@@ -1,0 +1,16 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Text;
+
+namespace PickleChic.DAL.Models
+{
+    public class Attribute
+    {
+        [Key]
+        public int Id { get; set; }
+        public string AttributeName { get; set; }
+
+    }
+
+}

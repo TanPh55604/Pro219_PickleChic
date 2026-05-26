@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PickleChic.API/PickleChic.API.csproj" />
+  <Project Path="PickleChic.DAL/PickleChic.DAL.csproj" />
+</Solution>
