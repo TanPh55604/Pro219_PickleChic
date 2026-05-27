@@ -1,7 +1,22 @@
 ﻿@inherits LayoutComponentBase
 
-<div>
-    @Body
+<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<div class="min-h-screen !bg-slate-100 text-slate-900">
+    <div class="flex min-h-screen">
+        <AdminSidebar />
+
+        <main class="min-w-0 flex-1">
+            <AdminHeader />
+
+            <section class="!p-6">
+                @Body
+            </section>
+        </main>
+    </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>

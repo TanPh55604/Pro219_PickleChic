@@ -1,0 +1,97 @@
+﻿@attribute [Route(RouterConfig.Admin.CreateCategory)]
+@layout AdminLayout
+
+<PageTitle>PickleChic Management - Create Category</PageTitle>
+
+<div class="mx-auto max-w-3xl !space-y-5">
+    <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Tạo thể loại</h1>
+        </div>
+
+        <a href="@RouterConfig.Admin.Categories"
+           class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-4 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+            Quay lại
+        </a>
+    </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+        <MudForm @ref="_form"
+                 Model="@_model"
+                 Validation="@_validator.ValidateValue">
+            <div class="grid !gap-5">
+                <MudTextField @bind-Value="_model.Name"
+                              For="@(() => _model.Name)"
+                              Label="Tên thể loại"
+                              Placeholder="Nhập tên thể loại"
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Immediate="true" />
+
+                <MudTextField @bind-Value="_model.LinkImage"
+                              For="@(() => _model.LinkImage)"
+                              Label="Đường dẫn ảnh"
+                              Placeholder="Nhập URL ảnh đại diện"
+                              Variant="Variant.Outlined"
+                              Immediate="true" />
+
+                <MudTextField @bind-Value="_model.Description"
+                              For="@(() => _model.Description)"
+                              Label="Mô tả"
+                              Placeholder="Nhập mô tả thể loại"
+                              Variant="Variant.Outlined"
+                              Lines="4"
+                              Immediate="true" />
+
+                <div class="!rounded-xl !border !border-slate-200 !bg-slate-50 !p-4">
+                    <MudSwitch @bind-Value="_model.Status"
+                               Color="Color.Success"
+                               Label="Đang hoạt động" />
+                </div>
+            </div>
+
+            <div class="!mt-6 flex justify-end">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="SubmitAsync"
+                           Class="!rounded-xl !px-5 !py-2.5 !normal-case">
+                    Lưu
+                </MudButton>
+            </div>
+        </MudForm>
+    </div>
+</div>
+
+@code {
+    private MudForm? _form;
+
+    private readonly CategoryModel _model = new()
+    {
+        Status = true,
+        CreateAt = DateTime.Now
+    };
+
+    private readonly CategorySchema.CreateUpdate _validator = new();
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        // TODO: Gọi API tạo thể loại tại đây.
+        // await CategoryService.CreateAsync(_model);
+
+        _navigation.NavigateTo(RouterConfig.Admin.Categories);
+    }
+}

@@ -1,0 +1,66 @@
+﻿<div class="w-full max-w-2xl">
+    <div class="overflow-hidden !rounded-3xl !border !border-slate-200 !bg-white shadow-sm">
+        <div class="relative !p-8 text-center md:!p-10">
+            <div class="absolute top-0 left-0 h-28 w-28 -translate-x-10 -translate-y-10 !rounded-full !bg-slate-100"></div>
+            <div class="absolute right-0 bottom-0 h-32 w-32 translate-x-12 translate-y-12 !rounded-full !bg-slate-50"></div>
+
+            <div class="relative">
+                <div class="mx-auto flex !h-16 !w-16 items-center justify-center !rounded-2xl @IconBoxClass">
+                    <MudIcon Icon="@Icon" Size="Size.Large" />
+                </div>
+
+                <p class="mt-6 text-sm font-bold tracking-[0.25em] text-slate-400 uppercase">
+                    @Code
+                </p>
+
+                <h1 class="mt-3 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">
+                    @Title
+                </h1>
+
+                <p class="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500 md:text-base">
+                    @Description
+                </p>
+
+                <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                    <a href="/"
+                       class="inline-flex w-full items-center justify-center gap-2 !rounded-xl !bg-slate-900 !px-5 !py-3 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800 sm:w-auto">
+                        <MudIcon Icon="@Icons.Material.Filled.Storefront" Size="Size.Small" />
+                        Về trang bán hàng
+                    </a>
+
+                    <a href="/admin/home"
+                       class="inline-flex w-full items-center justify-center gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50 sm:w-auto">
+                        <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" />
+                        Về trang quản trị
+                    </a>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Hint))
+                {
+                    <div class="mx-auto mt-6 max-w-lg !rounded-2xl !bg-slate-50 !p-4 text-left">
+                        <div class="flex gap-3">
+                            <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="mt-0.5 text-slate-400" />
+
+                            <p class="text-sm leading-6 text-slate-500">
+                                @Hint
+                            </p>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <p class="mt-5 text-center text-xs text-slate-400">
+        PickleChic Management · PickleChic Store
+    </p>
+</div>
+
+@code {
+    [Parameter] public string Code { get; set; } = "404";
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public string Description { get; set; } = "";
+    [Parameter] public string Hint { get; set; } = "";
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.ErrorOutline;
+    [Parameter] public string IconBoxClass { get; set; } = "!bg-slate-100 text-slate-700";
+}

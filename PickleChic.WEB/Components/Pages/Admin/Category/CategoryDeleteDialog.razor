@@ -1,0 +1,48 @@
+﻿<MudDialog>
+    <DialogContent>
+        <div class="!space-y-3">
+            <p class="text-base font-semibold text-slate-900">
+                Bạn chắc chắn muốn xóa thể loại này không?
+            </p>
+
+            <div class="!rounded-xl !bg-slate-50 !p-4">
+                <p class="text-sm text-slate-500">Tên thể loại:  <span class="font-bold text-slate-900">@Category.Name</span></p>
+            </div>
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="flex w-full justify-end !gap-3">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Default"
+                       OnClick="Cancel"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Hủy
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="Confirm"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Xóa
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public CategoryModel Category { get; set; } = new();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Confirm()
+    {
+        MudDialog.Close(DialogResult.Ok(Category.Id));
+    }
+}

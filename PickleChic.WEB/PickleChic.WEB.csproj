@@ -8,11 +8,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="MudBlazor" Version="9.5.0" />
+    <Compile Remove="wwwroot\assests\**" />
+    <Content Remove="wwwroot\assests\**" />
+    <EmbeddedResource Remove="wwwroot\assests\**" />
+    <None Remove="wwwroot\assests\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\assests\images\" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="MudBlazor" Version="9.5.0" />
   </ItemGroup>
 
 </Project>

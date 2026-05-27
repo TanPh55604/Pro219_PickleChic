@@ -1,0 +1,79 @@
+﻿@page "/{StatusCode:int}"
+
+@layout PublicLayout
+
+<PageTitle>@PageTitle</PageTitle>
+
+<ErrorPageView Code="@ErrorCode"
+               Title="@Title"
+               Description="@Description"
+               Hint="@Hint"
+               Icon="@Icon"
+               IconBoxClass="@IconBoxClass" />
+
+@code {
+    [Parameter] public int StatusCode { get; set; }
+
+    private string PageTitle => StatusCode switch
+    {
+        401 => "PickleChic - Unauthorized",
+        403 => "PickleChic - Access Denied",
+        404 => "PickleChic - Page Not Found",
+        500 => "PickleChic - Server Error",
+        _ => "PickleChic - Something Went Wrong"
+    };
+
+    private string ErrorCode => StatusCode switch
+    {
+        401 => "401",
+        403 => "403",
+        404 => "404",
+        500 => "500",
+        _ => "Oops"
+    };
+
+    private string Title => StatusCode switch
+    {
+        401 => "Bạn cần đăng nhập",
+        403 => "Không có quyền truy cập",
+        404 => "Không tìm thấy trang",
+        500 => "Đã xảy ra lỗi hệ thống",
+        _ => "Oops! Something went wrong"
+    };
+
+    private string Description => StatusCode switch
+    {
+        401 => "Bạn cần đăng nhập để truy cập chức năng hoặc tài nguyên này.",
+        403 => "Bạn không có quyền truy cập vào chức năng hoặc tài nguyên này.",
+        404 => "Trang bạn đang truy cập không tồn tại, đã bị di chuyển hoặc đường dẫn không còn hợp lệ.",
+        500 => "Hệ thống đang gặp sự cố khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.",
+        _ => "Đã có lỗi xảy ra trong quá trình xử lý yêu cầu của bạn. Vui lòng thử lại sau."
+    };
+
+    private string Hint => StatusCode switch
+    {
+        401 => "Nếu bạn đang ở khu vực quản trị, vui lòng đăng nhập bằng tài khoản có quyền phù hợp.",
+        403 => "Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ tài khoản quản trị có quyền cao hơn để được cấp quyền phù hợp.",
+        404 => "Nếu bạn đang thao tác trong khu vực quản trị, hãy quay lại trang quản trị. Nếu bạn là khách hàng, hãy quay lại trang bán hàng.",
+        500 => "Nếu lỗi tiếp tục xảy ra, hãy ghi lại thao tác vừa thực hiện và gửi cho bộ phận kỹ thuật để kiểm tra.",
+        _ => "Nếu lỗi tiếp tục xảy ra, hãy quay lại trang trước đó hoặc liên hệ bộ phận kỹ thuật để được hỗ trợ."
+    };
+
+    private string Icon => StatusCode switch
+    {
+        401 => Icons.Material.Filled.Login,
+        403 => Icons.Material.Filled.Lock,
+        404 => Icons.Material.Filled.SearchOff,
+        500 => Icons.Material.Filled.ReportProblem,
+        _ => Icons.Material.Filled.ErrorOutline
+    };
+
+    private string IconBoxClass => StatusCode switch
+    {
+        401 => "!bg-sky-50 text-sky-700",
+        403 => "!bg-amber-50 text-amber-700",
+        404 => "!bg-slate-100 text-slate-700",
+        500 => "!bg-red-50 text-red-700",
+        _ => "!bg-slate-100 text-slate-700"
+    };
+}

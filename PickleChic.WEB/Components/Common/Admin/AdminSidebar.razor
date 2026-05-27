@@ -1,0 +1,145 @@
+﻿@using MudBlazor
+
+<aside class="hidden !h-screen !w-72 shrink-0 flex-col !border-r !border-slate-200 !bg-white lg:flex">
+    <div class="flex !h-16 shrink-0 items-center gap-3 !border-b !border-slate-200 !px-6">
+        <MudAvatar Size="Size.Medium" class="flex !h-10 !w-10 items-center justify-center !rounded-xl !bg-slate-900 !text-white shadow-sm">
+            P
+        </MudAvatar>
+
+        <div class="min-w-0">
+            <p class="truncate text-base font-bold text-slate-900">PICKLECHIC</p>
+            <p class="truncate text-xs text-slate-500">PickleChic Management</p>
+        </div>
+    </div>
+
+    <nav class="min-h-0 flex-1 !space-y-6 overflow-y-auto !px-4 !py-5">
+        <div class="!space-y-1">
+            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Tổng quan
+            </p>
+
+            <AdminNavItem Href="@RouterConfig.Admin.Home"
+                          Icon="@Icons.Material.Filled.Home"
+                          Text="Trang chủ" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.Dashboard"
+                          Icon="@Icons.Material.Filled.Dashboard"
+                          Text="Thống kê" />
+        </div>
+
+        <div class="!space-y-1">
+            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Quản lý hệ thống
+            </p>
+
+            <AdminNavItem Href="@RouterConfig.Admin.Staffs"
+                          Icon="@Icons.Material.Filled.ManageAccounts"
+                          Text="Quản trị viên" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.PagePermissions"
+                          Icon="@Icons.Material.Filled.Lock"
+                          Text="Phân quyền" />
+        </div>
+
+        <div class="!space-y-1">
+            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Sản phẩm
+            </p>
+
+            <AdminNavItem Href="@RouterConfig.Admin.Products"
+                          Icon="@Icons.Material.Filled.Inventory2"
+                          Text="Sản phẩm" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.ProductVariants"
+                          Icon="@Icons.Material.Filled.ViewInAr"
+                          Text="Biến thể sản phẩm" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.ProductVariantAttributes"
+                          Icon="@Icons.Material.Filled.Tune"
+                          Text="Thuộc tính biến thể" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.Categories"
+                          Icon="@Icons.Material.Filled.Category"
+                          Text="Thể loại" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.Brands"
+                          Icon="@Icons.Material.Filled.LocalOffer"
+                          Text="Thương hiệu" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.Attributes"
+                          Icon="@Icons.Material.Filled.Extension"
+                          Text="Thuộc tính" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.AttributeValues"
+                          Icon="@Icons.Material.Filled.FormatListBulleted"
+                          Text="Giá trị thuộc tính" />
+        </div>
+
+        <div class="!space-y-1">
+            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Khuyến mãi
+            </p>
+
+            <AdminNavItem Href="@RouterConfig.Admin.Vouchers"
+                          Icon="@Icons.Material.Filled.ConfirmationNumber"
+                          Text="Mã giảm giá" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.PromotionDetails"
+                          Icon="@Icons.Material.Filled.Sell"
+                          Text="Sản phẩm giảm giá" />
+        </div>
+
+        <div class="!space-y-1">
+            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Bán hàng
+            </p>
+
+            <AdminNavItem Href="@RouterConfig.Admin.Orders"
+                          Icon="@Icons.Material.Filled.ReceiptLong"
+                          Text="Đơn hàng" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.OfflineSales"
+                          Icon="@Icons.Material.Filled.PointOfSale"
+                          Text="Bán hàng offline" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.PaymentMethods"
+                          Icon="@Icons.Material.Filled.Payments"
+                          Text="Phương thức thanh toán" />
+        </div>
+
+        <div class="!space-y-1">
+            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Khách hàng
+            </p>
+
+            <AdminNavItem Href="@RouterConfig.Admin.Customers"
+                          Icon="@Icons.Material.Filled.Groups"
+                          Text="Khách hàng" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.Ranks"
+                          Icon="@Icons.Material.Filled.WorkspacePremium"
+                          Text="Xếp hạng" />
+        </div>
+
+        <div class="!space-y-1">
+            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                Tương tác
+            </p>
+
+            <AdminNavItem Href="@RouterConfig.Admin.Reviews"
+                          Icon="@Icons.Material.Filled.RateReview"
+                          Text="Đánh giá" />
+
+            <AdminNavItem Href="@RouterConfig.Admin.Qna"
+                          Icon="@Icons.Material.Filled.QuestionAnswer"
+                          Text="Câu hỏi Q&A" />
+        </div>
+    </nav>
+
+    <div class="shrink-0 !border-t !border-slate-200 !p-4">
+        <button class="flex w-full items-center gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-600 transition hover:!bg-red-50 hover:!text-red-600">
+            <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
+            Đăng xuất
+        </button>
+    </div>
+</aside>

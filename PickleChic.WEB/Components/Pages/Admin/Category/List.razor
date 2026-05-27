@@ -1,0 +1,188 @@
+﻿@attribute [Route(RouterConfig.Admin.Categories)]
+@layout AdminLayout
+
+<PageTitle>PickleChic Management - Categories</PageTitle>
+
+<div class="!space-y-5">
+    <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Thể loại</h1>
+        </div>
+
+        <a href="@RouterConfig.Admin.CreateCategory"
+           class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-4 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+            Thêm thể loại
+        </a>
+    </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+            <MudTextField @bind-Value="_searchText"
+                          Placeholder="Tìm kiếm theo tên thể loại..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Class="md:!max-w-sm" />
+
+            <MudSelect T="bool?"
+                       @bind-Value="_statusFilter"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Class="md:!w-48">
+                <MudSelectItem T="bool?" Value="@((bool?)null)">
+                    Tất cả trạng thái
+                </MudSelectItem>
+                <MudSelectItem T="bool?" Value="@((bool?)true)">
+                    Đang hoạt động
+                </MudSelectItem>
+                <MudSelectItem T="bool?" Value="@((bool?)false)">
+                    Tạm ẩn
+                </MudSelectItem>
+            </MudSelect>
+        </div>
+
+        <MudTable Items="FilteredCategories"
+                  Hover="true"
+                  Dense="false"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(100vh - 330px)"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Ảnh</MudTh>
+                <MudTh>Tên thể loại</MudTh>
+                <MudTh>Mô tả</MudTh>
+                <MudTh>Trạng thái</MudTh>
+                <MudTh>Ngày tạo</MudTh>
+                <MudTh Class="text-right">Chi tiết</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="ID">
+                    <span class="font-medium text-slate-700">#@context.Id</span>
+                </MudTd>
+
+                <MudTd DataLabel="Ảnh">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.CategoryDetail, context.Id)"
+                       class="block">
+                        @if (!string.IsNullOrWhiteSpace(context.LinkImage))
+                        {
+                            <img src="@context.LinkImage"
+                                 alt="@context.Name"
+                                 class="!h-12 !w-12 !rounded-xl !border !border-slate-200 object-cover" />
+                        }
+                        else
+                        {
+                            <div class="flex !h-12 !w-12 items-center justify-center !rounded-xl !bg-slate-100 text-slate-400">
+                                <MudIcon Icon="@Icons.Material.Filled.Image" />
+                            </div>
+                        }
+                    </a>
+                </MudTd>
+
+                <MudTd DataLabel="Tên thể loại">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.CategoryDetail, context.Id)"
+                       class="font-semibold text-slate-900 transition hover:text-slate-600">
+                        @context.Name
+                    </a>
+
+                    <p class="!mt-1 text-xs text-slate-500">
+                        Cập nhật bởi: @(context.UpdateBy ?? "System")
+                    </p>
+                </MudTd>
+
+                <MudTd DataLabel="Mô tả">
+                    <p class="line-clamp-2 max-w-sm text-sm text-slate-600">
+                        @(string.IsNullOrWhiteSpace(context.Description) ? "Chưa có mô tả" : context.Description)
+                    </p>
+                </MudTd>
+
+                <MudTd DataLabel="Trạng thái">
+                    @if (context.Status)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                            Đang hoạt động
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
+                            Tạm ẩn
+                        </MudChip>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="Ngày tạo">
+                    <span class="text-sm text-slate-600">
+                        @context.CreateAt.ToString("dd/MM/yyyy")
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Chi tiết" Class="text-right">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.CategoryDetail, context.Id)"
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                    </a>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="!py-10 text-center text-slate-500">
+                    Không có thể loại nào.
+                </div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </div>
+</div>
+
+@code {
+    private string _searchText = string.Empty;
+    private bool? _statusFilter;
+
+    private List<CategoryModel> _categories = new()
+    {
+        new()
+        {
+            Id = 1,
+            Name = "Áo",
+            LinkImage = "",
+            Description = "Các sản phẩm áo thời trang.",
+            UpdateBy = "Admin",
+            Status = true,
+            CreateAt = DateTime.Now.AddDays(-10)
+        },
+        new()
+        {
+            Id = 2,
+            Name = "Quần",
+            LinkImage = "",
+            Description = "Các sản phẩm quần nam nữ.",
+            UpdateBy = "Admin",
+            Status = true,
+            CreateAt = DateTime.Now.AddDays(-8)
+        },
+        new()
+        {
+            Id = 3,
+            Name = "Phụ kiện",
+            LinkImage = "",
+            Description = "Túi, mũ, kính và phụ kiện thời trang.",
+            UpdateBy = "System",
+            Status = false,
+            CreateAt = DateTime.Now.AddDays(-5)
+        }
+    };
+
+    private IEnumerable<CategoryModel> FilteredCategories =>
+        _categories
+            .Where(x => string.IsNullOrWhiteSpace(_searchText)
+                        || x.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+            .Where(x => !_statusFilter.HasValue || x.Status == _statusFilter.Value);
+}

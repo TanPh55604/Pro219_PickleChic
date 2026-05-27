@@ -1,0 +1,235 @@
+﻿@inject NavigationManager NavigationManager
+
+<header class="sticky top-0 z-30 !h-16 !border-b !border-slate-200 !bg-white/90 backdrop-blur">
+    <div class="flex h-full items-center justify-between !px-6">
+        <div class="min-w-0">
+            <nav class="flex items-center gap-2 text-sm">
+                @foreach (var item in BreadcrumbItems.Select((value, index) => new { value, index }))
+                {
+                    if (item.index > 0)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight"
+                                 Size="Size.Small"
+                                 Class="text-slate-400" />
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(item.value.Href) && item.index < BreadcrumbItems.Count - 1)
+                    {
+                        <a href="@item.value.Href"
+                           class="font-medium text-slate-500 transition hover:text-slate-900">
+                            @item.value.Text
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="truncate font-semibold text-slate-900">
+                            @item.value.Text
+                        </span>
+                    }
+                }
+            </nav>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <MudIconButton Icon="@Icons.Material.Filled.Notifications"
+                           Size="Size.Medium"
+                           Class="text-slate-600" />
+
+            <div class="flex items-center gap-3 !rounded-full !border !border-slate-200 !bg-white !px-3 !py-1.5 shadow-sm">
+                <div class="flex !h-8 !w-8 items-center justify-center !rounded-full !bg-slate-900 text-sm font-semibold !text-white">
+                    A
+                </div>
+
+                <div class="hidden leading-tight sm:block">
+                    <p class="text-sm font-medium text-slate-800">Admin</p>
+                    <p class="text-xs text-slate-500">Quản trị viên</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+@code {
+    private List<BreadcrumbItemModel> BreadcrumbItems { get; set; } = [];
+
+    protected override void OnInitialized()
+    {
+        BreadcrumbItems = GetBreadcrumbItems();
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        BreadcrumbItems = GetBreadcrumbItems();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string CurrentPath
+    {
+        get
+        {
+            var path = "/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri).Trim('/');
+            path = path.Split('?')[0].Split('#')[0];
+
+            return string.IsNullOrWhiteSpace(path) ? "/" : path.ToLowerInvariant();
+        }
+    }
+
+    private List<BreadcrumbItemModel> GetBreadcrumbItems()
+    {
+        var items = new List<BreadcrumbItemModel>
+        {
+            new("Trang chủ", "/admin")
+        };
+
+        switch (CurrentPath)
+        {
+            case "/admin/home":
+                break;
+
+            case "/admin/dashboard":
+                items.Add(new("Thống kê"));
+                break;
+
+            case "/admin/permissions":
+                items.Add(new("Phân quyền quản trị"));
+                break;
+
+            case "/admin/admin-accounts":
+                items.Add(new("Tài khoản quản trị"));
+                break;
+
+            case "/admin/customers":
+                items.Add(new("Tài khoản khách hàng"));
+                break;
+
+            case "/admin/products":
+                items.Add(new("Sản phẩm"));
+                break;
+
+            case "/admin/products/create":
+                items.Add(new("Sản phẩm", "/admin/products"));
+                items.Add(new("Tạo"));
+                break;
+
+            case var path when path.StartsWith("/admin/products/detail"):
+                items.Add(new("Sản phẩm", "/admin/products"));
+                items.Add(new("Chi tiết"));
+                break;
+
+            case var path when path.StartsWith("/admin/products/edit"):
+                items.Add(new("Sản phẩm", "/admin/products"));
+                items.Add(new("Cập nhật"));
+                break;
+
+            case "/admin/categories":
+                items.Add(new("Thể loại"));
+                break;
+
+            case "/admin/categories/create":
+                items.Add(new("Thể loại", "/admin/categories"));
+                items.Add(new("Tạo"));
+                break;
+
+            case var path when path.StartsWith("/admin/categories/detail"):
+                items.Add(new("Thể loại", "/admin/categories"));
+                items.Add(new("Chi tiết"));
+                break;
+
+            case var path when path.StartsWith("/admin/categories/edit"):
+                items.Add(new("Thể loại", "/admin/categories"));
+                items.Add(new("Cập nhật"));
+                break;
+
+            case "/admin/brands":
+                items.Add(new("Thương hiệu"));
+                break;
+
+            case "/admin/colors":
+                items.Add(new("Màu sắc"));
+                break;
+
+            case "/admin/discounted-products":
+                items.Add(new("Sản phẩm giảm giá"));
+                break;
+
+            case "/admin/discount-codes":
+                items.Add(new("Mã giảm giá"));
+                break;
+
+            case "/admin/discount-campaigns":
+                items.Add(new("Đợt giảm giá"));
+                break;
+
+            case "/admin/orders":
+                items.Add(new("Đơn hàng"));
+                break;
+
+            case var path when path.StartsWith("/admin/orders/detail"):
+                items.Add(new("Đơn hàng", "/admin/orders"));
+                items.Add(new("Chi tiết"));
+                break;
+
+            case "/admin/offline-sales":
+                items.Add(new("Bán hàng offline"));
+                break;
+
+            case "/admin/customer-payments":
+                items.Add(new("Thanh toán khách hàng"));
+                break;
+
+            case "/admin/cart-management":
+                items.Add(new("Giỏ hàng khách hàng"));
+                break;
+
+            case "/admin/customer-info":
+                items.Add(new("Thông tin khách hàng"));
+                break;
+
+            case "/admin/customer-favorites":
+                items.Add(new("Yêu thích khách hàng"));
+                break;
+
+            case "/admin/customer-reviews":
+                items.Add(new("Đánh giá khách hàng"));
+                break;
+
+            case "/admin/customer-rankings":
+                items.Add(new("Xếp hạng & điểm"));
+                break;
+
+            case "/admin/qna":
+                items.Add(new("Câu hỏi Q&A"));
+                break;
+
+            case "/admin/chatbot-qna":
+                items.Add(new("Chatbot Q&A"));
+                break;
+
+            case "/admin/search-management":
+                items.Add(new("Tìm kiếm khách hàng"));
+                break;
+
+            case "/admin/admin-reviews":
+                items.Add(new("Đánh giá phía quản trị"));
+                break;
+
+            case "/admin/settings":
+                items.Add(new("Cài đặt"));
+                break;
+
+            default:
+                items.Add(new("Quản trị"));
+                break;
+        }
+
+        return items;
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private sealed record BreadcrumbItemModel(string Text, string? Href = null);
+}

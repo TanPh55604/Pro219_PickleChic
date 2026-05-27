@@ -1,0 +1,19 @@
+﻿@using MudBlazor
+
+<NavLink href="@Href"
+         Match="@Match"
+         class="group flex items-center gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-600 transition hover:!bg-slate-100 hover:text-slate-950"
+         activeClass="!bg-slate-900 !text-white shadow-sm hover:!bg-slate-900 hover:!text-white">
+    <MudIcon Icon="@Icon"
+             Size="Size.Small"
+             Class="shrink-0" />
+
+    <span class="truncate">@Text</span>
+</NavLink>
+
+@code {
+    [Parameter] public string Href { get; set; } = "/";
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Circle;
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+}
