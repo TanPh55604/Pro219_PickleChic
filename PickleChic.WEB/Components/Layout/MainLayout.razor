@@ -1,0 +1,17 @@
+﻿@inherits LayoutComponentBase
+
+<div class="flex min-h-screen flex-col bg-white text-neutral-950">
+    <CustomerHeader />
+
+    <main class="flex-1">
+        @Body
+    </main>
+
+    <CustomerFooter />
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    An unhandled error has occurred.
+    <a href="." class="reload">Reload</a>
+    <span class="dismiss">🗙</span>
+</div>

@@ -1,0 +1,505 @@
+﻿@page "/"
+@layout MainLayout
+
+<PageTitle>PickleChic Store</PageTitle>
+
+<div class="pc-home bg-white text-neutral-950">
+    <section class="bg-neutral-950">
+        <MudCarousel TData="HeroSlide"
+                     Class="mud-width-full"
+                     Style="height: 620px;"
+                     AutoCycle="true"
+                     AutoCycleTime="TimeSpan.FromSeconds(5)"
+                     ShowArrows="true"
+                     ShowBullets="true"
+                     EnableSwipeGesture="true">
+            @foreach (var slide in HeroSlides)
+            {
+                <MudCarouselItem>
+                    <div class="relative h-[620px] overflow-hidden bg-neutral-950">
+                        <img src="@slide.ImageUrl"
+                             alt="@slide.Title"
+                             class="absolute inset-0 h-full w-full object-cover" />
+
+                        <div class="bg-gradient-to-r absolute inset-0 from-black via-black/75 to-black/20"></div>
+
+                        <div class="relative mx-auto flex h-full max-w-7xl items-center px-4">
+                            <div class="max-w-3xl text-white">
+                                <p class="mb-4 inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-black tracking-[0.28em] text-white/80 uppercase backdrop-blur">
+                                    @slide.Eyebrow
+                                </p>
+
+                                <h1 class="text-5xl leading-[0.92] font-black tracking-[-0.07em] uppercase sm:text-6xl lg:text-7xl">
+                                    @slide.Title
+                                </h1>
+
+                                <p class="mt-6 max-w-xl text-base leading-7 text-neutral-300 sm:text-lg">
+                                    @slide.Description
+                                </p>
+
+                                <div class="mt-8 flex flex-wrap gap-3">
+                                    <MudButton Href="@slide.Url"
+                                               Variant="Variant.Filled"
+                                               Color="Color.Error"
+                                               Size="Size.Large"
+                                               Class="!rounded-full !px-7 !py-3 !text-sm !font-black !tracking-wide !uppercase">
+                                        Xem sản phẩm
+                                    </MudButton>
+
+                                    <MudButton Href="#new-products"
+                                               Variant="Variant.Outlined"
+                                               Color="Color.Default"
+                                               Size="Size.Large"
+                                               Class="!rounded-full !border-white/30 !px-7 !py-3 !text-sm !font-black !tracking-wide !text-white !uppercase">
+                                        Sản phẩm mới
+                                    </MudButton>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </MudCarouselItem>
+            }
+        </MudCarousel>
+    </section>
+
+    <section class="border-b border-neutral-200 bg-neutral-100">
+        <div class="mx-auto grid max-w-7xl gap-0 px-4 py-9 sm:grid-cols-2 lg:grid-cols-4">
+            @foreach (var item in _serviceBenefits)
+            {
+                <div class="flex gap-5 border-neutral-300 px-2 py-4 lg:border-r lg:last:border-r-0">
+                    <div class="shrink-0 text-neutral-950">
+                        <MudIcon Icon="@item.Icon" Size="Size.Large" />
+                    </div>
+
+                    <div>
+                        <h3 class="text-base font-black text-neutral-950 capitalize">
+                            @item.Title
+                        </h3>
+
+                        <p class="mt-3 max-w-[220px] text-sm leading-6 font-medium text-neutral-600">
+                            @item.Description
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+    </section>
+
+    <section class="mx-auto grid max-w-7xl gap-4 !px-4 !py-12 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach (var category in _categories)
+        {
+            <a href="@category.Url" class="group overflow-hidden !rounded-3xl bg-neutral-100 !p-6 transition hover:!text-white hover:-translate-y-1 hover:bg-neutral-950 hover:shadow-xl">
+                <p class="text-xs font-black tracking-[0.28em] text-[#d71920] uppercase">
+                    @category.Eyebrow
+                </p>
+
+                <h3 class="mt-4 text-2xl font-black tracking-[-0.04em] uppercase">
+                    @category.Name
+                </h3>
+
+                <p class="mt-8 text-sm font-bold text-neutral-500 transition group-hover:text-neutral-300">
+                    Xem chi tiết →
+                </p>
+            </a>
+        }
+    </section>
+
+    <section class="mx-auto max-w-7xl !px-4 !pb-14">
+        <div class="grid overflow-hidden !rounded-[2rem] bg-neutral-950 !text-white md:grid-cols-[1.1fr_0.9fr]">
+            <div class="!p-8 md:!p-12">
+                <p class="text-xs font-black tracking-[0.3em] text-[#d71920] uppercase">
+                    Công nghệ thế hệ mới
+                </p>
+
+                <h2 class="mt-3 max-w-xl text-4xl leading-none font-black tracking-[-0.06em] uppercase md:text-5xl">
+                    Pro IV Colorway dành cho người chơi nghiêm túc
+                </h2>
+
+                <p class="mt-5 max-w-xl text-sm leading-7 text-neutral-300">
+                    Thiết kế đậm chất thi đấu, tối ưu sức mạnh, độ xoáy và kiểm soát bóng.
+                    Phù hợp cho người chơi muốn nâng cấp trải nghiệm pickleball chuyên nghiệp.
+                </p>
+
+                <a href="#best-sellers" class="mt-8 inline-flex !rounded-full bg-[#d71920] !px-7 !py-3 text-sm font-black tracking-wide !text-white uppercase transition hover:bg-white hover:text-neutral-950">
+                    Khám phá ngay
+                </a>
+            </div>
+
+            <div class="bg-gradient-to-br relative min-h-[320px] from-neutral-900 to-neutral-800">
+                <img src="https://joola.com.vn/images/1102/thumbs/joola-ra-mat-vot-pickleball-pro-iv-va-agassi-pro-duoc-chung-nhan-kep-w900.webp"
+                     alt="PickleChic Pro IV"
+                     class="h-full w-full object-cover opacity-90" />
+            </div>
+        </div>
+    </section>
+
+    <section id="new-products" class="bg-white py-16 text-neutral-950 lg:py-20">
+        <div class="mx-auto max-w-7xl px-4">
+            @SectionHeading("New arrivals", "Sản phẩm mới", "Xem tất cả", "/products/new")
+
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach (var product in _newProducts)
+                {
+                    @ProductCard(product)
+                }
+            </div>
+        </div>
+    </section>
+
+    <section id="best-sellers" class="bg-neutral-950 !py-16 !text-white lg:!py-20">
+        <div class="mx-auto max-w-7xl !px-4">
+            @SectionHeading("Best sellers", "Sản phẩm bán chạy", "Xem tất cả", "/products/best-sellers")
+
+            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                @foreach (var product in _bestSellerProducts)
+                {
+                    @ProductCard(product)
+                }
+            </div>
+        </div>
+    </section>
+
+    <section id="team-picklechic" class="bg-neutral-100 !py-16 lg:!py-24">
+        <div class="mx-auto max-w-7xl !px-4">
+            @SectionHeading("Athletes", "TEAM PICKLECHIC", "Xem tất cả", "/team")
+
+            <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+                @foreach (var member in _teamMembers)
+                {
+                    <article class="group overflow-hidden rounded-[1.75rem] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                        <div class="aspect-[4/5] bg-neutral-900">
+                            <img src="@member.ImageUrl"
+                                 alt="@member.Name"
+                                 class="h-full w-full object-cover opacity-95 transition duration-500 group-hover:scale-105" />
+                        </div>
+
+                        <div class="!p-6">
+                            <h3 class="text-xl font-black tracking-[-0.04em] uppercase">
+                                @member.Name
+                            </h3>
+
+                            <p class="mt-3 text-sm leading-6 font-semibold text-neutral-600">
+                                @member.Highlight
+                            </p>
+                        </div>
+                    </article>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-white !py-16 lg:!py-24">
+        <div class="mx-auto max-w-7xl !px-4">
+            @SectionHeading("PickleChic News", "Blog - Tin tức", "Xem tất cả", "/blog")
+
+            <div class="grid gap-6 md:grid-cols-3">
+                @foreach (var post in _blogPosts)
+                {
+                    <article class="group overflow-hidden !rounded-[1.75rem] !border !border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                        <a href="@post.Url" class="block aspect-[16/10] overflow-hidden bg-neutral-100">
+                            <img src="@post.ImageUrl"
+                                 alt="@post.Title"
+                                 class="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+                        </a>
+
+                        <div class="!p-6">
+                            <div class="flex items-center gap-3 text-xs font-black tracking-[0.18em] text-[#d71920] uppercase">
+                                <span>@post.Category</span>
+                                <span class="h-1 w-1 !rounded-full bg-neutral-300"></span>
+                                <span class="text-neutral-400">@post.DateText</span>
+                            </div>
+
+                            <h3 class="mt-4 min-h-[72px] text-xl leading-6 font-black tracking-[-0.04em] text-neutral-950 uppercase">
+                                <a href="@post.Url" class="transition hover:text-[#d71920]">
+                                    @post.Title
+                                </a>
+                            </h3>
+
+                            <p class="mt-4 text-sm leading-6 font-medium text-neutral-600">
+                                @post.Description
+                            </p>
+
+                            <a href="@post.Url" class="mt-5 inline-flex text-sm font-black tracking-wide text-neutral-950 uppercase transition hover:text-[#d71920]">
+                                Đọc tiếp →
+                            </a>
+                        </div>
+                    </article>
+                }
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private class HeroSlide
+    {
+        public string Eyebrow { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string ImageUrl { get; set; }
+        public string Url { get; set; }
+
+        public HeroSlide(string eyebrow, string title, string description, string imageUrl, string url)
+        {
+            Eyebrow = eyebrow;
+            Title = title;
+            Description = description;
+            ImageUrl = imageUrl;
+            Url = url;
+        }
+    }
+
+    private class ServiceBenefit
+    {
+        public string Icon { get; set; }
+        public string Title { get; set; }
+        public string Description { get; set; }
+
+        public ServiceBenefit(string icon, string title, string description)
+        {
+            Icon = icon;
+            Title = title;
+            Description = description;
+        }
+    }
+
+    private class CategoryItem
+    {
+        public string Eyebrow { get; set; }
+        public string Name { get; set; }
+        public string Url { get; set; }
+
+        public CategoryItem(string eyebrow, string name, string url)
+        {
+            Eyebrow = eyebrow;
+            Name = name;
+            Url = url;
+        }
+    }
+
+    private class ProductItem
+    {
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
+        public string Price { get; set; }
+        public string OldPrice { get; set; }
+        public int Discount { get; set; }
+        public int Reviews { get; set; }
+        public string Tag { get; set; }
+        public string Url { get; set; }
+
+        public ProductItem(string name, string imageUrl, string price, string oldPrice, int discount, int reviews, string tag, string url)
+        {
+            Name = name;
+            ImageUrl = imageUrl;
+            Price = price;
+            OldPrice = oldPrice;
+            Discount = discount;
+            Reviews = reviews;
+            Tag = tag;
+            Url = url;
+        }
+    }
+
+    private class TeamMember
+    {
+        public string Name { get; set; }
+        public string ImageUrl { get; set; }
+        public string Highlight { get; set; }
+
+        public TeamMember(string name, string imageUrl, string highlight)
+        {
+            Name = name;
+            ImageUrl = imageUrl;
+            Highlight = highlight;
+        }
+    }
+
+    private class BlogPost
+    {
+        public string Title { get; set; }
+        public string Category { get; set; }
+        public string DateText { get; set; }
+        public string Description { get; set; }
+        public string ImageUrl { get; set; }
+        public string Url { get; set; }
+
+        public BlogPost(string title, string category, string dateText, string description, string imageUrl, string url)
+        {
+            Title = title;
+            Category = category;
+            DateText = dateText;
+            Description = description;
+            ImageUrl = imageUrl;
+            Url = url;
+        }
+    }
+
+    private HeroSlide[] HeroSlides = new HeroSlide[]
+    {
+        new HeroSlide(
+            "PickleChic x Razer",
+            "Phiên bản giới hạn cho người chơi tốc độ",
+            "Thiết kế đậm chất thể thao, hiệu suất cao và khác biệt trên sân đấu.",
+            "https://joola.com.vn/images/1629/thumbs/razer-va-joola-ra-mat-vot-pickleball-phien-ban-gioi-han-trong-su-kien-ket-hop-choi-game-dau-tien-tren-the-gioi-w900.webp",
+            "/products/limited"
+        ),
+        new HeroSlide(
+            "Pro IV Series",
+            "Công nghệ mới cho cú đánh mạnh hơn",
+            "Dòng vợt Pro IV với các hình dáng Hyperion, Perseus, Magnus và Scorpeus.",
+            "https://joola.com.vn/images/1102/thumbs/joola-ra-mat-vot-pickleball-pro-iv-va-agassi-pro-duoc-chung-nhan-kep-w900.webp",
+            "/products/pro-iv"
+        ),
+        new HeroSlide(
+            "Vietnam Colorway",
+            "Bản sắc Việt trong từng đường bóng",
+            "Phiên bản phối màu nổi bật, tối ưu sức mạnh, kiểm soát và độ xoáy.",
+            "https://joola.com.vn/images/1510/thumbs/magnus-pro-iv-16mm-vietnam-colorway-dtc-850x850xcrop.webp",
+            "/products/vietnam-colorway"
+        )
+    };
+
+    private ServiceBenefit[] _serviceBenefits = new ServiceBenefit[]
+    {
+        new ServiceBenefit(Icons.Material.Outlined.Storefront, "Chất Lượng Sản Phẩm", "Toàn bộ sản phẩm được kiểm soát chất lượng giúp khách hàng yên tâm."),
+        new ServiceBenefit(Icons.Material.Outlined.LocalOffer, "Giá Bán Hợp Lý", "Giá trực tiếp từ hãng, mang tiết kiệm tối đa cho khách hàng."),
+        new ServiceBenefit(Icons.Material.Outlined.Inventory2, "Vận Chuyển Nhanh", "Giao hàng nhanh chóng, đáng tin cậy từ các kho hàng toàn quốc."),
+        new ServiceBenefit(Icons.Material.Outlined.SentimentSatisfied, "Tư Vấn Tận Tâm", "Đội ngũ hỗ trợ, tư vấn có chuyên môn cao và nhiệt tình.")
+    };
+
+    private CategoryItem[] _categories = new CategoryItem[]
+    {
+        new CategoryItem("Paddles", "Vợt Pickleball", "/products/paddles"),
+        new CategoryItem("Accessories", "Phụ kiện", "/products/accessories"),
+        new CategoryItem("Apparel", "Trang phục", "/products/apparel"),
+        new CategoryItem("Balls", "Bóng Pickleball", "/products/balls")
+    };
+
+    private ProductItem[] _newProducts = new ProductItem[]
+    {
+        new ProductItem("Hyperion Pro V Ben Johns Bolt Blue 16mm", "https://joola.com.vn/images/1807/thumbs/hyperion-pro-v-ben-johns-bolt-blue-16mm-250x250xcrop.webp", "7,890,000 đ", "", 0, 7, "Sẵn hàng", "/products/hyperion-pro-v"),
+        new ProductItem("Perseus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1372/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 10, "Sale", "/products/perseus-pro-iv-vietnam"),
+        new ProductItem("Magnus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1510/thumbs/magnus-pro-iv-16mm-vietnam-colorway-dtc-850x850xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 12, "New", "/products/magnus-pro-iv-vietnam"),
+        new ProductItem("Perseus Pro IV 16mm - Asia Colorway", "https://joola.com.vn/images/1373/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 8, "Hot", "/products/perseus-pro-iv-asia")
+    };
+
+    private ProductItem[] _bestSellerProducts = new ProductItem[]
+    {
+        new ProductItem("Perseus Pro IV 14mm - Asia Colorway", "https://joola.com.vn/images/1373/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 18, "Best", "/products/perseus-pro-iv-asia"),
+        new ProductItem("Magnus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1510/thumbs/magnus-pro-iv-16mm-vietnam-colorway-dtc-850x850xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 16, "Best", "/products/magnus-pro-iv-vietnam"),
+        new ProductItem("Hyperion Pro V Ben Johns Bolt Blue 16mm", "https://joola.com.vn/images/1807/thumbs/hyperion-pro-v-ben-johns-bolt-blue-16mm-250x250xcrop.webp", "7,890,000 đ", "", 0, 9, "Pro V", "/products/hyperion-pro-v"),
+        new ProductItem("Perseus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1372/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 14, "Pro IV", "/products/perseus-pro-iv-vietnam")
+    };
+
+    private TeamMember[] _teamMembers = new TeamMember[]
+    {
+        new TeamMember("Ben Johns", "https://joola.com.vn/images/236/thumbs/ben-johns-a991b0c5-f33f-4001-ba12-6f1543b033d2-495x796xcrop.webp", "Triple Crown, kiểm soát bóng và sức mạnh ở đẳng cấp thi đấu chuyên nghiệp."),
+        new TeamMember("Anna Bright", "https://joola.com.vn/images/237/thumbs/anna-bright-495x796xcrop.webp", "Phong cách thi đấu tốc độ, linh hoạt và giàu năng lượng trên sân."),
+        new TeamMember("Tyson McGuffin", "https://joola.com.vn/images/238/thumbs/tyson-mcguffin-495x796xcrop.webp", "Biểu tượng thi đấu mạnh mẽ, truyền cảm hứng cho cộng đồng pickleball."),
+        new TeamMember("Dekel Bar", "https://joola.com.vn/images/239/thumbs/dekel-bar-495x796xcrop.webp", "Vận động viên chuyên nghiệp với khả năng tấn công bền bỉ và chính xác.")
+    };
+
+    private BlogPost[] _blogPosts = new BlogPost[]
+    {
+        new BlogPost(
+            "Razer và PickleChic ra mắt vợt Pickleball phiên bản giới hạn",
+            "Tin tức",
+            "Nov 19, 2025",
+            "Sự kiện kết hợp giữa thế giới gaming và pickleball với thiết kế hiệu suất cao.",
+            "https://joola.com.vn/images/1629/thumbs/razer-va-joola-ra-mat-vot-pickleball-phien-ban-gioi-han-trong-su-kien-ket-hop-choi-game-dau-tien-tren-the-gioi-w900.webp",
+            "/blog/razer-picklechic-limited"
+        ),
+        new BlogPost(
+            "PickleChic ra mắt vợt Pickleball Pro IV và Agassi Pro",
+            "Tin tức",
+            "Mar 08, 2025",
+            "Dòng Pro IV mới với nhiều cải tiến về cảm giác bóng, độ xoáy và độ ổn định.",
+            "https://joola.com.vn/images/1102/thumbs/joola-ra-mat-vot-pickleball-pro-iv-va-agassi-pro-duoc-chung-nhan-kep-w900.webp",
+            "/blog/pro-iv-agassi-pro"
+        ),
+        new BlogPost(
+            "Chứng nhận kép Agassi Pro và Pro IV",
+            "Hướng dẫn",
+            "Mar 08, 2025",
+            "Tìm hiểu các tiêu chuẩn chứng nhận và ý nghĩa với người chơi pickleball.",
+            "https://joola.com.vn/images/1102/thumbs/joola-ra-mat-vot-pickleball-pro-iv-va-agassi-pro-duoc-chung-nhan-kep-w900.webp",
+            "/blog/chung-nhan-kep-agassi-pro-va-pro-iv"
+        )
+    };
+
+    private RenderFragment SectionHeading(string eyebrow, string title, string buttonText, string buttonUrl)
+    {
+        return @<div class="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+                <p class="text-xs font-black tracking-[0.3em] text-[#d71920] uppercase">
+                    @eyebrow
+                </p>
+
+                <h2 class="mt-2 text-4xl font-black tracking-[-0.06em] uppercase md:text-5xl">
+                    @title
+                </h2>
+            </div>
+
+            <a href="@buttonUrl" class="inline-flex w-fit rounded-full bg-[#d71920] !px-5 !py-3 text-xs font-black tracking-wide !text-white uppercase transition hover:bg-neutral-950">
+                @buttonText
+            </a>
+        </div>;
+    }
+
+    private RenderFragment ProductCard(ProductItem product)
+    {
+        return @<article class="group relative overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-white text-neutral-950 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+            @if (product.Discount > 0)
+            {
+                <div class="absolute top-4 left-4 z-10 rounded-full bg-[#d71920] !px-3 !py-1 text-xs font-black !text-white">
+                    -@product.Discount%
+                </div>
+            }
+
+            <div class="absolute top-4 right-4 z-10 rounded-full bg-neutral-950 !px-3 !py-1 text-xs font-black !text-white">
+                @product.Tag
+            </div>
+
+            <a href="@product.Url" class="block aspect-square bg-neutral-100 p-5">
+                <div class="flex h-full items-center justify-center rounded-[1.25rem] bg-white text-center">
+                    <img src="@product.ImageUrl"
+                         alt="@product.Name"
+                         class="max-h-full max-w-full object-contain transition duration-500 group-hover:scale-105" />
+                </div>
+            </a>
+
+            <div class="!p-5">
+
+                <h3 class="min-h-12 overflow-hidden text-sm leading-6 font-black tracking-[-0.02em] uppercase">
+                    <a href="@product.Url" class="transition hover:text-[#d71920]">
+                        @product.Name
+                    </a>
+                </h3>
+
+                <div class="mt-4 flex flex-wrap items-center gap-2">
+                    <p class="text-lg font-black text-[#d71920]">
+                        @product.Price
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(product.OldPrice))
+                    {
+                        <p class="text-sm font-bold text-neutral-400 line-through">
+                            @product.OldPrice
+                        </p>
+                    }
+                </div>
+
+                <div class="mt-5 grid grid-cols-2 gap-2">
+                    <button class="!rounded-full !border !border-neutral-300 !px-3 !py-2 text-xs font-black uppercase transition hover:!border-neutral-950">
+                        Xem nhanh
+                    </button>
+
+                    <button class="!rounded-full !bg-neutral-950 !px-3 !py-2 text-xs font-black !text-white uppercase transition hover:bg-[#d71920]">
+                        Chọn
+                    </button>
+                </div>
+            </div>
+        </article>;
+    }
+}
