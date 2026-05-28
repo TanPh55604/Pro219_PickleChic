@@ -1,0 +1,22 @@
+﻿@attribute [Route(RouterConfig.Admin.EditRank)]
+@layout AdminLayout
+
+<PageTitle>@Constant.metaDataAdmin Edit Rank</PageTitle>
+
+<div class="mx-auto w-full max-w-5xl !space-y-6">
+    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Cập nhật xếp hạng</h1>
+        </div>
+
+        <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.RankDetail, Id)"
+           class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+            Quay lại
+        </a>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+}

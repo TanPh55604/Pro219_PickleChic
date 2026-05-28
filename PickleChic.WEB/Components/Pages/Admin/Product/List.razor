@@ -1,0 +1,20 @@
+﻿@attribute [Route(RouterConfig.Admin.Products)]
+@layout AdminLayout
+
+<PageTitle>@Constant.metaDataAdmin Products</PageTitle>
+
+<div class="!space-y-5">
+    <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Sản phẩm</h1>
+        </div>
+
+        <a href="@RouterConfig.Admin.CreateProduct"
+           class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-4 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+            Thêm sản phẩm
+        </a>
+    </div>
+</div>
+
+@code {}

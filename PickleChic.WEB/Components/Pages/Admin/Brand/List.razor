@@ -1,0 +1,20 @@
+﻿@attribute [Route(RouterConfig.Admin.Brands)]
+@layout AdminLayout
+
+<PageTitle>@Constant.metaDataAdmin Brands</PageTitle>
+
+<div class="!space-y-5">
+    <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Thương hiệu</h1>
+        </div>
+
+        <a href="@RouterConfig.Admin.CreateBrand"
+           class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-4 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+            Thêm thương hiệu
+        </a>
+    </div>
+</div>
+
+@code {}

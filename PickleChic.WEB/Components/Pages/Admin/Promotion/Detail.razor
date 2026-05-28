@@ -1,0 +1,37 @@
+﻿@attribute [Route(RouterConfig.Admin.PromotionDetail)]
+@layout AdminLayout
+
+<PageTitle>@Constant.metaDataAdmin Promotion Detail</PageTitle>
+
+<div class="mx-auto w-full max-w-7xl !space-y-6">
+    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Chi tiết khuyến mãi</h1>
+        </div>
+
+        <div class="flex flex-wrap !gap-3">
+            <a href="@RouterConfig.Admin.Promotions"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                Quay lại
+            </a>
+
+            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditPromotion, Id)"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                Cập nhật
+            </a>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
+                Xóa
+            </MudButton>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+}

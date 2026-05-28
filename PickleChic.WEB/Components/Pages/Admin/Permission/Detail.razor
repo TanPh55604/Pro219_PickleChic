@@ -1,0 +1,62 @@
+﻿@attribute [Route(RouterConfig.Admin.PermissionDetail)]
+@layout AdminLayout
+
+<PageTitle>@Constant.metaDataAdmin Permission Detail</PageTitle>
+
+<div class="mx-auto w-full max-w-7xl !space-y-6">
+    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Chi tiết quyền</h1>
+        </div>
+
+        <div class="flex flex-wrap !gap-3">
+            <a href="@RouterConfig.Admin.Permissions"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                Quay lại
+            </a>
+
+            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditPermission, Id)"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                Cập nhật
+            </a>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
+                Xóa
+            </MudButton>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    // private async Task OpenDeleteDialog()
+    // {
+    //     var parameters = new DialogParameters<CategoryDeleteDialog>
+    //     {
+    //         { x => x.Category, _model }
+    //     };
+
+    //     var options = new DialogOptions
+    //     {
+    //         CloseButton = true,
+    //         MaxWidth = MaxWidth.ExtraSmall,
+    //         FullWidth = true
+    //     };
+
+    //     var dialog = await _dialogService.ShowAsync<CategoryDeleteDialog>("Xóa thể loại", parameters, options);
+    //     var result = await dialog.Result;
+
+    //     if (!result.Canceled)
+    //     {
+    //         TODO: Gọi API delete category ở đây.
+
+    //         _navigation.NavigateTo(RouterConfig.Admin.Categories);
+    //     }
+    // }
+}

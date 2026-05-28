@@ -1,26 +1,23 @@
 ﻿@attribute [Route(RouterConfig.Admin.CategoryDetail)]
 @layout AdminLayout
 
-<PageTitle>PickleChic Management - Category Detail</PageTitle>
+<PageTitle>@Constant.metaDataAdmin Category Detail</PageTitle>
 
-<div class="mx-auto max-w-4xl !space-y-5">
-    <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+<div class="mx-auto w-full max-w-7xl !space-y-6">
+    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Chi tiết thể loại</h1>
-            <p class="mt-1 text-sm text-slate-500">
-                Xem thông tin chi tiết của thể loại sản phẩm.
-            </p>
         </div>
 
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap !gap-3">
             <a href="@RouterConfig.Admin.Categories"
-               class="inline-flex items-center justify-center gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-4 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
                 <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
                 Quay lại
             </a>
 
             <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditCategory, Id)"
-               class="inline-flex items-center justify-center gap-2 !rounded-xl !bg-slate-900 !px-4 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
                 <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
                 Cập nhật
             </a>
@@ -29,94 +26,111 @@
                        Color="Color.Error"
                        StartIcon="@Icons.Material.Filled.Delete"
                        OnClick="OpenDeleteDialog"
-                       Class="!rounded-xl !px-4 !py-2.5 !normal-case">
+                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
                 Xóa
             </MudButton>
         </div>
     </div>
 
-    <div class="grid gap-5 lg:grid-cols-3">
-        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-            <div class="flex aspect-square items-center justify-center overflow-hidden !rounded-2xl !bg-slate-100">
-                @if (!string.IsNullOrWhiteSpace(_model.LinkImage))
-                {
-                    <img src="@_model.LinkImage"
-                         alt="@_model.Name"
-                         class="h-full w-full object-cover" />
-                }
-                else
-                {
-                    <MudIcon Icon="@Icons.Material.Filled.Image"
-                             Size="Size.Large"
-                             Class="text-slate-400" />
-                }
+    <div class="grid !gap-6 xl:grid-cols-12">
+        <div class="xl:col-span-4">
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                <div class="flex aspect-[4/5] items-center justify-center overflow-hidden !rounded-2xl !bg-slate-100">
+                    @if (!string.IsNullOrWhiteSpace(_model.LinkImage))
+                    {
+                        <img src="@_model.LinkImage"
+                             alt="@_model.Name"
+                             class="h-full w-full object-cover" />
+                    }
+                    else
+                    {
+                        <div class="flex flex-col items-center justify-center text-slate-400">
+                            <MudIcon Icon="@Icons.Material.Filled.Image"
+                                     Size="Size.Large" />
+                            <p class="!mt-3 text-sm">Chưa có ảnh</p>
+                        </div>
+                    }
+                </div>
             </div>
         </div>
 
-        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm lg:col-span-2">
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="text-sm text-slate-500">Tên thể loại</p>
-                    <h2 class="mt-1 text-2xl font-bold text-slate-900">@_model.Name</h2>
+        <div class="xl:col-span-8">
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+                <div class="flex flex-col !gap-4 border-b !border-slate-200 !pb-6 md:flex-row md:items-start md:justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Tên thể loại</p>
+                        <h2 class="!mt-2 text-3xl font-bold text-slate-900">@_model.Name</h2>
+                    </div>
+
+                    @if (_model.Status)
+                    {
+                        <MudChip T="string" Color="Color.Success" Variant="Variant.Text">
+                            Đang hoạt động
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Default" Variant="Variant.Text">
+                            Tạm ẩn
+                        </MudChip>
+                    }
                 </div>
 
-                @if (_model.Status)
-                {
-                    <MudChip T="string" Color="Color.Success" Variant="Variant.Text">
-                        Đang hoạt động
-                    </MudChip>
-                }
-                else
-                {
-                    <MudChip T="string" Color="Color.Default" Variant="Variant.Text">
-                        Tạm ẩn
-                    </MudChip>
-                }
-            </div>
+                <div class="!mt-7 grid !gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">ID</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">#@_model.Id</p>
+                    </div>
 
-            <div class="mt-6 grid gap-5 md:grid-cols-2">
-                <div>
-                    <p class="text-sm text-slate-500">ID</p>
-                    <p class="mt-1 font-semibold text-slate-900">#@_model.Id</p>
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Người cập nhật</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">@(_model.UpdateBy ?? "System")</p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Trạng thái</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @(_model.Status ? "Đang hoạt động" : "Tạm ẩn")
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Ngày tạo</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.CreateAt.ToString("dd/MM/yyyy HH:mm")
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Ngày cập nhật</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @(_model.UpdateAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Ngày xóa</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @(_model.DeleteAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa xóa")
+                        </p>
+                    </div>
                 </div>
 
-                <div>
-                    <p class="text-sm text-slate-500">Người cập nhật</p>
-                    <p class="mt-1 font-semibold text-slate-900">@(_model.UpdateBy ?? "System")</p>
+                <div class="!mt-7 !space-y-6">
+                    <div class="!rounded-2xl !border !border-slate-200 !p-5">
+                        <p class="text-sm font-medium text-slate-500">Đường dẫn ảnh</p>
+                        <p class="!mt-3 text-base leading-7 break-all text-slate-800">
+                            @(string.IsNullOrWhiteSpace(_model.LinkImage) ? "Chưa có đường dẫn ảnh." : _model.LinkImage)
+                        </p>
+                    </div>
+
+                    <div class="!rounded-2xl !border !border-slate-200 !p-5">
+                        <p class="text-sm font-medium text-slate-500">Mô tả</p>
+                        <p class="!mt-3 text-base leading-8 text-slate-800">
+                            @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả." : _model.Description)
+                        </p>
+                    </div>
                 </div>
-
-                <div>
-                    <p class="text-sm text-slate-500">Ngày tạo</p>
-                    <p class="mt-1 font-semibold text-slate-900">@_model.CreateAt.ToString("dd/MM/yyyy HH:mm")</p>
-                </div>
-
-                <div>
-                    <p class="text-sm text-slate-500">Ngày cập nhật</p>
-                    <p class="mt-1 font-semibold text-slate-900">
-                        @(_model.UpdateAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa cập nhật")
-                    </p>
-                </div>
-
-                <div>
-                    <p class="text-sm text-slate-500">Ngày xóa</p>
-                    <p class="mt-1 font-semibold text-slate-900">
-                        @(_model.DeleteAt?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa xóa")
-                    </p>
-                </div>
-            </div>
-
-            <div class="mt-6 !border-t !border-slate-200 pt-5">
-                <p class="text-sm text-slate-500">Đường dẫn ảnh</p>
-                <p class="mt-2 text-sm break-all text-slate-700">
-                    @(string.IsNullOrWhiteSpace(_model.LinkImage) ? "Chưa có đường dẫn ảnh." : _model.LinkImage)
-                </p>
-            </div>
-
-            <div class="mt-6 !border-t !border-slate-200 pt-5">
-                <p class="text-sm text-slate-500">Mô tả</p>
-                <p class="mt-2 leading-7 text-slate-700">
-                    @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả." : _model.Description)
-                </p>
             </div>
         </div>
     </div>
