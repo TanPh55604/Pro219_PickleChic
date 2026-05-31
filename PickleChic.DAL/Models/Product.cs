@@ -1,29 +1,38 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
-namespace PickleChic.DAL.Models
+namespace PickleChic.DAL.Models;
+
+public class Product
 {
-    public class Product
-    {
-        [Key]
-        public int Id { get; set; }
-        public string ProductName { get; set; }
+    [Key]
+    public int Id { get; set; }
 
-        public string Description { get; set; }
+    public string ProductName { get; set; } = null!;
 
-        [ForeignKey("CategoryId")]
-        public int CategoryId { get; set; }
-        [ForeignKey("BrandId")]
-        public int BrandId { get; set; }
+    public string? Description { get; set; }
 
-        public int Status { get; set; }
+    [ForeignKey(nameof(Category))]
+    public int CategoryId { get; set; }
 
-        public DateTime CreateAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
-        public string UpdateBy  { get; set; }
-        public bool Delete {  get; set; }
-    }
+    [ForeignKey(nameof(Brand))]
+    public int BrandId { get; set; }
+
+    public int Status { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime? UpdatedAt { get; set; }
+
+    public string? UpdatedBy { get; set; }
+
+    public bool IsDeleted { get; set; }
+
+    public Category? Category { get; set; }
+
+    public Brand? Brand { get; set; }
+
+    public ICollection<ProductVariant>? ProductVariants { get; set; }
+
+    public ICollection<Wishlist>? Wishlists { get; set; }
 }

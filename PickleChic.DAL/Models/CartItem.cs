@@ -1,21 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
-namespace PickleChic.DAL.Models
+namespace PickleChic.DAL.Models;
+
+public class CartItem
 {
-    public class CartItem
-    {
-        [Key]
-        public int Id { get; set; }
-        [ForeignKey("CartId")]
-        public int CartId { get; set; }
-        [ForeignKey("ProductVariantId")]
-        public int ProductVariantId { get; set; }
+    [Key]
+    public int Id { get; set; }
 
-        public int Quantity { get; set; }
+    [ForeignKey(nameof(Customer))]
+    public int CustomerId { get; set; }
 
-    }
+    [ForeignKey(nameof(ProductVariant))]
+    public int ProductVariantId { get; set; }
+
+    public int Quantity { get; set; }
+
+    public DateTime InsertedAt { get; set; }
+
+    public Customer? Customer { get; set; }
+
+    public ProductVariant? ProductVariant { get; set; }
 }

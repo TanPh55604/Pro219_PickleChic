@@ -1,18 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Runtime.InteropServices.Marshalling;
-using System.Text;
 
-namespace PickleChic.DAL.Models
+namespace PickleChic.DAL.Models;
+
+public class Role
 {
-    public class Role
-    {
-        [Key]
-        public int Id { get; set; }
-        public string RoleName { get; set; }
-        public string Permissions { get; set; }
-        public int Status { get; set; }
+    [Key]
+    public int Id { get; set; }
 
-    }
+    public string RoleName { get; set; } = null!;
+
+    public string? Permissions { get; set; }
+
+    public int Status { get; set; }
+
+    public ICollection<Staff>? StaffMembers { get; set; }
 }

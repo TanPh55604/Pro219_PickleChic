@@ -1,21 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
-namespace PickleChic.DAL.Models
+namespace PickleChic.DAL.Models;
+
+public class Wishlist
 {
-    public class Wishlist
-    {
-        [Key]
-        public int Id { get; set; }
-        [ForeignKey("CustomerId")]
-        public int CustomerId { get; set; }
-        [ForeignKey("ProductId")]
-        public int ProductId { get; set; }
+    [Key]
+    public int Id { get; set; }
 
+    [ForeignKey(nameof(Customer))]
+    public int CustomerId { get; set; }
 
+    [ForeignKey(nameof(Product))]
+    public int ProductId { get; set; }
 
-    }
+    public Customer? Customer { get; set; }
+
+    public Product? Product { get; set; }
 }

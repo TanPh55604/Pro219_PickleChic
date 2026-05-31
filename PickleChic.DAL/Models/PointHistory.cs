@@ -1,23 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text;
 
-namespace PickleChic.DAL.Models
+namespace PickleChic.DAL.Models;
+
+public class PointHistory
 {
-    public class PointHistory
-    {
-        public int Id { get; set; }
-        [ForeignKey("CustomerId")]
-        public int CustomerId { get; set; }
-        [ForeignKey("OrderId")]
-        public int OrderId { get; set; }
+    [Key]
+    public int Id { get; set; }
 
-        public int Points { get; set; }
+    [ForeignKey(nameof(Customer))]
+    public int CustomerId { get; set; }
 
-        public string TransactionType { get; set; }
-        public string Description { get; set; }
-        public DateTime CreateAt { get; set; }
+    [ForeignKey(nameof(Order))]
+    public int OrderId { get; set; }
 
-    }
+    public int Points { get; set; }
+
+    public string TransactionType { get; set; } = null!;
+
+    public string? Description { get; set; }
+
+    public DateTime CreatedAt { get; set; }
+
+    public Customer? Customer { get; set; }
+
+    public Order? Order { get; set; }
 }

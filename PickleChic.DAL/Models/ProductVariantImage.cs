@@ -3,23 +3,21 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PickleChic.DAL.Models;
 
-public class PromotionDetail
+public class ProductVariantImage
 {
     [Key]
     public int Id { get; set; }
 
-    [ForeignKey(nameof(Promotion))]
-    public int PromotionId { get; set; }
-
     [ForeignKey(nameof(ProductVariant))]
     public int ProductVariantId { get; set; }
 
-    public string DiscountType { get; set; } = null!;
+    public string URL { get; set; } = null!;
 
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal DiscountValue { get; set; }
+    public string? Name { get; set; }
 
-    public Promotion? Promotion { get; set; }
+    public string? Description { get; set; }
+
+    public bool IsMain { get; set; }
 
     public ProductVariant? ProductVariant { get; set; }
 }
