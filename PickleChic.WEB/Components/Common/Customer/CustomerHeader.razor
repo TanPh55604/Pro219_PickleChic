@@ -43,10 +43,11 @@
                 Tìm kiếm
             </button>
 
-            <a href="@RouterConfig.Customer.Cart"
-               class="!rounded-full !bg-neutral-950 !px-5 !py-2.5 text-sm font-black !text-white transition hover:!bg-[#d71920]">
+            <button type="button"
+                    @onclick="HandleCartClick"
+                    class="!rounded-full !bg-neutral-950 !px-5 !py-2.5 text-sm font-black !text-white transition hover:!bg-[#d71920]">
                 Giỏ hàng
-            </a>
+            </button>
 
             @if (!_isAuthenticated)
             {
@@ -99,6 +100,8 @@
 </header>
 
 @code {
+    [Parameter] public EventCallback OnCartClick { get; set; }
+
     private bool _isAuthenticated = false;
 
     private string _customerName = "Nguyễn Văn A";
@@ -123,6 +126,11 @@
         new("Giới thiệu", RouterConfig.Customer.About),
         new("Liên hệ", RouterConfig.Customer.Contact)
     };
+
+    private async Task HandleCartClick()
+    {
+        await OnCartClick.InvokeAsync();
+    }
 
     private async Task LogoutAsync()
     {
