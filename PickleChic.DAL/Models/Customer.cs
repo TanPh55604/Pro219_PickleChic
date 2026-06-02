@@ -8,6 +8,8 @@ public class Customer
     [Key]
     public int Id { get; set; }
 
+    public string Username { get; set; } = null!;
+
     public string FullName { get; set; } = null!;
 
     public string Email { get; set; } = null!;

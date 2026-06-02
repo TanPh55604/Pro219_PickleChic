@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using PickleChic.DAL.Models;
 
 namespace PickleChic.DAL.Context;
@@ -13,7 +13,7 @@ public class PickleChicDbContext : DbContext
     {
     }
 
-    public DbSet<Customer> Customers {  get; set; }
+    public DbSet<Customer> Customers { get; set; }
     public DbSet<Rank> Ranks { get; set; }
     public DbSet<Address> Addresses { get; set; }
     public DbSet<Staff> Staff { get; set; }
@@ -77,5 +77,47 @@ public class PickleChicDbContext : DbContext
             .WithMany(pv => pv.OrderItems)
             .HasForeignKey(oi => oi.ProductVariantId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Rank>().HasData(
+            new Rank { Id = 1, RankName = "Đồng", MinPoints = 0 },
+            new Rank { Id = 2, RankName = "Bạc", MinPoints = 100 },
+            new Rank { Id = 3, RankName = "Vàng", MinPoints = 500 }
+        );
+
+        modelBuilder.Entity<Role>().HasData(
+            new Role { Id = 1, RoleName = "Admin", Status = 1, Permissions = "Waiting for list permissions" },
+            new Role { Id = 2, RoleName = "Customer", Status = 1, Permissions = "Waiting for list permissions" }
+        );
+
+        modelBuilder.Entity<Staff>().HasData(
+            new Staff
+            {
+                Id = 1,
+                FullName = "Administrator",
+                UserName = "admin",
+                Email = "admin@example.com",
+                PhoneNumber = "0123456789",
+                PasswordHash = "C750DEC2A8526D8F49DD768D095F54D3",
+                RoleId = 1,
+                Status = 1
+            }
+        );
+
+        modelBuilder.Entity<Customer>().HasData(
+            new Customer
+            {
+                Id = 1,
+                Username = "customer",
+                FullName = "Customer",
+                Email = "customer@example.com",
+                PasswordHash = "4E7282BE3B013E7C38590F6483C366EF",
+                PhoneNumber = "0987654321",
+                Gender = true,
+                DateOfBirth = new DateTime(2000, 1, 1),
+                TotalPoints = 0,
+                Status = 1,
+                RankId = 1
+            }
+        );
     }
 }
