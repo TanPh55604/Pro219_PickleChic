@@ -15,7 +15,7 @@ public class CustomerRepository
 
     public async Task<List<Customer>> GetAllAsync()
     {
-        return await _context.Customers.ToListAsync();
+        return await _context.Customers.Where(x=>x.IsDeleted!=true).ToListAsync();
     }
 
     public async Task<Customer> FindUserExistByKeyWord(string key)
@@ -56,7 +56,10 @@ public class CustomerRepository
 
     public async Task<Customer?> GetByIdAsync(int id)
     {
-        return await _context.Customers.FindAsync(id);
+        Customer cus =  await _context.Customers.FindAsync(id);
+        if (cus != null && cus.IsDeleted != true)
+            return cus;
+        return null;
     }
 
     public async Task<Customer> AddAsync(Customer entity)
@@ -73,7 +76,7 @@ public class CustomerRepository
             var existing = await _context.Customers.FindAsync(entity.Id);
             if (existing is null)
                 return null;
-
+            existing.Username = entity.Username;
             existing.FullName = entity.FullName;
             existing.Email = entity.Email;
             existing.PasswordHash = entity.PasswordHash;
@@ -100,6 +103,18 @@ public class CustomerRepository
             return false;
 
         _context.Customers.Remove(entity);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> SoftDeleteAsync(int id)
+    {
+        var entity = await _context.Customers.FindAsync(id);
+        if (entity is null)
+            return false;
+
+        entity.IsDeleted = true;
+        _context.Customers.Update(entity);
         await _context.SaveChangesAsync();
         return true;
     }
