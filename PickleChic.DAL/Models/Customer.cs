@@ -24,6 +24,8 @@ public class Customer
 
     public int TotalPoints { get; set; }
 
+    public bool IsDeleted { get; set; } = false;
+
     public DateTime? LastLogin { get; set; }
 
     public int Status { get; set; }
