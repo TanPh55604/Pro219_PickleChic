@@ -1,18 +1,18 @@
 ﻿@inherits LayoutComponentBase
 
-<MudThemeProvider />
+<MudThemeProvider Theme="@ThemeConfig.AdminTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<div class="min-h-screen !bg-slate-100 text-slate-900">
-    <div class="flex min-h-screen">
+<div class="h-screen overflow-hidden !bg-slate-100 text-slate-900">
+    <div class="flex h-full min-h-0">
         <AdminSidebar />
 
-        <main class="min-w-0 flex-1">
+        <main class="flex min-w-0 flex-1 flex-col">
             <AdminHeader />
 
-            <section class="!p-6">
+            <section class="min-h-0 flex-1 overflow-y-auto !p-6">
                 @Body
             </section>
         </main>
@@ -23,4 +23,4 @@
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
-</div>
+</div>  
