@@ -20,12 +20,15 @@ public class StaffRepository
 
     public async Task<List<Staff>> GetAllAsync()
     {
-        return await _context.Staff.ToListAsync();
+        return await _context.Staff.Where(x => x.Status != -1).ToListAsync();
     }
 
     public async Task<Staff?> GetByIdAsync(int id)
     {
-        return await _context.Staff.FindAsync(id);
+        var staff = await _context.Staff.FindAsync(id);
+        if (staff != null && staff.Status != -1)
+            return staff;
+        return null;
     }
 
     public async Task<Staff> AddAsync(Staff entity)
@@ -67,6 +70,18 @@ public class StaffRepository
             return false;
 
         _context.Staff.Remove(entity);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> SoftDeleteAsync(int id)
+    {
+        var entity = await _context.Staff.FindAsync(id);
+        if (entity is null)
+            return false;
+
+        entity.Status = -1;
+        _context.Staff.Update(entity);
         await _context.SaveChangesAsync();
         return true;
     }
