@@ -13,6 +13,8 @@ public class ProductVariant
 
     public string SKU { get; set; } = null!;
 
+    public string? VariantName { get; set; }
+
     [Column(TypeName = "decimal(18,2)")]
     public decimal Price { get; set; }
 
