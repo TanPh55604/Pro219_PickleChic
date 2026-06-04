@@ -119,5 +119,106 @@ public class PickleChicDbContext : DbContext
                 RankId = 1
             }
         );
+
+        modelBuilder.Entity<Category>().HasData(
+            new Category
+            {
+                Id = 1,
+                Name = "Vợt Pickleball",
+                LinkImage = "https://example.com/images/racket-category.jpg",
+                Description = "Các dòng vợt pickleball chính hãng cao cấp dành cho mọi trình độ",
+                Status = 1,
+                InsertedAt = new DateTime(2026, 6, 4, 12, 0, 0),
+                Delete = false
+            }
+        );
+
+        modelBuilder.Entity<Brand>().HasData(
+            new Brand
+            {
+                Id = 1,
+                Name = "PickleChic",
+                Description = "Thương hiệu Pickleball phong cách, thời thượng hàng đầu cho phái đẹp",
+                Status = 1,
+                Delete = false,
+                InsertedAt = new DateTime(2026, 6, 4, 12, 0, 0)
+            }
+        );
+
+        modelBuilder.Entity<Product>().HasData(
+            new Product
+            {
+                Id = 1,
+                ProductName = "Vợt PickleChic Pro Carbon",
+                Description = "Vợt Pickleball làm từ sợi carbon T700 cao cấp siêu nhẹ, thiết kế sang trọng thanh lịch.",
+                CategoryId = 1,
+                BrandId = 1,
+                Status = 1,
+                CreatedAt = new DateTime(2026, 6, 4, 12, 0, 0),
+                IsDeleted = false
+            }
+        );
+
+        modelBuilder.Entity<ProductAttribute>().HasData(
+            new ProductAttribute { Id = 1, AttributeName = "Kích thước" },
+            new ProductAttribute { Id = 2, AttributeName = "Màu sắc" }
+        );
+
+        modelBuilder.Entity<AttributeValue>().HasData(
+            new AttributeValue { Id = 1, AttributeId = 1, Value = "Tiêu chuẩn", Note = "Độ dày tiêu chuẩn 16mm" },
+            new AttributeValue { Id = 2, AttributeId = 2, Value = "Hồng Pastel", Note = "Màu hồng nữ tính, ngọt ngào" },
+            new AttributeValue { Id = 3, AttributeId = 2, Value = "Trắng Chic", Note = "Màu trắng ngọc trai, sang trọng" }
+        );
+
+        modelBuilder.Entity<ProductVariant>().HasData(
+            new ProductVariant
+            {
+                Id = 1,
+                ProductId = 1,
+                SKU = "PC-PRO-STD-PNK",
+                VariantName = "Pro Carbon - Tiêu chuẩn - Hồng",
+                Price = 1890000m,
+                StockQuantity = 50,
+                Status = 1
+            },
+            new ProductVariant
+            {
+                Id = 2,
+                ProductId = 1,
+                SKU = "PC-PRO-STD-WHT",
+                VariantName = "Pro Carbon - Tiêu chuẩn - Trắng",
+                Price = 1890000m,
+                StockQuantity = 30,
+                Status = 1
+            }
+        );
+
+        modelBuilder.Entity<ProductVariantImage>().HasData(
+            new ProductVariantImage
+            {
+                Id = 1,
+                ProductVariantId = 1,
+                URL = "https://example.com/images/pc-pro-pnk.jpg",
+                Name = "Pro Carbon Hồng Mặt Trước",
+                Description = "Màu hồng pastel tươi sáng",
+                IsMain = true
+            },
+            new ProductVariantImage
+            {
+                Id = 2,
+                ProductVariantId = 2,
+                URL = "https://example.com/images/pc-pro-wht.jpg",
+                Name = "Pro Carbon Trắng Mặt Trước",
+                Description = "Màu trắng ngọc trai tinh tế",
+                IsMain = true
+            }
+        );
+
+        modelBuilder.Entity<ProductVariantAttribute>().HasData(
+            new ProductVariantAttribute { Id = 1, ProductVariantId = 1, AttributeValueId = 1 },
+            new ProductVariantAttribute { Id = 2, ProductVariantId = 1, AttributeValueId = 2 },
+            new ProductVariantAttribute { Id = 3, ProductVariantId = 2, AttributeValueId = 1 },
+            new ProductVariantAttribute { Id = 4, ProductVariantId = 2, AttributeValueId = 3 }
+        );
     }
 }
