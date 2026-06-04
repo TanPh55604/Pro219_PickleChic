@@ -122,8 +122,15 @@
         </div>
     </nav>
 
-    <div class="shrink-0 !border-t !border-slate-200 !p-4">
-        <button class="flex w-full items-center gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-600 transition hover:!bg-red-50 hover:!text-red-600">
+    <div class="shrink-0 !space-y-1 !border-t !border-slate-200 !p-4">
+        <a href="@RouterConfig.Admin.AdminChangePassword"
+           class="flex w-full items-center justify-center !gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-600 transition hover:!bg-slate-100 hover:!text-slate-900">
+            <MudIcon Icon="@Icons.Material.Filled.Password" Size="Size.Small" />
+            Đổi mật khẩu
+        </a>
+
+        <button type="button"
+                class="flex w-full items-center !gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-600 transition hover:!bg-red-50 hover:!text-red-600">
             <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
             Đăng xuất
         </button>
