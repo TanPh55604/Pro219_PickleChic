@@ -15,7 +15,152 @@
             Quay lại
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+        <MudForm @ref="_form"
+                 Model="@_model"
+                 Validation="@_validator.ValidateValue">
+            <div class="!space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Thông tin khách hàng</h2>
+                </div>
+
+                <div class="grid !gap-5 md:grid-cols-2">
+                    <MudTextField @bind-Value="_model.Username"
+                                  For="@(() => _model.Username)"
+                                  Label="Tên đăng nhập"
+                                  Placeholder="Nhập tên đăng nhập"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  Immediate="true" />
+
+                    <MudTextField @bind-Value="_model.FullName"
+                                  For="@(() => _model.FullName)"
+                                  Label="Họ tên"
+                                  Placeholder="Nhập họ tên"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  Immediate="true" />
+
+                    <MudTextField @bind-Value="_model.Email"
+                                  For="@(() => _model.Email)"
+                                  Label="Email"
+                                  Placeholder="Nhập email"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
+                                  Required="true"
+                                  Immediate="true" />
+
+                    <MudTextField @bind-Value="_model.PhoneNumber"
+                                  For="@(() => _model.PhoneNumber)"
+                                  Label="Số điện thoại"
+                                  Placeholder="Nhập số điện thoại"
+                                  Variant="Variant.Outlined"
+                                  Immediate="true" />
+
+                    <MudDatePicker Date="@_model.DateOfBirth"
+                                   DateChanged="OnDateOfBirthChanged"
+                                   Label="Ngày sinh"
+                                   Placeholder="Chọn ngày sinh"
+                                   Variant="Variant.Outlined"
+                                   Required="true" />
+
+                    <MudSelect T="bool?"
+                               @bind-Value="_model.Gender"
+                               For="@(() => _model.Gender)"
+                               Label="Giới tính"
+                               Placeholder="Chọn giới tính"
+                               Variant="Variant.Outlined"
+                               Required="true">
+                        <MudSelectItem T="bool?" Value="@((bool?)true)">Nam</MudSelectItem>
+                        <MudSelectItem T="bool?" Value="@((bool?)false)">Nữ</MudSelectItem>
+                    </MudSelect>
+
+                    <MudNumericField T="int"
+                                     @bind-Value="_model.TotalPoints"
+                                     For="@(() => _model.TotalPoints)"
+                                     Label="Điểm tích lũy"
+                                     Placeholder="Nhập điểm tích lũy"
+                                     Variant="Variant.Outlined"
+                                     Min="0"
+                                     Immediate="true" />
+
+                    <MudSelect T="int"
+                               @bind-Value="_model.RankId"
+                               For="@(() => _model.RankId)"
+                               Label="Hạng khách hàng"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem T="int" Value="1">Đồng</MudSelectItem>
+                        <MudSelectItem T="int" Value="2">Bạc</MudSelectItem>
+                        <MudSelectItem T="int" Value="3">Vàng</MudSelectItem>
+                        <MudSelectItem T="int" Value="4">Kim cương</MudSelectItem>
+                    </MudSelect>
+
+                    <div class="!rounded-xl !border !border-slate-200 !bg-slate-50 !p-4">
+                        <MudSwitch @bind-Value="_model.Status"
+                                   Color="Color.Success"
+                                   Label="Đang hoạt động" />
+                    </div>
+                </div>
+
+                <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Dark"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="SubmitAsync"
+                               Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                        Lưu
+                    </MudButton>
+                </div>
+            </div>
+        </MudForm>
+    </div>
 </div>
 
 @code {
+    private MudForm? _form;
+
+    private readonly CustomerModel _model = new()
+    {
+        PasswordHash = "Customer12345@",
+        LastLogin = null,
+        Status = true,
+        TotalPoints = 0,
+        RankId = 1,
+        RankName = "Đồng",
+        DateOfBirth = DateTime.Today.AddYears(-18)
+    };
+
+    private readonly CustomerSchema.CreateUpdate _validator = new();
+
+    private void OnDateOfBirthChanged(DateTime? value)
+    {
+        if (value.HasValue)
+        {
+            _model.DateOfBirth = value.Value;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null)
+        {
+            return;
+        }
+
+        await _form.Validate();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _model.PasswordHash = "Customer12345@";
+        _model.LastLogin = null;
+        _model.Status = true;
+
+        // TODO: Gọi API tạo customer.
+
+        _navigation.NavigateTo(RouterConfig.Admin.Customers);
+    }
 }
