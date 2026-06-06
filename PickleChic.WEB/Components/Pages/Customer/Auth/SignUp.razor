@@ -1,9 +1,9 @@
 ﻿@attribute [Route(RouterConfig.Customer.SignUp)]
 @layout MainLayout
 
-<PageTitle>PickleChic WEB - Register</PageTitle>
+<PageTitle>@Constant.metaDataCustomer Register</PageTitle>
 
-<div class="min-h-[calc(100vh-180px)] !bg-slate-50 !px-4 !pt-10 !pb-14">
+<div class="!bg-slate-50 !px-4 !pt-10 !pb-14">
     <div class="mx-auto w-full max-w-4xl">
         <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-10">
             <div class="mx-auto max-w-2xl text-center">
@@ -63,7 +63,7 @@
                                    AdornmentIcon="@Icons.Material.Filled.CalendarMonth"
                                    Required="true" />
 
-                    <MudSelect T="string"
+                    <MudSelect T="int"
                                @bind-Value="_model.Gender"
                                For="@(() => _model.Gender)"
                                Label="Giới tính"
@@ -71,9 +71,9 @@
                                Variant="Variant.Outlined"
                                AdornmentIcon="@Icons.Material.Filled.Wc"
                                Required="true">
-                        <MudSelectItem T="string" Value="@("Nam")">Nam</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("Nữ")">Nữ</MudSelectItem>
-                        <MudSelectItem T="string" Value="@("Khác")">Khác</MudSelectItem>
+                        <MudSelectItem T="int" Value="1">Nam</MudSelectItem>
+                        <MudSelectItem T="int" Value="0">Nữ</MudSelectItem>
+                        <MudSelectItem T="int" Value="2">Khác</MudSelectItem>
                     </MudSelect>
 
                     <div class="hidden md:block"></div>
@@ -83,20 +83,22 @@
                                   Label="Mật khẩu"
                                   Placeholder="Nhập mật khẩu"
                                   Variant="Variant.Outlined"
-                                  InputType="InputType.Password"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.Lock"
+                                  InputType="@NewPasswordInputType"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@NewPasswordIcon"
+                                  OnAdornmentClick="@(() => _showNewPassword = !_showNewPassword)"
                                   Required="true"
                                   Immediate="true" />
 
                     <MudTextField @bind-Value="_model.ConfirmPassword"
                                   For="@(() => _model.ConfirmPassword)"
-                                  Label="Xác nhận mật khẩu"
-                                  Placeholder="Nhập lại mật khẩu"
+                                  Label="Xác nhận mật khẩu mới"
+                                  Placeholder="Nhập lại mật khẩu mới"
                                   Variant="Variant.Outlined"
-                                  InputType="InputType.Password"
-                                  Adornment="Adornment.Start"
-                                  AdornmentIcon="@Icons.Material.Filled.LockReset"
+                                  InputType="@ConfirmPasswordInputType"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@ConfirmPasswordIcon"
+                                  OnAdornmentClick="@(() => _showConfirmPassword = !_showConfirmPassword)"
                                   Required="true"
                                   Immediate="true" />
                 </div>
@@ -112,9 +114,10 @@
 
                     <button type="button"
                             @onclick="SubmitAsync"
-                            class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-8 !py-3 text-sm font-bold !text-white shadow-sm transition hover:!border-red-600 hover:!bg-red-600 hover:!text-white">
+                            disabled="@_isSubmitting"
+                            class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-8 !py-3 text-sm font-bold !text-white shadow-sm transition hover:!border-red-600 hover:!bg-red-600 hover:!text-white disabled:!cursor-not-allowed disabled:!opacity-70">
                         <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Size="Size.Small" />
-                        Đăng ký
+                        @(_isSubmitting ? "Đang đăng ký..." : "Đăng ký")
                     </button>
                 </div>
             </MudForm>
@@ -129,23 +132,55 @@
 
     private readonly RegisterSchema.Register _validator = new();
 
+    private bool _isSubmitting;
+
+    private bool _showNewPassword;
+    private bool _showConfirmPassword;
+
     private async Task SubmitAsync()
     {
-        if (_form is null)
+        if (_form is null || _isSubmitting)
         {
             return;
         }
 
-        await _form.Validate();
+        await _form.ValidateAsync();
 
         if (!_form.IsValid)
         {
             return;
         }
 
-        // TODO: Gọi API đăng ký customer tại đây.
-        // await AuthService.RegisterAsync(_model);
+        _isSubmitting = true;
 
-        _navigation.NavigateTo(RouterConfig.Customer.Login);
+        try
+        {
+            var result = await _authService.RegisterCustomerAsync(_model);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(result.Message, Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Đăng ký thành công.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.Customer.Login, replace: true);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
     }
+
+    private InputType NewPasswordInputType => _showNewPassword ? InputType.Text : InputType.Password;
+    private InputType ConfirmPasswordInputType => _showConfirmPassword ? InputType.Text : InputType.Password;
+
+    private string NewPasswordIcon => _showNewPassword
+        ? Icons.Material.Filled.VisibilityOff
+        : Icons.Material.Filled.Visibility;
+
+    private string ConfirmPasswordIcon => _showConfirmPassword
+        ? Icons.Material.Filled.VisibilityOff
+        : Icons.Material.Filled.Visibility;
 }

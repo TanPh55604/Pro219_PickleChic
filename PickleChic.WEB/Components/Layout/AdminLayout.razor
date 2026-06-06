@@ -5,22 +5,69 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<div class="h-screen overflow-hidden !bg-slate-100 text-slate-900">
-    <div class="flex h-full min-h-0">
-        <AdminSidebar />
+@if(_isCheckingAuth) {
+    <Loading />
+} else {
+    <div class="h-screen overflow-hidden !bg-slate-100 text-slate-900">
+        <div class="flex h-full min-h-0">
+            <AdminSidebar />
 
-        <main class="flex min-w-0 flex-1 flex-col">
-            <AdminHeader />
+            <main class="flex min-w-0 flex-1 flex-col">
+                <AdminHeader />
 
-            <section class="min-h-0 flex-1 overflow-y-auto !p-6">
-                @Body
-            </section>
-        </main>
+                <section class="min-h-0 flex-1 overflow-y-auto !p-6">
+                    @Body
+                </section>
+            </main>
+        </div>
     </div>
-</div>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>  
+
+@code {
+    private bool _isCheckingAuth = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await CheckAdminAuthAsync();
+
+        _isCheckingAuth = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task CheckAdminAuthAsync()
+    {
+        var isAuthenticated = await _authStorageService.IsAuthenticatedAsync();
+
+        if (!isAuthenticated)
+        {
+            _navigation.NavigateTo(RouterConfig.Admin.Login, replace: true);
+            return;
+        }
+
+        var result = await _currentUserService.CheckCurrentUserAsync();
+
+        if (!result.Success || result.Data is null)
+        {
+            await _authStorageService.ClearAuthAsync();
+            _navigation.NavigateTo(RouterConfig.Admin.Login, replace: true);
+            return;
+        }
+
+        if (result.Data.IsCustomer)
+        {
+            _navigation.NavigateTo(RouterConfig.AccessDenied, replace: true);
+            return;
+        }
+    }
+}

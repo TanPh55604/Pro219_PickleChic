@@ -6,7 +6,7 @@
 <div class="!space-y-5">
     <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Thuộc tính</h1>
+            <h1 class="text-2xl font-bold text-slate-900">Khách hàng</h1>
         </div>
 
         <a href="@RouterConfig.Admin.CreateCustomer"
@@ -15,6 +15,205 @@
             Thêm khách hàng
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+            <MudTextField @bind-Value="_searchText"
+                          Placeholder="Tìm kiếm theo username, tên, email, số điện thoại..."
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          Class="md:!max-w-md" />
+
+            <MudSelect T="bool?"
+                       @bind-Value="_statusFilter"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Class="md:!w-48">
+                <MudSelectItem T="bool?" Value="@((bool?)null)">
+                    Tất cả trạng thái
+                </MudSelectItem>
+                <MudSelectItem T="bool?" Value="@((bool?)true)">
+                    Đang hoạt động
+                </MudSelectItem>
+                <MudSelectItem T="bool?" Value="@((bool?)false)">
+                    Tạm khóa
+                </MudSelectItem>
+            </MudSelect>
+        </div>
+
+        <MudTable Items="FilteredCustomers"
+                  Hover="true"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(100vh - 330px)"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Khách hàng</MudTh>
+                <MudTh>Username</MudTh>
+                <MudTh>Số điện thoại</MudTh>
+                <MudTh>Giới tính</MudTh>
+                <MudTh>Hạng</MudTh>
+                <MudTh>Điểm</MudTh>
+                <MudTh>Đăng nhập</MudTh>
+                <MudTh>Trạng thái</MudTh>
+                <MudTh Class="text-right">Chi tiết</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="STT">
+                    <span class="font-medium text-slate-700">
+                        @(FilteredCustomers.IndexOf(context) + 1)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Khách hàng">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.CustomerDetail, context.Id)"
+                       class="font-semibold text-slate-900 transition hover:text-slate-600">
+                        @context.FullName
+                    </a>
+
+                    <p class="!mt-1 text-xs text-slate-500">@context.Email</p>
+                </MudTd>
+
+                <MudTd DataLabel="Username">
+                    <span class="text-sm font-semibold text-slate-700">@context.Username</span>
+                </MudTd>
+
+                <MudTd DataLabel="Số điện thoại">
+                    <span class="text-sm text-slate-700">@(context.PhoneNumber ?? "Chưa cập nhật")</span>
+                </MudTd>
+
+                <MudTd DataLabel="Giới tính">
+                    <span class="text-sm text-slate-600">@context.GenderText</span>
+                </MudTd>
+
+                <MudTd DataLabel="Hạng">
+                    <span class="text-sm font-semibold text-slate-700">
+                        @(context.RankName ?? "Đồng")
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Điểm">
+                    <span class="text-sm font-black text-slate-900">@context.TotalPoints</span>
+                </MudTd>
+
+                <MudTd DataLabel="Đăng nhập">
+                    @if (context.LastLogin is null)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
+                            Chưa đăng nhập
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <span class="text-sm text-slate-600">
+                            @context.LastLogin.Value.ToString("dd/MM/yyyy HH:mm")
+                        </span>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="Trạng thái">
+                    @if (context.Status)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                            Đang hoạt động
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Text">
+                            Tạm khóa
+                        </MudChip>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="Chi tiết" Class="text-right">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.CustomerDetail, context.Id)"
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                    </a>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="!py-10 text-center text-slate-500">
+                    Không có khách hàng nào.
+                </div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+            </PagerContent>
+        </MudTable>
+    </div>
 </div>
 
-@code {}
+@code {
+    private string _searchText = string.Empty;
+    private bool? _statusFilter;
+
+    private List<CustomerModel> _customers = new()
+    {
+        new()
+        {
+            Id = 1,
+            Username = "nguyenvana",
+            FullName = "Nguyễn Văn A",
+            Email = "nguyenvana@gmail.com",
+            PasswordHash = "Customer12345@",
+            PhoneNumber = "0900000001",
+            Gender = true,
+            DateOfBirth = new DateTime(1998, 5, 18),
+            TotalPoints = 1200,
+            RankId = 1,
+            RankName = "Đồng",
+            LastLogin = null,
+            Status = true
+        },
+        new()
+        {
+            Id = 2,
+            Username = "tranthib",
+            FullName = "Trần Thị B",
+            Email = "tranthib@gmail.com",
+            PasswordHash = "Customer12345@",
+            PhoneNumber = "0900000002",
+            Gender = false,
+            DateOfBirth = new DateTime(2000, 8, 22),
+            TotalPoints = 3500,
+            RankId = 2,
+            RankName = "Vàng",
+            LastLogin = DateTime.Now.AddDays(-1),
+            Status = true
+        },
+        new()
+        {
+            Id = 3,
+            Username = "levanc",
+            FullName = "Lê Văn C",
+            Email = "levanc@gmail.com",
+            PasswordHash = "Customer12345@",
+            PhoneNumber = "0900000003",
+            Gender = true,
+            DateOfBirth = new DateTime(1995, 12, 10),
+            TotalPoints = 0,
+            RankId = 1,
+            RankName = "Đồng",
+            LastLogin = null,
+            Status = false
+        }
+    };
+
+    private List<CustomerModel> FilteredCustomers =>
+        _customers
+            .Where(x => string.IsNullOrWhiteSpace(_searchText)
+                        || x.Username.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                        || x.FullName.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                        || x.Email.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
+                        || (x.PhoneNumber?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+            .Where(x => !_statusFilter.HasValue || x.Status == _statusFilter.Value)
+            .ToList();
+}

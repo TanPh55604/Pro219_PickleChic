@@ -1,6 +1,4 @@
-﻿@inject NavigationManager NavigationManager
-
-<header class="sticky top-0 z-30 !h-16 !border-b !border-slate-200 !bg-white/90 backdrop-blur">
+﻿<header class="sticky top-0 z-30 !h-16 !border-b !border-slate-200 !bg-white/90 backdrop-blur">
     <div class="flex h-full items-center justify-between !px-6">
         <div class="min-w-0">
             <nav class="flex items-center gap-2 text-sm">
@@ -37,12 +35,13 @@
 
             <div class="flex items-center gap-3 !rounded-full !border !border-slate-200 !bg-white !px-3 !py-1.5 shadow-sm">
                 <div class="flex !h-8 !w-8 items-center justify-center !rounded-full !bg-slate-900 text-sm font-semibold !text-white">
-                    A
+                    @GetAvatarText(_currentUser?.FullName)
                 </div>
 
                 <div class="hidden leading-tight sm:block">
-                    <p class="text-sm font-medium text-slate-800">Admin</p>
-                    <p class="text-xs text-slate-500">Quản trị viên</p>
+                    <p class="text-sm font-medium text-slate-800">
+                        @(_currentUser?.FullName ?? "Admin")
+                    </p>
                 </div>
             </div>
         </div>
@@ -50,12 +49,26 @@
 </header>
 
 @code {
+    private AuthModel? _currentUser;
+
     private List<BreadcrumbItemModel> BreadcrumbItems { get; set; } = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _currentUser = await _authStorageService.GetUserAsync();
+
+        await InvokeAsync(StateHasChanged);
+}
 
     protected override void OnInitialized()
     {
         BreadcrumbItems = GetBreadcrumbItems();
-        NavigationManager.LocationChanged += OnLocationChanged;
+        _navigation.LocationChanged += OnLocationChanged;
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -64,11 +77,21 @@
         InvokeAsync(StateHasChanged);
     }
 
+    private static string GetAvatarText(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return "A";
+        }
+
+        return fullName.Trim()[0].ToString().ToUpperInvariant();
+    }
+
     private string CurrentPath
     {
         get
         {
-            var path = "/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri).Trim('/');
+            var path = "/" + _navigation.ToBaseRelativePath(_navigation.Uri).Trim('/');
             path = path.Split('?')[0].Split('#')[0];
 
             return string.IsNullOrWhiteSpace(path) ? "/" : path.ToLowerInvariant();
@@ -214,8 +237,8 @@
                 items.Add(new("Đánh giá phía quản trị"));
                 break;
 
-            case "/admin/settings":
-                items.Add(new("Cài đặt"));
+            case "/admin/change-password":
+                items.Add(new("Đổi mật khẩu"));
                 break;
 
             default:
@@ -228,7 +251,7 @@
 
     public void Dispose()
     {
-        NavigationManager.LocationChanged -= OnLocationChanged;
+        _navigation.LocationChanged -= OnLocationChanged;
     }
 
     private sealed record BreadcrumbItemModel(string Text, string? Href = null);

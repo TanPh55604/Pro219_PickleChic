@@ -6,7 +6,7 @@
 
         <div class="hidden items-center !gap-5 sm:flex">
             <span>Hotline: 0900 000 000</span>
-            <a href="#" class="transition hover:!text-white">Hệ thống cửa hàng</a>
+            <a href="#" class="!text-neutral-300 transition hover:!text-white">Hệ thống cửa hàng</a>
         </div>
     </div>
 </div>
@@ -49,7 +49,7 @@
                 Giỏ hàng
             </button>
 
-            @if (!_isAuthenticated)
+            @if (!IsAuthenticated)
             {
                 <a href="@RouterConfig.Customer.Login"
                    class="inline-flex !h-11 !w-11 items-center justify-center !rounded-full !border !border-neutral-300 text-neutral-900 transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white"
@@ -59,41 +59,64 @@
             }
             else
             {
-                <MudMenu AnchorOrigin="Origin.BottomRight"
-                         TransformOrigin="Origin.TopRight"
-                         Dense="true">
-                    <ActivatorContent>
-                        <button class="inline-flex !h-11 !w-11 items-center justify-center !rounded-full !border !border-neutral-300 text-neutral-900 transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white">
-                            <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
-                        </button>
-                    </ActivatorContent>
+                <div class="group relative">
+                    <button type="button"
+                            class="inline-flex !h-11 !w-11 items-center justify-center !rounded-full !border !border-neutral-300 text-neutral-900 transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white">
+                        <span class="text-sm font-black">
+                            @GetAvatarText(CurrentUser?.FullName)
+                        </span>
+                    </button>
 
-                    <ChildContent>
-                        <div class="min-w-56 !px-4 !py-3">
-                            <p class="text-sm font-bold text-neutral-900">@_customerName</p>
-                            <p class="!mt-1 text-xs text-neutral-500">@_customerEmail</p>
+                    <div class="absolute top-full right-0 !z-[999] hidden w-64 translate-y-2 pt-3 opacity-0 transition-all duration-150 group-hover:block group-hover:translate-y-0 group-hover:opacity-100">
+                        <div class="!rounded-2xl !border !border-neutral-200 !bg-white !p-2 shadow-xl">
+                            <div class="!px-4 !py-3">
+                                <p class="truncate text-sm font-bold text-neutral-900">
+                                    @(CurrentUser?.FullName ?? "Khách hàng")
+                                </p>
+
+                                <p class="!mt-1 truncate text-xs text-neutral-500">
+                                    @(CurrentUser?.Email ?? string.Empty)
+                                </p>
+
+                                @if (!string.IsNullOrWhiteSpace(CurrentUser?.RankName))
+                                {
+                                    <p class="!mt-1 text-xs font-semibold text-[#d71920]">
+                                        Hạng: @CurrentUser.RankName
+                                    </p>
+                                }
+                            </div>
+
+                            <div class="!my-1 !h-px !bg-neutral-100"></div>
+
+                            <a href="@RouterConfig.Customer.Profile"
+                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Size="Size.Small" />
+                                Thông tin tài khoản
+                            </a>
+
+                            <a href="@RouterConfig.Customer.Orders"
+                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" />
+                                Đơn hàng của tôi
+                            </a>
+
+                            <a href="@RouterConfig.Customer.ChangePassword"
+                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                <MudIcon Icon="@Icons.Material.Filled.Password" Size="Size.Small" />
+                                Đổi mật khẩu
+                            </a>
+
+                            <div class="!my-1 !h-px !bg-neutral-100"></div>
+
+                            <button type="button"
+                                    @onclick="LogoutAsync"
+                                    class="flex w-full items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-left text-sm font-semibold text-neutral-700 transition hover:!bg-red-50 hover:!text-red-600">
+                                <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
+                                Đăng xuất
+                            </button>
                         </div>
-
-                        <MudDivider />
-
-                        <MudMenuItem Href="@RouterConfig.Customer.Profile"
-                                     Icon="@Icons.Material.Filled.AccountCircle">
-                            Thông tin tài khoản
-                        </MudMenuItem>
-
-                        <MudMenuItem Href="@RouterConfig.Customer.Orders"
-                                     Icon="@Icons.Material.Filled.ReceiptLong">
-                            Đơn hàng của tôi
-                        </MudMenuItem>
-
-                        <MudDivider />
-
-                        <MudMenuItem Icon="@Icons.Material.Filled.Logout"
-                                     OnClick="LogoutAsync">
-                            Đăng xuất
-                        </MudMenuItem>
-                    </ChildContent>
-                </MudMenu>
+                    </div>
+                </div>
             }
         </div>
     </div>
@@ -102,10 +125,11 @@
 @code {
     [Parameter] public EventCallback OnCartClick { get; set; }
 
-    private bool _isAuthenticated = false;
+    [Parameter] public bool IsAuthenticated { get; set; }
 
-    private string _customerName = "Nguyễn Văn A";
-    private string _customerEmail = "customer@gmail.com";
+    [Parameter] public AuthModel? CurrentUser { get; set; }
+
+    [Parameter] public EventCallback OnLogout { get; set; }
 
     private class NavItem
     {
@@ -134,11 +158,16 @@
 
     private async Task LogoutAsync()
     {
-        // TODO: Gọi API/logout service tại đây.
-        // await AuthService.LogoutAsync();
+        await OnLogout.InvokeAsync();
+    }
 
-        _isAuthenticated = false;
+    private static string GetAvatarText(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return "P";
+        }
 
-        _navigation.NavigateTo(RouterConfig.Customer.Home);
+        return fullName.Trim()[0].ToString().ToUpperInvariant();
     }
 }

@@ -16,6 +16,16 @@
 @using PickleChic.WEB.Constant
 @using PickleChic.WEB.Model
 @using PickleChic.WEB.Schema
+@using PickleChic.WEB.Services.Storage
+@using PickleChic.WEB.Services.Auth
+@using PickleChic.WEB.Services.Api
 
 @inject NavigationManager _navigation
+@inject ISnackbar _snackbar
 @inject IDialogService _dialogService
+@inject ILocalStorageService _localStorageService
+@inject IAuthStorageService _authStorageService
+@inject IApiProvider _apiProvider
+@inject IAuthService _authService
+@inject ICurrentUserService _currentUserService
+@inject IJSRuntime _JSRuntime

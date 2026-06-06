@@ -97,7 +97,7 @@ public class PickleChicDbContext : DbContext
                 UserName = "admin",
                 Email = "admin@example.com",
                 PhoneNumber = "0123456789",
-                PasswordHash = "C750DEC2A8526D8F49DD768D095F54D3",
+                PasswordHash = "1b97db3e7bb476c2757d2d12f0bca777",
                 RoleId = 1,
                 Status = 1
             }

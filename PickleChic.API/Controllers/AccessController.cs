@@ -80,7 +80,7 @@ namespace PickleChic.API.Controllers
             }
             else
             {
-                return StatusCode(403, "Unauthorized");
+                return StatusCode(401, "Unauthorized");
             }
         }
 
@@ -125,7 +125,7 @@ namespace PickleChic.API.Controllers
             }
             else
             {
-                return StatusCode(403, "Unauthorized");
+                return StatusCode(401, "Unauthorized");
             }
         }
 
@@ -153,7 +153,7 @@ namespace PickleChic.API.Controllers
 
                         if (isExpired)
                         {
-                            return StatusCode(403, "TokenExpired");
+                            return StatusCode(401, "TokenExpired");
                         }
                     }
                 }
@@ -245,8 +245,8 @@ namespace PickleChic.API.Controllers
             }
 
             UtilityFunc utilityFunc = new UtilityFunc();
-            string newPassword = utilityFunc.GenerateRandomString(16);
-            //string newPassword = "User@12345";
+            //string newPassword = utilityFunc.GenerateRandomString(16);
+            string newPassword = "Customer12345@";
 
             customer.PasswordHash = utilityFunc.HashPassword(newPassword);
             customer.LastLogin = null;

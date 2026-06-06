@@ -122,10 +122,54 @@
         </div>
     </nav>
 
-    <div class="shrink-0 !border-t !border-slate-200 !p-4">
-        <button class="flex w-full items-center gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-600 transition hover:!bg-red-50 hover:!text-red-600">
-            <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
-            Đăng xuất
-        </button>
+    <div class="shrink-0 !border-t !border-slate-200 !bg-white !p-4">
+        <div class="!space-y-2 !rounded-2xl !bg-slate-50 !p-2">
+            <a href="@RouterConfig.Admin.AdminChangePassword"
+               class="flex w-full items-center justify-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-slate-700 transition hover:!bg-white hover:!text-slate-900 hover:shadow-sm">
+                <span class="flex !h-9 !w-9 items-center justify-center !rounded-lg !bg-white text-slate-600 shadow-sm">
+                    <MudIcon Icon="@Icons.Material.Filled.Password" Size="Size.Small" />
+                </span>
+
+                <span>Đổi mật khẩu</span>
+            </a>
+
+            <button type="button"
+                    @onclick="LogoutAsync"
+                    disabled="@_isLoggingOut"
+                    class="flex w-full items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-slate-700 transition hover:!bg-red-50 hover:!text-red-600 disabled:!cursor-not-allowed disabled:!opacity-60">
+                <span class="flex !h-9 !w-9 items-center justify-center !rounded-lg !bg-red-50 text-red-600">
+                    <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
+                </span>
+
+                <span>@(_isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất")</span>
+            </button>
+        </div>
     </div>
 </aside>
+
+@code {
+    private bool _isLoggingOut;
+
+    private async Task LogoutAsync()
+    {
+        if (_isLoggingOut)
+        {
+            return;
+        }
+
+        _isLoggingOut = true;
+
+        try
+        {
+            await _authService.LogoutAsync();
+
+            _snackbar.Add("Đã đăng xuất.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.Admin.Login, replace: true);
+        }
+        finally
+        {
+            _isLoggingOut = false;
+        }
+    }
+}

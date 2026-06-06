@@ -63,6 +63,8 @@
 
             // Auth
             public const string Login = "/admin/login";
+            public const string AdminForgotPassword = "/admin/forgot-password";
+            public const string AdminChangePassword = "/admin/change-password";
 
             // Dashboard / Statistical
             public const string Dashboard = "/admin/dashboard";
