@@ -1,6 +1,6 @@
-﻿namespace PickleChic.WEB.Model
+﻿namespace PickleChic.WEB.DTO.Admin
 {
-    public class StaffModel
+    public class StaffResponse
     {
         public int Id { get; set; }
 
@@ -12,16 +12,14 @@
 
         public string? PhoneNumber { get; set; }
 
-        public string PasswordHash { get; set; } = "Admin12345@";
+        public int RoleId { get; set; }
 
-        public int RoleId { get; set; } = 1;
-
-        public int Status { get; set; } = 1;
+        public int Status { get; set; }
 
         public DateTime? LastLogin { get; set; }
 
         public bool IsActive => Status == 1;
 
-        public bool IsFirstLogin => LastLogin is null;
+        //public bool IsFirstLogin => LastLogin is null;
     }
 }

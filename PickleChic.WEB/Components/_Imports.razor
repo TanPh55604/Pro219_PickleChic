@@ -15,11 +15,14 @@
 @using PickleChic.WEB.Components.Shared
 @using PickleChic.WEB.Constant
 @using PickleChic.WEB.Model
+@using PickleChic.WEB.DTO.Admin
 @using PickleChic.WEB.Schema
 @using PickleChic.WEB.Services.Storage
 @using PickleChic.WEB.Services.Auth
 @using PickleChic.WEB.Services.Api
+@using PickleChic.WEB.Services.Admin
 
+@inject IJSRuntime _JSRuntime
 @inject NavigationManager _navigation
 @inject ISnackbar _snackbar
 @inject IDialogService _dialogService
@@ -28,4 +31,4 @@
 @inject IApiProvider _apiProvider
 @inject IAuthService _authService
 @inject ICurrentUserService _currentUserService
-@inject IJSRuntime _JSRuntime
+@inject IStaffService _adminStaffService

@@ -13,7 +13,7 @@ namespace PickleChic.WEB.Schema
                     .NotEmpty().WithMessage("Họ tên không được để trống")
                     .Length(2, 255).WithMessage("Họ tên có độ dài từ 2 đến 255 ký tự");
 
-                RuleFor(x => x.Username)
+                RuleFor(x => x.UserName)
                     .NotEmpty().WithMessage("Tên đăng nhập không được để trống")
                     .Length(2, 100).WithMessage("Tên đăng nhập có độ dài từ 2 đến 100 ký tự");
 

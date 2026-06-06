@@ -34,8 +34,8 @@
                                   Required="true"
                                   Immediate="true" />
 
-                    <MudTextField @bind-Value="_model.Username"
-                                  For="@(() => _model.Username)"
+                    <MudTextField @bind-Value="_model.UserName"
+                                  For="@(() => _model.UserName)"
                                   Label="Tên đăng nhập"
                                   Placeholder="Nhập tên đăng nhập"
                                   Variant="Variant.Outlined"
@@ -70,6 +70,7 @@
                     </MudSelect>
 
                     <MudSelect T="int"
+                               Disabled="@_isCurrentAccount"
                                @bind-Value="_model.Status"
                                For="@(() => _model.Status)"
                                Label="Trạng thái"
@@ -84,8 +85,9 @@
                                Color="Color.Dark"
                                StartIcon="@Icons.Material.Filled.Save"
                                OnClick="SubmitAsync"
+                               Disabled="@_isSubmitting"
                                Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                        Cập nhật
+                        @(_isSubmitting ? "Đang cập nhật..." : "Cập nhật")
                     </MudButton>
                 </div>
             </div>
@@ -102,6 +104,10 @@
 
     private readonly StaffSchema.CreateUpdate _validator = new();
 
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private bool _isCurrentAccount;
+
     private readonly List<RoleOption> _roles = new()
     {
         new(1, "Quản trị hệ thống"),
@@ -109,39 +115,100 @@
         new(3, "Nhân viên bán hàng")
     };
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _model = new StaffModel
+        await LoadStaffAsync();
+    }
+
+    private async Task LoadStaffAsync()
+    {
+        _isLoading = true;
+
+        try
         {
-            Id = Id,
-            FullName = "Nguyễn Văn Quản Trị",
-            Username = "nguyenadmin",
-            Email = "nguyenadmin@gmail.com",
-            PhoneNumber = "0900000002",
-            PasswordHash = "Admin12345@",
-            RoleId = 2,
-            Status = 1,
-            LastLogin = null
-        };
+            var result = await _adminStaffService.GetByIdAsync(Id);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertStaffErrorMessage(result.Message), Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Staffs, replace: true);
+                return;
+            }
+
+            _model = MapToModel(result.Data);
+
+            var currentUser = await _authStorageService.GetUserAsync();
+            _isCurrentAccount = currentUser?.Id == _model.Id;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 
     private async Task SubmitAsync()
     {
-        if (_form is null)
+        if (_form is null || _isSubmitting)
         {
             return;
         }
 
-        await _form.Validate();
+        await _form.ValidateAsync();
 
         if (!_form.IsValid)
         {
             return;
         }
 
-        // TODO: Gọi API cập nhật staff.
+        _isSubmitting = true;
 
-        _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.StaffDetail, Id));
+        try
+        {
+            var result = await _adminStaffService.UpdateAsync(_model);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertStaffErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Cập nhật quản trị viên thành công.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.StaffDetail, Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertStaffErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể xử lý dữ liệu quản trị viên.",
+            "Không tìm thấy" => "Không tìm thấy quản trị viên.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
+    }
+
+    private static StaffModel MapToModel(StaffResponse response)
+    {
+        return new StaffModel
+        {
+            Id = response.Id,
+            FullName = response.FullName,
+            UserName = response.UserName,
+            Email = response.Email,
+            PhoneNumber = response.PhoneNumber,
+            RoleId = response.RoleId,
+            Status = response.Status,
+            LastLogin = response.LastLogin
+        };
     }
 
     private record RoleOption(int Id, string Name);

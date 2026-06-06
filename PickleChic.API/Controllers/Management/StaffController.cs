@@ -22,12 +22,16 @@ public class StaffController : ControllerBase
         try
         {
             var result = await _repository.GetAllAsync();
-            if (result.Count == 0)
-                return NoContent();
+
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 result = result
-                    .Where(s => s.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase) || s.Email.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                    .Where(s =>
+                        s.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                        || s.UserName.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                        || s.Email.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                        || (!string.IsNullOrWhiteSpace(s.PhoneNumber)
+                            && s.PhoneNumber.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
 

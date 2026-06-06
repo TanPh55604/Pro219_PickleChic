@@ -18,38 +18,49 @@
 
     <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
         <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
-            <MudTextField @bind-Value="_searchText"
-                          Placeholder="Tìm kiếm theo username, tên, email, số điện thoại..."
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          Class="md:!max-w-md" />
+            <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
+                <MudTextField @bind-Value="_searchText"
+                              Placeholder="Tìm kiếm theo tên quản trị viên..."
+                              Variant="Variant.Outlined"
+                              
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              OnKeyDown="HandleSearchKeyDown"
+                              Class="flex-1" />
 
-            <MudSelect T="int?"
-                       @bind-Value="_statusFilter"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense"
-                       Class="md:!w-48">
-                <MudSelectItem T="int?" Value="@((int?)null)">Tất cả trạng thái</MudSelectItem>
-                <MudSelectItem T="int?" Value="@((int?)1)">Đang hoạt động</MudSelectItem>
-                <MudSelectItem T="int?" Value="@((int?)0)">Tạm khóa</MudSelectItem>
-            </MudSelect>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="SearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Tìm kiếm
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ResetSearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Làm mới
+                </MudButton>
+            </div>
         </div>
 
-        <MudTable Items="FilteredStaffs"
+        <MudTable Items="_staffs"
+                  Loading="@_isLoading"
                   Hover="true"
                   Elevation="0"
                   FixedHeader="true"
-                  Height="calc(100vh - 310px)"
+                  Height="calc(100vh - 340px)"
                   RowsPerPage="10">
             <HeaderContent>
                 <MudTh>STT</MudTh>
                 <MudTh>Quản trị viên</MudTh>
-                <MudTh>Username</MudTh>
+                <MudTh>Tên đăng nhập</MudTh>
                 <MudTh>Số điện thoại</MudTh>
                 <MudTh>Vai trò</MudTh>
-                <MudTh>Đăng nhập</MudTh>
                 <MudTh>Trạng thái</MudTh>
                 <MudTh Class="text-right">Chi tiết</MudTh>
             </HeaderContent>
@@ -57,7 +68,7 @@
             <RowTemplate>
                 <MudTd DataLabel="STT">
                     <span class="font-medium text-slate-700">
-                        @(FilteredStaffs.IndexOf(context) + 1)
+                        @(_staffs.IndexOf(context) + 1)
                     </span>
                 </MudTd>
 
@@ -70,33 +81,22 @@
                     <p class="!mt-1 text-xs text-slate-500">@context.Email</p>
                 </MudTd>
 
-                <MudTd DataLabel="Username">
-                    <span class="text-sm font-semibold text-slate-700">@context.Username</span>
+                <MudTd DataLabel="Tên đăng nhập">
+                    <span class="text-sm font-semibold text-slate-700">
+                        @context.UserName
+                    </span>
                 </MudTd>
 
                 <MudTd DataLabel="Số điện thoại">
-                    <span class="text-sm text-slate-700">@(context.PhoneNumber ?? "Chưa cập nhật")</span>
+                    <span class="text-sm text-slate-700">
+                        @(string.IsNullOrWhiteSpace(context.PhoneNumber) ? "Chưa cập nhật" : context.PhoneNumber)
+                    </span>
                 </MudTd>
 
                 <MudTd DataLabel="Vai trò">
                     <span class="text-sm font-semibold text-slate-700">
                         @GetRoleName(context.RoleId)
                     </span>
-                </MudTd>
-
-                <MudTd DataLabel="Đăng nhập">
-                    @if (context.LastLogin is null)
-                    {
-                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
-                            Chưa đăng nhập
-                        </MudChip>
-                    }
-                    else
-                    {
-                        <span class="text-sm text-slate-600">
-                            @context.LastLogin.Value.ToString("dd/MM/yyyy HH:mm")
-                        </span>
-                    }
                 </MudTd>
 
                 <MudTd DataLabel="Trạng thái">
@@ -129,7 +129,7 @@
             </NoRecordsContent>
 
             <PagerContent>
-                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+                <MudTablePager />
             </PagerContent>
         </MudTable>
     </div>
@@ -137,57 +137,56 @@
 
 @code {
     private string _searchText = string.Empty;
-    private int? _statusFilter;
 
-    private List<StaffModel> _staffs = new()
+    private bool _isLoading = true;
+
+    private List<StaffResponse> _staffs = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        new()
-        {
-            Id = 1,
-            FullName = "Admin PickleChic",
-            Username = "admin",
-            Email = "admin@picklechiс.com",
-            PhoneNumber = "0900000001",
-            PasswordHash = "Admin12345@",
-            RoleId = 1,
-            Status = 1,
-            LastLogin = DateTime.Now.AddHours(-2)
-        },
-        new()
-        {
-            Id = 2,
-            FullName = "Nguyễn Văn Quản Trị",
-            Username = "nguyenadmin",
-            Email = "nguyenadmin@gmail.com",
-            PhoneNumber = "0900000002",
-            PasswordHash = "Admin12345@",
-            RoleId = 2,
-            Status = 1,
-            LastLogin = null
-        },
-        new()
-        {
-            Id = 3,
-            FullName = "Trần Thị Nhân Viên",
-            Username = "transtaff",
-            Email = "transtaff@gmail.com",
-            PhoneNumber = "0900000003",
-            PasswordHash = "Admin12345@",
-            RoleId = 2,
-            Status = 0,
-            LastLogin = null
-        }
-    };
+        await LoadStaffsAsync();
+    }
 
-    private List<StaffModel> FilteredStaffs =>
-        _staffs
-            .Where(x => string.IsNullOrWhiteSpace(_searchText)
-                        || x.Username.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                        || x.FullName.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                        || x.Email.Contains(_searchText, StringComparison.OrdinalIgnoreCase)
-                        || (x.PhoneNumber?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false))
-            .Where(x => !_statusFilter.HasValue || x.Status == _statusFilter.Value)
-            .ToList();
+    private async Task LoadStaffsAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminStaffService.GetAllAsync(_searchText);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertStaffErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _staffs = result.Data ?? new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        await LoadStaffsAsync();
+    }
+
+    private async Task ResetSearchAsync()
+    {
+        _searchText = string.Empty;
+        await LoadStaffsAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
 
     private static string GetRoleName(int roleId)
     {
@@ -197,6 +196,19 @@
             2 => "Nhân viên quản trị",
             3 => "Nhân viên bán hàng",
             _ => "Chưa phân quyền"
+        };
+    }
+
+    private static string ConvertStaffErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách quản trị viên.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
         };
     }
 }

@@ -16,6 +16,11 @@
             TRequest request,
             bool requireAuth = false);
 
+        Task<ApiResult<TResponse>> PatchAsync<TRequest, TResponse>(
+            string url,
+            TRequest request,
+            bool requireAuth = false);
+
         Task<ApiResult<TResponse>> DeleteAsync<TResponse>(
             string url,
             bool requireAuth = false);
