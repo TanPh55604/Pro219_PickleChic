@@ -5,14 +5,14 @@ namespace PickleChic.WEB.Schema
 {
     public class AdminLoginSchema
     {
-        public class Login : AbstractValidator<AdminLoginModel>
+        public class Login : AbstractValidator<LoginModel>
         {
             public Login()
             {
                 RuleFor(x => x.Email)
-                    .NotEmpty().WithMessage("Email không được để trống")
-                    .EmailAddress().WithMessage("Email không đúng định dạng")
-                    .MaximumLength(255).WithMessage("Email có độ dài tối đa 255 ký tự");
+                    .NotEmpty().WithMessage("Email hoặc tên đăng nhập không được để trống")
+                    .MaximumLength(255).WithMessage("Email hoặc tên đăng nhập có độ dài tối đa 255 ký tự");
+
 
                 RuleFor(x => x.Password)
                     .NotEmpty().WithMessage("Mật khẩu không được để trống")
@@ -23,8 +23,8 @@ namespace PickleChic.WEB.Schema
             public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
             {
                 var result = await ValidateAsync(
-                    ValidationContext<AdminLoginModel>
-                        .CreateWithOptions((AdminLoginModel)model, x => x.IncludeProperties(propertyName)));
+                    ValidationContext<LoginModel>
+                        .CreateWithOptions((LoginModel)model, x => x.IncludeProperties(propertyName)));
 
                 if (result.IsValid)
                 {

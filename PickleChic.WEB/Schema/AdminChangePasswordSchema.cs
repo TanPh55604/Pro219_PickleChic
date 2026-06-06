@@ -5,7 +5,7 @@ namespace PickleChic.WEB.Schema
 {
     public class AdminChangePasswordSchema
     {
-        public class ChangePassword : AbstractValidator<AdminChangePasswordModel>
+        public class ChangePassword : AbstractValidator<ChangePasswordModel>
         {
             public ChangePassword()
             {
@@ -29,8 +29,8 @@ namespace PickleChic.WEB.Schema
             public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
             {
                 var result = await ValidateAsync(
-                    ValidationContext<AdminChangePasswordModel>
-                        .CreateWithOptions((AdminChangePasswordModel)model, x => x.IncludeProperties(propertyName)));
+                    ValidationContext<ChangePasswordModel>
+                        .CreateWithOptions((ChangePasswordModel)model, x => x.IncludeProperties(propertyName)));
 
                 if (result.IsValid)
                 {

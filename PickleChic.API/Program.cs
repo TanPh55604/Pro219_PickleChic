@@ -59,11 +59,11 @@ builder.Services.AddDbContext<PickleChicDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
         ?? "Data Source=localhost;Initial Catalog=PickleChic;TrustServerCertificate=True;User Id=sa; Password=123456"));
 
-builder.Services.AddScoped<AddressRepository>();
+//builder.Services.AddScoped<AddressRepository>();
 builder.Services.AddScoped<CustomerRepository>();
 builder.Services.AddScoped<RankRepository>();
 builder.Services.AddScoped<StaffRepository>();
-builder.Services.AddScoped<RoleRepository>();
+//builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<BrandRepository>();
 builder.Services.AddScoped<ProductRepository>();
@@ -72,15 +72,15 @@ builder.Services.AddScoped<ProductVariantImageRepository>();
 builder.Services.AddScoped<ProductAttributeRepository>();
 builder.Services.AddScoped<AttributeValueRepository>();
 builder.Services.AddScoped<ProductVariantAttributeRepository>();
-builder.Services.AddScoped<CartItemRepository>();
-builder.Services.AddScoped<WishlistRepository>();
-builder.Services.AddScoped<PointHistoryRepository>();
-builder.Services.AddScoped<PromotionRepository>();
-builder.Services.AddScoped<PromotionDetailRepository>();
+//builder.Services.AddScoped<CartItemRepository>();
+//builder.Services.AddScoped<WishlistRepository>();
+//builder.Services.AddScoped<PointHistoryRepository>();
+//builder.Services.AddScoped<PromotionRepository>();
+//builder.Services.AddScoped<PromotionDetailRepository>();
 builder.Services.AddScoped<VoucherRepository>();
-builder.Services.AddScoped<OrderRepository>();
-builder.Services.AddScoped<OrderItemRepository>();
-builder.Services.AddScoped<PaymentMethodRepository>();
+//builder.Services.AddScoped<OrderRepository>();
+//builder.Services.AddScoped<OrderItemRepository>();
+//builder.Services.AddScoped<PaymentMethodRepository>();
 
 var app = builder.Build();
 

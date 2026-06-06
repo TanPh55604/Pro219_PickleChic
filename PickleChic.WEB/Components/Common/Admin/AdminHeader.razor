@@ -34,21 +34,36 @@
                            Class="text-slate-600" />
 
             <div class="flex items-center gap-3 !rounded-full !border !border-slate-200 !bg-white !px-3 !py-1.5 shadow-sm">
-                    <div class="flex !h-8 !w-8 items-center justify-center !rounded-full !bg-slate-900 text-sm font-semibold !text-white">
-                        A
-                    </div>
+                <div class="flex !h-8 !w-8 items-center justify-center !rounded-full !bg-slate-900 text-sm font-semibold !text-white">
+                    @GetAvatarText(_currentUser?.FullName)
+                </div>
 
                 <div class="hidden leading-tight sm:block">
-                        <p class="text-sm font-medium text-slate-800">Admin</p>
-                        <p class="text-xs text-slate-500">Quản trị viên</p>
-                    </div>
+                    <p class="text-sm font-medium text-slate-800">
+                        @(_currentUser?.FullName ?? "Admin")
+                    </p>
                 </div>
-                </div>
+            </div>
+        </div>
     </div>
 </header>
 
 @code {
+    private AuthModel? _currentUser;
+
     private List<BreadcrumbItemModel> BreadcrumbItems { get; set; } = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _currentUser = await _authStorageService.GetUserAsync();
+
+        await InvokeAsync(StateHasChanged);
+}
 
     protected override void OnInitialized()
     {
@@ -60,6 +75,16 @@
     {
         BreadcrumbItems = GetBreadcrumbItems();
         InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetAvatarText(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            return "A";
+        }
+
+        return fullName.Trim()[0].ToString().ToUpperInvariant();
     }
 
     private string CurrentPath

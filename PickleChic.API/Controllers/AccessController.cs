@@ -80,7 +80,7 @@ namespace PickleChic.API.Controllers
             }
             else
             {
-                return StatusCode(403, "Unauthorized");
+                return StatusCode(401, "Unauthorized");
             }
         }
 
@@ -125,7 +125,7 @@ namespace PickleChic.API.Controllers
             }
             else
             {
-                return StatusCode(403, "Unauthorized");
+                return StatusCode(401, "Unauthorized");
             }
         }
 
@@ -153,7 +153,7 @@ namespace PickleChic.API.Controllers
 
                         if (isExpired)
                         {
-                            return StatusCode(403, "TokenExpired");
+                            return StatusCode(401, "TokenExpired");
                         }
                     }
                 }
@@ -245,8 +245,8 @@ namespace PickleChic.API.Controllers
             }
 
             UtilityFunc utilityFunc = new UtilityFunc();
-            string newPassword = utilityFunc.GenerateRandomString(16);
-            //string newPassword = "User@12345";
+            //string newPassword = utilityFunc.GenerateRandomString(16);
+            string newPassword = "Customer12345@";
 
             customer.PasswordHash = utilityFunc.HashPassword(newPassword);
             customer.LastLogin = null;
@@ -258,14 +258,14 @@ namespace PickleChic.API.Controllers
                 return StatusCode(500, "OtherError");
             }
             StringBuilder sb = new StringBuilder();
-            sb.Append($"Kính chào quý khách hàng <b>{customer.FullName}</b><br><br>Mật khẩu truy cập vào tài khoản ITeam Store đã được thay đổi thành <b>{newPassword} </b> Vui lòng truy cập trang web và thay đổi mật khẩu, xin trân trọng cám ơn!<br><br>Đội ngũ ITeam");
+            sb.Append($"Kính chào quý khách hàng <b>{customer.FullName}</b><br><br>Mật khẩu truy cập vào tài khoản PickleChic Store đã được thay đổi thành <b>{newPassword} </b> Vui lòng truy cập trang web và thay đổi mật khẩu, xin trân trọng cám ơn!<br><br>Đội ngũ PickleChic");
             if (updatedCustomer == null)
             {
                 return StatusCode(500, "OtherError");
             }
             else
             {
-                bool re = await utilityFunc.SendEmailToAddress(customer.Email, customer.FullName, "Khôi phục mật khẩu tài khoản ITeam", "", sb.ToString());
+                bool re = await utilityFunc.SendEmailToAddress(customer.Email, customer.FullName, "Khôi phục mật khẩu tài khoản PickleChic", "", sb.ToString());
             }
 
             return Ok(true);

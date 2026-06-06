@@ -15,7 +15,7 @@ public class StaffRepository
 
     public async Task<Staff> GetByKeyAndPassword(string userName, string passwordHash)
     {
-        return await _context.Staff.FirstOrDefaultAsync(s => s.UserName == userName && s.PasswordHash == passwordHash);
+        return await _context.Staff.FirstOrDefaultAsync(s => (s.UserName == userName || s.Email == userName) && s.PasswordHash == passwordHash);
     }
 
     public async Task<List<Staff>> GetAllAsync()
