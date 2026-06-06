@@ -1,22 +1,35 @@
 ﻿@using PickleChic.WEB.Components.Pages.Customer.Cart
 @inherits LayoutComponentBase
+@implements IDisposable
 
 <MudThemeProvider Theme="@ThemeConfig.CustomerTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<div class="flex min-h-screen flex-col bg-white text-neutral-950">
-    <CustomerHeader OnCartClick="OpenQuickCart" />
+@if(_isCheckingAuth) {
+    <Loading />
+} else {
 
-    <main class="flex-1">
-        @Body
-    </main>
+    <div class="flex min-h-screen flex-col overflow-x-hidden bg-white text-neutral-950">
+        <CustomerHeader OnCartClick="OpenQuickCart"
+                        CurrentUser="@_currentUser"
+                        IsAuthenticated="@_isAuthenticated"
+                        OnLogout="LogoutAsync" />
 
-    <CustomerFooter />
+        <main class="flex-1">
+            @Body
+        </main>
 
-    <QuickCartDrawer @bind-Open="_quickCartOpen" />
-</div>
+        <CustomerFooter />
+
+        <MudScrollToTop TopOffset="100">
+            <MudButton Variant="Variant.Filled" Color="Color.Error" Size="Size.Medium"><MudIcon Icon="@Icons.Material.Outlined.ArrowUpward" /></MudButton>
+        </MudScrollToTop>
+
+        <QuickCartDrawer @bind-Open="_quickCartOpen" />
+    </div>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
@@ -27,8 +40,116 @@
 @code {
     private bool _quickCartOpen;
 
+    private bool _isAuthenticated;
+
+    private bool _isCheckingAuth = true;
+
+    private AuthModel? _currentUser;
+
     private void OpenQuickCart()
     {
         _quickCartOpen = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        _navigation.LocationChanged += OnLocationChanged;
+
+        await LoadCustomerAuthAsync();
+
+        _isCheckingAuth = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            await LoadCustomerAuthAsync();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadCustomerAuthAsync()
+    {
+        _isAuthenticated = await _authStorageService.IsAuthenticatedAsync();
+
+        if (!_isAuthenticated)
+        {
+            _currentUser = null;
+            return;
+        }
+
+        var result = await _currentUserService.CheckCurrentUserAsync();
+
+        if (!result.Success || result.Data is null)
+        {
+            await _authStorageService.ClearAuthAsync();
+            _isAuthenticated = false;
+            _currentUser = null;
+            return;
+        }
+
+        if (result.Data.IsAdmin)
+        {
+            _navigation.NavigateTo(RouterConfig.Admin.Home, replace: true);
+            return;
+        }
+
+        if (result.Data.MustChangePassword && !IsCurrentPath(RouterConfig.Customer.ChangePassword))
+        {
+            _navigation.NavigateTo(RouterConfig.Customer.ChangePassword, replace: true);
+            return;
+        }
+
+        if (IsCustomerAuthPublicPath())
+        {
+            _navigation.NavigateTo(RouterConfig.Customer.Home, replace: true);
+            return;
+        }
+
+        _currentUser = result.Data;
+    }
+
+    private async Task LogoutAsync()
+    {
+        await _authService.LogoutAsync();
+
+        _isAuthenticated = false;
+        _currentUser = null;
+
+        _snackbar.Add("Đã đăng xuất.", Severity.Info);
+
+        _navigation.NavigateTo(RouterConfig.Customer.Home, replace: true);
+    }
+
+    private bool IsCustomerAuthPublicPath()
+    {
+        return IsCurrentPath(RouterConfig.Customer.Login)
+               || IsCurrentPath(RouterConfig.Customer.SignUp)
+               || IsCurrentPath(RouterConfig.Customer.ForgotPassword);
+    }   
+
+    private bool IsCurrentPath(string route)
+    {
+        var currentPath = "/" + _navigation.ToBaseRelativePath(_navigation.Uri).Trim('/');
+        currentPath = currentPath.Split('?')[0].Split('#')[0];
+
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            currentPath = "/";
+        }
+
+        return currentPath.Equals(route, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public void Dispose()
+    {
+        _navigation.LocationChanged -= OnLocationChanged;
     }
 }
