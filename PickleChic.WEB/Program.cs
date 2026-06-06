@@ -1,6 +1,7 @@
 using MudBlazor;
 using MudBlazor.Services;
 using PickleChic.WEB.Components;
+using PickleChic.WEB.Services.Admin;
 using PickleChic.WEB.Services.Api;
 using PickleChic.WEB.Services.Auth;
 using PickleChic.WEB.Services.Storage;
@@ -29,6 +30,7 @@ builder.Services.AddScoped<IAuthStorageService, AuthStorageService>();
 builder.Services.AddScoped<IApiProvider, ApiProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>(); 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IStaffService, StaffService>();
 
 builder.Services.AddScoped(sp =>
 {

@@ -85,6 +85,29 @@ namespace PickleChic.WEB.Services.Api
             }
         }
 
+        public async Task<ApiResult<TResponse>> PatchAsync<TRequest, TResponse>(
+            string url,
+            TRequest request,
+            bool requireAuth = false)
+        {
+            try
+            {
+                await AddAuthorizationHeaderAsync(requireAuth);
+
+                var content = JsonContent.Create(request, options: _jsonOptions);
+
+                var response = await _httpClient.PatchAsync(url, content);
+
+                return await ReadResponseAsync<TResponse>(response);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<TResponse>.Fail(
+                    message: ex.Message,
+                    statusCode: 0);
+            }
+        }
+
         public async Task<ApiResult<TResponse>> DeleteAsync<TResponse>(
             string url,
             bool requireAuth = false)

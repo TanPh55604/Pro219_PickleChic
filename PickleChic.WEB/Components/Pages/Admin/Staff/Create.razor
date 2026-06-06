@@ -34,8 +34,8 @@
                                   Required="true"
                                   Immediate="true" />
 
-                    <MudTextField @bind-Value="_model.Username"
-                                  For="@(() => _model.Username)"
+                    <MudTextField @bind-Value="_model.UserName"
+                                  For="@(() => _model.UserName)"
                                   Label="Tên đăng nhập"
                                   Placeholder="Nhập tên đăng nhập"
                                   Variant="Variant.Outlined"
@@ -79,15 +79,14 @@
                     </MudSelect>
                 </div>
 
-                <div class="flex justify-end !border-t !border-slate-200 !pt-6">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Dark"
-                               StartIcon="@Icons.Material.Filled.Save"
-                               OnClick="SubmitAsync"
-                               Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                        Lưu
-                    </MudButton>
-                </div>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="SubmitAsync"
+                           Disabled="@_isSubmitting"
+                           Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                    @(_isSubmitting ? "Đang lưu..." : "Lưu")
+                </MudButton>
             </div>
         </MudForm>
     </div>
@@ -101,10 +100,12 @@
         PasswordHash = "Admin12345@",
         RoleId = 2,
         Status = 1,
-        LastLogin = null
+        LastLogin = DateTime.Now,
     };
 
     private readonly StaffSchema.CreateUpdate _validator = new();
+
+    private bool _isSubmitting;
 
     private readonly List<RoleOption> _roles = new()
     {
@@ -115,24 +116,51 @@
 
     private async Task SubmitAsync()
     {
-        if (_form is null)
+        if (_form is null || _isSubmitting)
         {
             return;
         }
 
-        await _form.Validate();
+        await _form.ValidateAsync();
 
         if (!_form.IsValid)
         {
             return;
         }
 
-        _model.PasswordHash = "Admin12345@";
-        _model.LastLogin = null;
+        _isSubmitting = true;
 
-        // TODO: Gọi API tạo staff.
+        try
+        {
+            var result = await _adminStaffService.CreateAsync(_model);
 
-        _navigation.NavigateTo(RouterConfig.Admin.Staffs);
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertStaffErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Tạo quản trị viên thành công.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.Admin.Staffs);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertStaffErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tạo quản trị viên.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
     }
 
     private record RoleOption(int Id, string Name);
