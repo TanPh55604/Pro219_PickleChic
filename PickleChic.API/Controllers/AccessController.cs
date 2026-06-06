@@ -258,14 +258,14 @@ namespace PickleChic.API.Controllers
                 return StatusCode(500, "OtherError");
             }
             StringBuilder sb = new StringBuilder();
-            sb.Append($"Kính chào quý khách hàng <b>{customer.FullName}</b><br><br>Mật khẩu truy cập vào tài khoản ITeam Store đã được thay đổi thành <b>{newPassword} </b> Vui lòng truy cập trang web và thay đổi mật khẩu, xin trân trọng cám ơn!<br><br>Đội ngũ ITeam");
+            sb.Append($"Kính chào quý khách hàng <b>{customer.FullName}</b><br><br>Mật khẩu truy cập vào tài khoản PickleChic Store đã được thay đổi thành <b>{newPassword} </b> Vui lòng truy cập trang web và thay đổi mật khẩu, xin trân trọng cám ơn!<br><br>Đội ngũ PickleChic");
             if (updatedCustomer == null)
             {
                 return StatusCode(500, "OtherError");
             }
             else
             {
-                bool re = await utilityFunc.SendEmailToAddress(customer.Email, customer.FullName, "Khôi phục mật khẩu tài khoản ITeam", "", sb.ToString());
+                bool re = await utilityFunc.SendEmailToAddress(customer.Email, customer.FullName, "Khôi phục mật khẩu tài khoản PickleChic", "", sb.ToString());
             }
 
             return Ok(true);
