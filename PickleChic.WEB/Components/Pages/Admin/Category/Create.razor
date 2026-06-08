@@ -37,24 +37,29 @@
                     <MudTextField @bind-Value="_model.LinkImage"
                                   For="@(() => _model.LinkImage)"
                                   Label="Đường dẫn ảnh"
-                                  Placeholder="Nhập URL ảnh đại diện"
+                                  Placeholder="Nhập đường dẫn ảnh"
                                   Variant="Variant.Outlined"
                                   Immediate="true" />
+
+                    <MudSelect T="int"
+                               @bind-Value="_model.Status"
+                               For="@(() => _model.Status)"
+                               Label="Trạng thái"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem T="int" Value="1">Đang hoạt động</MudSelectItem>
+                        <MudSelectItem T="int" Value="0">Tạm ẩn</MudSelectItem>
+                    </MudSelect>
+
+                    <div class="hidden md:block"></div>
 
                     <div class="md:col-span-2">
                         <MudTextField @bind-Value="_model.Description"
                                       For="@(() => _model.Description)"
                                       Label="Mô tả"
-                                      Placeholder="Nhập mô tả thể loại"
+                                      Placeholder="Nhập mô tả"
                                       Variant="Variant.Outlined"
-                                      Lines="6"
+                                      Lines="4"
                                       Immediate="true" />
-                    </div>
-
-                    <div class="!rounded-xl !border !border-slate-200 !bg-slate-50 !p-4 md:col-span-2">
-                        <MudSwitch @bind-Value="_model.Status"
-                                   Color="Color.Success"
-                                   Label="Đang hoạt động" />
                     </div>
                 </div>
 
@@ -63,8 +68,9 @@
                                Color="Color.Dark"
                                StartIcon="@Icons.Material.Filled.Save"
                                OnClick="SubmitAsync"
+                               Disabled="@_isSubmitting"
                                Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                        Lưu
+                        @(_isSubmitting ? "Đang lưu..." : "Lưu")
                     </MudButton>
                 </div>
             </div>
@@ -77,29 +83,59 @@
 
     private readonly CategoryModel _model = new()
     {
-        Status = true,
-        CreateAt = DateTime.Now
+        Status = 1
     };
 
     private readonly CategorySchema.CreateUpdate _validator = new();
 
+    private bool _isSubmitting;
+
     private async Task SubmitAsync()
     {
-        if (_form is null)
+        if (_form is null || _isSubmitting)
         {
             return;
         }
 
-        await _form.Validate();
+        await _form.ValidateAsync();
 
         if (!_form.IsValid)
         {
             return;
         }
 
-        // TODO: Gọi API tạo thể loại tại đây.
-        // await CategoryService.CreateAsync(_model);
+        _isSubmitting = true;
 
-        _navigation.NavigateTo(RouterConfig.Admin.Categories);
+        try
+        {
+            var result = await _adminCategoryService.CreateAsync(_model);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertCategoryErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Tạo thể loại thành công.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.CategoryDetail, result.Data.Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertCategoryErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tạo thể loại.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
     }
 }

@@ -3,18 +3,15 @@ using PickleChic.WEB.Model;
 
 namespace PickleChic.WEB.Schema
 {
-    public class CategorySchema
+    public class BrandSchema
     {
-        public class CreateUpdate : AbstractValidator<CategoryModel>
+        public class CreateUpdate : AbstractValidator<BrandModel>
         {
             public CreateUpdate()
             {
                 RuleFor(x => x.Name)
-                    .NotEmpty().WithMessage("Tên thể loại không được để trống")
-                    .Length(2, 255).WithMessage("Tên thể loại có độ dài từ 2 đến 255 ký tự");
-
-                RuleFor(x => x.LinkImage)
-                    .MaximumLength(1000).WithMessage("Đường dẫn ảnh có độ dài tối đa 1000 ký tự");
+                    .NotEmpty().WithMessage("Tên thương hiệu không được để trống")
+                    .Length(2, 255).WithMessage("Tên thương hiệu có độ dài từ 2 đến 255 ký tự");
 
                 RuleFor(x => x.Description)
                     .MaximumLength(1000).WithMessage("Mô tả có độ dài tối đa 1000 ký tự");
@@ -27,8 +24,8 @@ namespace PickleChic.WEB.Schema
             public Func<object, string, Task<IEnumerable<string>>> ValidateValue => async (model, propertyName) =>
             {
                 var result = await ValidateAsync(
-                    ValidationContext<CategoryModel>
-                        .CreateWithOptions((CategoryModel)model, x => x.IncludeProperties(propertyName)));
+                    ValidationContext<BrandModel>
+                        .CreateWithOptions((BrandModel)model, x => x.IncludeProperties(propertyName)));
 
                 if (result.IsValid)
                 {

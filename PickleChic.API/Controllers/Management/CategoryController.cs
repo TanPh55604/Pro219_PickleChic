@@ -22,8 +22,7 @@ public class CategoryController : ControllerBase
         try
         {
             var result = await _repository.GetAllAsync();
-            if (result.Count == 0)
-                return NoContent();
+            
             if (!string.IsNullOrWhiteSpace(keyword))
             {
                 result = result

@@ -1,12 +1,10 @@
 ﻿namespace PickleChic.WEB.Model
 {
-    public class CategoryModel
+    public class BrandModel
     {
         public int Id { get; set; }
 
         public string Name { get; set; } = string.Empty;
-
-        public string? LinkImage { get; set; }
 
         public string? Description { get; set; }
 
