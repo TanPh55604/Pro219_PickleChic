@@ -30,7 +30,9 @@ builder.Services.AddScoped<IAuthStorageService, AuthStorageService>();
 builder.Services.AddScoped<IApiProvider, ApiProvider>();
 builder.Services.AddScoped<IAuthService, AuthService>(); 
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IStaffService, StaffService>(); 
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<IBrandService, BrandService>();
 
 builder.Services.AddScoped(sp =>
 {

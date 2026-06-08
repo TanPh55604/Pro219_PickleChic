@@ -18,40 +18,44 @@
 
     <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
         <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
-            <MudTextField @bind-Value="_searchText"
-                          Placeholder="Tìm kiếm theo tên thể loại..."
-                          Variant="Variant.Outlined"
-                          Margin="Margin.Dense"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Search"
-                          Class="md:!max-w-sm" />
+            <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
+                <MudTextField @bind-Value="_searchText"
+                              Placeholder="Tìm kiếm theo tên thể loại..."
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              OnKeyDown="HandleSearchKeyDown"
+                              Class="flex-1" />
 
-            <MudSelect T="bool?"
-                       @bind-Value="_statusFilter"
-                       Variant="Variant.Outlined"
-                       Margin="Margin.Dense"
-                       Class="md:!w-48">
-                <MudSelectItem T="bool?" Value="@((bool?)null)">
-                    Tất cả trạng thái
-                </MudSelectItem>
-                <MudSelectItem T="bool?" Value="@((bool?)true)">
-                    Đang hoạt động
-                </MudSelectItem>
-                <MudSelectItem T="bool?" Value="@((bool?)false)">
-                    Tạm ẩn
-                </MudSelectItem>
-            </MudSelect>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="SearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Tìm kiếm
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ResetSearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Làm mới
+                </MudButton>
+            </div>
         </div>
 
-        <MudTable Items="FilteredCategories"
+        <MudTable Items="_categories"
+                  Loading="@_isLoading"
                   Hover="true"
-                  Dense="false"
                   Elevation="0"
                   FixedHeader="true"
-                  Height="calc(100vh - 330px)"
+                  Height="calc(100vh - 340px)"
                   RowsPerPage="10">
             <HeaderContent>
-                <MudTh>ID</MudTh>
+                <MudTh>STT</MudTh>
                 <MudTh>Ảnh</MudTh>
                 <MudTh>Tên thể loại</MudTh>
                 <MudTh>Mô tả</MudTh>
@@ -61,8 +65,10 @@
             </HeaderContent>
 
             <RowTemplate>
-                <MudTd DataLabel="ID">
-                    <span class="font-medium text-slate-700">#@context.Id</span>
+                <MudTd DataLabel="STT">
+                    <span class="font-medium text-slate-700">
+                        @(_categories.IndexOf(context) + 1)
+                    </span>
                 </MudTd>
 
                 <MudTd DataLabel="Ảnh">
@@ -88,10 +94,6 @@
                        class="font-semibold text-slate-900 transition hover:text-slate-600">
                         @context.Name
                     </a>
-
-                    <p class="!mt-1 text-xs text-slate-500">
-                        Cập nhật bởi: @(context.UpdateBy ?? "System")
-                    </p>
                 </MudTd>
 
                 <MudTd DataLabel="Mô tả">
@@ -101,7 +103,7 @@
                 </MudTd>
 
                 <MudTd DataLabel="Trạng thái">
-                    @if (context.Status)
+                    @if (context.IsActive)
                     {
                         <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
                             Đang hoạt động
@@ -117,7 +119,7 @@
 
                 <MudTd DataLabel="Ngày tạo">
                     <span class="text-sm text-slate-600">
-                        @context.CreateAt.ToString("dd/MM/yyyy")
+                        @(context.InsertedAt?.ToString("dd/MM/yyyy") ?? "Chưa có")
                     </span>
                 </MudTd>
 
@@ -136,7 +138,7 @@
             </NoRecordsContent>
 
             <PagerContent>
-                <MudTablePager />
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
             </PagerContent>
         </MudTable>
     </div>
@@ -144,45 +146,67 @@
 
 @code {
     private string _searchText = string.Empty;
-    private bool? _statusFilter;
 
-    private List<CategoryModel> _categories = new()
+    private bool _isLoading = true;
+
+    private List<CategoryResponse> _categories = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        new()
-        {
-            Id = 1,
-            Name = "Áo",
-            LinkImage = "",
-            Description = "Các sản phẩm áo thời trang.",
-            UpdateBy = "Admin",
-            Status = true,
-            CreateAt = DateTime.Now.AddDays(-10)
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Quần",
-            LinkImage = "",
-            Description = "Các sản phẩm quần nam nữ.",
-            UpdateBy = "Admin",
-            Status = true,
-            CreateAt = DateTime.Now.AddDays(-8)
-        },
-        new()
-        {
-            Id = 3,
-            Name = "Phụ kiện",
-            LinkImage = "",
-            Description = "Túi, mũ, kính và phụ kiện thời trang.",
-            UpdateBy = "System",
-            Status = false,
-            CreateAt = DateTime.Now.AddDays(-5)
-        }
-    };
+        await LoadCategoriesAsync();
+    }
 
-    private IEnumerable<CategoryModel> FilteredCategories =>
-        _categories
-            .Where(x => string.IsNullOrWhiteSpace(_searchText)
-                        || x.Name.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
-            .Where(x => !_statusFilter.HasValue || x.Status == _statusFilter.Value);
+    private async Task LoadCategoriesAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminCategoryService.GetAllAsync(_searchText);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertCategoryErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _categories = result.Data ?? new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        await LoadCategoriesAsync();
+    }
+
+    private async Task ResetSearchAsync()
+    {
+        _searchText = string.Empty;
+        await LoadCategoriesAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private static string ConvertCategoryErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách thể loại.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
+    }
 }

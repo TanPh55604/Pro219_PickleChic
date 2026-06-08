@@ -7,8 +7,8 @@
 
             <div class="!rounded-xl !bg-slate-50 !p-4">
                 <p class="text-sm text-slate-500">
-                    Tên thể loại:
-                    <span class="font-bold text-slate-900">@Category.Name</span>
+                    Tên thương hiệu:
+                    <span class="font-bold text-slate-900">@Brand.Name</span>
                 </p>
             </div>
         </div>
@@ -35,9 +35,11 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
 
-    [Parameter] public CategoryResponse Category { get; set; } = new();
+    [Parameter]
+    public BrandResponse Brand { get; set; } = new();
 
     private void Cancel()
     {
@@ -46,6 +48,6 @@
 
     private void Confirm()
     {
-        MudDialog.Close(DialogResult.Ok(Category.Id));
+        MudDialog.Close(DialogResult.Ok(Brand.Id));
     }
 }

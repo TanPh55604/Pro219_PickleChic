@@ -15,7 +15,118 @@
             Quay lại
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+        <MudForm @ref="_form"
+                 Model="@_model"
+                 Validation="@_validator.ValidateValue">
+            <div class="!space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Thông tin thương hiệu</h2>
+                </div>
+
+                <div class="grid !gap-5 md:grid-cols-2">
+                    <MudTextField @bind-Value="_model.Name"
+                                  For="@(() => _model.Name)"
+                                  Label="Tên thương hiệu"
+                                  Placeholder="Nhập tên thương hiệu"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  Immediate="true" />
+
+                    <MudSelect T="int"
+                               @bind-Value="_model.Status"
+                               For="@(() => _model.Status)"
+                               Label="Trạng thái"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem T="int" Value="1">Đang hoạt động</MudSelectItem>
+                        <MudSelectItem T="int" Value="0">Tạm ẩn</MudSelectItem>
+                    </MudSelect>
+
+                    <div class="md:col-span-2">
+                        <MudTextField @bind-Value="_model.Description"
+                                      For="@(() => _model.Description)"
+                                      Label="Mô tả"
+                                      Placeholder="Nhập mô tả"
+                                      Variant="Variant.Outlined"
+                                      Lines="4"
+                                      Immediate="true" />
+                    </div>
+                </div>
+
+                <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Dark"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="SubmitAsync"
+                               Disabled="@_isSubmitting"
+                               Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                        @(_isSubmitting ? "Đang lưu..." : "Lưu")
+                    </MudButton>
+                </div>
+            </div>
+        </MudForm>
+    </div>
 </div>
 
 @code {
+    private MudForm? _form;
+
+    private readonly BrandModel _model = new()
+    {
+        Status = 1
+    };
+
+    private readonly BrandSchema.CreateUpdate _validator = new();
+
+    private bool _isSubmitting;
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null || _isSubmitting)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _adminBrandService.CreateAsync(_model);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertBrandErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Tạo thương hiệu thành công.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.BrandDetail, result.Data.Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertBrandErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tạo thương hiệu.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
+    }
 }

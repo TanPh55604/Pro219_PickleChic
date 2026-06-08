@@ -29,5 +29,27 @@
 
             public static string Delete(int id) => $"management/staff/delete/{id}";
         }
+
+        public static class Category
+        {
+            public const string GetAll = "management/category/get-all";
+            public const string Create = "management/category/create";
+            public const string Update = "management/category/update";
+
+            public static string GetById(int id) => $"management/category/get-by-id/{id}";
+
+            public static string Delete(int id) => $"management/category/delete/{id}";
+        }
+
+        public static class Brand
+        {
+            public const string GetAll = "management/brand/get-all";
+            public const string Create = "management/brand/create";
+            public const string Update = "management/brand/update";
+
+            public static string GetById(int id) => $"management/brand/get-by-id/{id}";
+
+            public static string Delete(int id) => $"management/brand/delete/{id}";
+        }
     }
 }

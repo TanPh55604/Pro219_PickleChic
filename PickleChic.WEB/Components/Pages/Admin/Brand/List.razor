@@ -15,6 +15,186 @@
             Thêm thương hiệu
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
+                <MudTextField @bind-Value="_searchText"
+                              Placeholder="Tìm kiếm theo tên thương hiệu..."
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              OnKeyDown="HandleSearchKeyDown"
+                              Class="flex-1" />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="SearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Tìm kiếm
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ResetSearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Làm mới
+                </MudButton>
+            </div>
+        </div>
+
+        <MudTable Items="_brands"
+                  Loading="@_isLoading"
+                  Hover="true"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(100vh - 340px)"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Tên thương hiệu</MudTh>
+                <MudTh>Mô tả</MudTh>
+                <MudTh>Người cập nhật</MudTh>
+                <MudTh>Trạng thái</MudTh>
+                <MudTh>Ngày tạo</MudTh>
+                <MudTh Class="text-right">Chi tiết</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="STT">
+                    <span class="font-medium text-slate-700">
+                        @(_brands.IndexOf(context) + 1)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Tên thương hiệu">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.BrandDetail, context.Id)"
+                       class="font-semibold text-slate-900 transition hover:text-slate-600">
+                        @context.Name
+                    </a>
+                </MudTd>
+
+                <MudTd DataLabel="Mô tả">
+                    <p class="line-clamp-2 max-w-sm text-sm text-slate-600">
+                        @(string.IsNullOrWhiteSpace(context.Description) ? "Chưa có mô tả" : context.Description)
+                    </p>
+                </MudTd>
+
+                <MudTd DataLabel="Người cập nhật">
+                    <span class="text-sm text-slate-600">
+                        @(string.IsNullOrWhiteSpace(context.UpdateBy) ? "Chưa có" : context.UpdateBy)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Trạng thái">
+                    @if (context.IsActive)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                            Đang hoạt động
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
+                            Tạm ẩn
+                        </MudChip>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="Ngày tạo">
+                    <span class="text-sm text-slate-600">
+                        @(context.InsertedAt?.ToString("dd/MM/yyyy") ?? "Chưa có")
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Chi tiết" Class="text-right">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.BrandDetail, context.Id)"
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                    </a>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="!py-10 text-center text-slate-500">
+                    Không có thương hiệu nào.
+                </div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+            </PagerContent>
+        </MudTable>
+    </div>
 </div>
 
-@code {}
+@code {
+    private string _searchText = string.Empty;
+
+    private bool _isLoading = true;
+
+    private List<BrandResponse> _brands = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBrandsAsync();
+    }
+
+    private async Task LoadBrandsAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminBrandService.GetAllAsync(_searchText);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertBrandErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _brands = result.Data ?? new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        await LoadBrandsAsync();
+    }
+
+    private async Task ResetSearchAsync()
+    {
+        _searchText = string.Empty;
+        await LoadBrandsAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private static string ConvertBrandErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách thương hiệu.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
+    }
+}
