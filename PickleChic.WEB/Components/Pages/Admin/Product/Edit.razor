@@ -3,20 +3,259 @@
 
 <PageTitle>@Constant.metaDataAdmin Edit Product</PageTitle>
 
-<div class="mx-auto w-full max-w-5xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Cập nhật sản phẩm</h1>
+@if (_isLoading)
+{
+    <EditPageSkeleton FieldCount="4" />
+}
+else
+{
+    <div class="mx-auto w-full max-w-5xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Cập nhật sản phẩm</h1>
+            </div>
+
+            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, Id)"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                Quay lại
+            </a>
         </div>
 
-        <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, Id)"
-           class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-            Quay lại
-        </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+            <MudForm @ref="_form"
+                     Model="@_model"
+                     Validation="@_validator.ValidateValue">
+                <div class="!space-y-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Thông tin sản phẩm</h2>
+                    </div>
+
+                    <div class="grid !gap-5 md:grid-cols-2">
+                        <div class="md:col-span-2">
+                            <MudTextField @bind-Value="_model.ProductName"
+                                          For="@(() => _model.ProductName)"
+                                          Label="Tên sản phẩm"
+                                          Placeholder="Nhập tên sản phẩm"
+                                          Variant="Variant.Outlined"
+                                          Required="true"
+                                          Immediate="true" />
+                        </div>
+
+                        <MudSelect T="int"
+                                   @bind-Value="_model.CategoryId"
+                                   For="@(() => _model.CategoryId)"
+                                   Label="Thể loại"
+                                   Variant="Variant.Outlined"
+                                   Required="true">
+                            @foreach (var category in _categories)
+                            {
+                                <MudSelectItem T="int" Value="@category.Id">@category.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+
+                        <MudSelect T="int"
+                                   @bind-Value="_model.BrandId"
+                                   For="@(() => _model.BrandId)"
+                                   Label="Thương hiệu"
+                                   Variant="Variant.Outlined"
+                                   Required="true">
+                            @foreach (var brand in _brands)
+                            {
+                                <MudSelectItem T="int" Value="@brand.Id">@brand.Name</MudSelectItem>
+                            }
+                        </MudSelect>
+
+                        <div>
+                            <MudSelect T="int"
+                                       @bind-Value="_model.Status"
+                                       For="@(() => _model.Status)"
+                                       Label="Trạng thái"
+                                       Variant="Variant.Outlined"
+                                       Disabled="@(!_hasVariants)">
+                                <MudSelectItem T="int" Value="1">Đang hoạt động</MudSelectItem>
+                                <MudSelectItem T="int" Value="0">Tạm ẩn</MudSelectItem>
+                            </MudSelect>
+                        </div>
+
+                        <div class="hidden md:block"></div>
+
+                        @if (!_hasVariants)
+                        {
+                            <div class="md:col-span-2">
+                                <MudAlert Severity="Severity.Warning"
+                                          Variant="Variant.Outlined"
+                                          Class="!rounded-xl">
+                                    Cần ít nhất 1 biến thể để chuyển sản phẩm sang trạng thái "Đang hoạt động".
+                                    <a href="@GetCreateVariantUrl()"
+                                       class="!ml-1 font-semibold text-amber-800 underline">
+                                        Thêm biến thể
+                                    </a>
+                                </MudAlert>
+                            </div>
+                        }
+
+                        <div class="md:col-span-2">
+                            <MudTextField @bind-Value="_model.Description"
+                                          For="@(() => _model.Description)"
+                                          Label="Mô tả"
+                                          Placeholder="Nhập mô tả sản phẩm"
+                                          Variant="Variant.Outlined"
+                                          Lines="4"
+                                          Immediate="true" />
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Dark"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   OnClick="SubmitAsync"
+                                   Disabled="@_isSubmitting"
+                                   Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                            @(_isSubmitting ? "Đang cập nhật..." : "Cập nhật")
+                        </MudButton>
+                    </div>
+                </div>
+            </MudForm>
+        </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private MudForm? _form;
+
+    private ProductModel _model = new();
+
+    private readonly ProductSchema.CreateUpdate _validator = new();
+
+    private List<CategoryResponse> _categories = new();
+
+    private List<BrandResponse> _brands = new();
+
+    private bool _isLoading = true;
+
+    private bool _isSubmitting;
+
+    private bool _hasVariants;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var categoryResult = await _adminCategoryService.GetAllAsync();
+            var brandResult = await _adminBrandService.GetAllAsync();
+            var productResult = await _adminProductService.GetByIdWithDetailsAsync(Id);
+
+            if (!categoryResult.Success || !brandResult.Success)
+            {
+                _snackbar.Add("Không thể tải dữ liệu tham chiếu.", Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Products, replace: true);
+                return;
+            }
+
+            if (!productResult.Success || productResult.Data is null)
+            {
+                _snackbar.Add(ConvertProductErrorMessage(productResult.Message), Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Products, replace: true);
+                return;
+            }
+
+            _categories = categoryResult.Data?.Where(c => c.IsActive).ToList() ?? new();
+            _brands = brandResult.Data?.Where(b => b.IsActive).ToList() ?? new();
+            _hasVariants = productResult.Data.ProductVariants?.Count > 0;
+            _model = MapToModel(productResult.Data);
+
+            if (!_hasVariants)
+            {
+                _model.Status = 0;
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static ProductModel MapToModel(ProductDetailResponse response)
+    {
+        return new ProductModel
+        {
+            Id = response.Id,
+            ProductName = response.ProductName,
+            Description = response.Description,
+            CategoryId = response.CategoryId,
+            BrandId = response.BrandId,
+            Status = response.Status
+        };
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null || _isSubmitting)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            if (!_hasVariants)
+            {
+                _model.Status = 0;
+            }
+
+            var result = await _adminProductService.UpdateAsync(_model);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertProductErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Cập nhật sản phẩm thành công.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private string GetCreateVariantUrl()
+    {
+        return $"{RouterConfig.Admin.CreateProductVariant}?productId={Id}";
+    }
+
+    private static string ConvertProductErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Không tìm thấy" => "Không tìm thấy sản phẩm.",
+            "Db Error" => "Không thể xử lý dữ liệu sản phẩm.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
+    }
 }

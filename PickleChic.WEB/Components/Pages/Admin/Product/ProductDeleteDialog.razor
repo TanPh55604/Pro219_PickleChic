@@ -1,0 +1,58 @@
+<MudDialog>
+    <DialogContent>
+        <div class="!space-y-3">
+            <p class="text-base font-semibold text-slate-900">
+                Bạn chắc chắn muốn xóa sản phẩm này không?
+            </p>
+
+            <div class="!rounded-xl !bg-slate-50 !p-4">
+                <p class="text-sm text-slate-500">
+                    Tên sản phẩm:
+                    <span class="font-bold text-slate-900">@Product.ProductName</span>
+                </p>
+            </div>
+
+            @if (Product.ProductVariants.Count > 0)
+            {
+                <p class="text-sm text-red-600">
+                    Sản phẩm có @Product.ProductVariants.Count biến thể. Hãy xóa biến thể trước nếu cần.
+                </p>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="flex w-full justify-end !gap-3">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Default"
+                       OnClick="Cancel"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Hủy
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="Confirm"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Xóa
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public ProductDetailResponse Product { get; set; } = new();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Confirm()
+    {
+        MudDialog.Close(DialogResult.Ok(Product.Id));
+    }
+}
