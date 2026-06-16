@@ -1,0 +1,51 @@
+﻿<div class="mx-auto w-full @MaxWidthClass !space-y-6">
+    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+        <MudSkeleton Width="240px" Height="32px" Animation="Animation.Wave" />
+        <MudSkeleton Width="120px" Height="42px" Animation="Animation.Wave" Class="!rounded-xl" />
+    </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+        <MudSkeleton Width="200px" Height="24px" Animation="Animation.Wave" />
+
+        <div class="!mt-6 grid !gap-5 md:grid-cols-2">
+            @for (var i = 0; i < FieldCount; i++)
+            {
+                <MudSkeleton Height="56px" Animation="Animation.Wave" Class="w-full !rounded-lg" />
+            }
+
+            @if (HasFullWidthField)
+            {
+                <MudSkeleton Height="120px" Animation="Animation.Wave" Class="w-full !rounded-lg md:col-span-2" />
+            }
+        </div>  
+
+        @if (ExtraSectionCount > 0)
+        {
+            <div class="!mt-8 !space-y-4">
+                <div class="flex items-center justify-between">
+                    <MudSkeleton Width="160px" Height="24px" Animation="Animation.Wave" />
+                    <MudSkeleton Width="120px" Height="38px" Animation="Animation.Wave" Class="!rounded-xl" />
+                </div>
+
+                @for (var i = 0; i < ExtraSectionCount; i++)
+                {
+                    <MudSkeleton Height="72px" Animation="Animation.Wave" Class="w-full !rounded-xl" />
+                }
+            </div>
+        }
+
+        <div class="!mt-6 flex justify-end !border-t !border-slate-200 !pt-6">
+            <MudSkeleton Width="120px" Height="42px" Animation="Animation.Wave" Class="!rounded-xl" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string MaxWidthClass { get; set; } = "max-w-5xl";
+
+    [Parameter] public int FieldCount { get; set; } = 4;
+
+    [Parameter] public bool HasFullWidthField { get; set; } = true;
+
+    [Parameter] public int ExtraSectionCount { get; set; }
+}

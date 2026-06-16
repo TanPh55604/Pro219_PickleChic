@@ -15,7 +15,183 @@
             Quay lại
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+        <MudForm @ref="_form"
+                 Model="@_model"
+                 Validation="@_validator.ValidateValue">
+            <div class="!space-y-6">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Thông tin thuộc tính</h2>
+                </div>
+
+                <MudTextField @bind-Value="_model.AttributeName"
+                              For="@(() => _model.AttributeName)"
+                              Label="Tên thuộc tính"
+                              Placeholder="Ví dụ: Kích thước, Màu sắc..."
+                              Variant="Variant.Outlined"
+                              Required="true"
+                              Immediate="true" />
+
+                <div class="!space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-base font-bold text-slate-900">Danh sách giá trị</h3>
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Dark"
+                                   StartIcon="@Icons.Material.Filled.Add"
+                                   OnClick="AddValueRow"
+                                   Class="!rounded-xl !normal-case">
+                            Thêm giá trị
+                        </MudButton>
+                    </div>
+
+                    @if (_model.AttributeValues.Count == 0)
+                    {
+                        <div class="!rounded-xl !border !border-dashed !border-slate-300 !p-6 text-center text-sm text-slate-500">
+                            Chưa có giá trị nào. Nhấn "Thêm giá trị" để bắt đầu.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="!space-y-3">
+                            @for (var i = 0; i < _model.AttributeValues.Count; i++)
+                            {
+                                var index = i;
+                                var valueItem = _model.AttributeValues[index];
+
+                                <div class="grid !gap-3 !rounded-xl !border !border-slate-200 !p-4 md:grid-cols-[1fr_1fr_auto]">
+                                    <MudTextField @bind-Value="valueItem.Value"
+                                                  Label="Giá trị"
+                                                  Placeholder="Nhập giá trị"
+                                                  Variant="Variant.Outlined"
+                                                  Required="true"
+                                                  Immediate="true" />
+
+                                    <MudTextField @bind-Value="valueItem.Note"
+                                                  Label="Ghi chú"
+                                                  Placeholder="Ghi chú (tuỳ chọn)"
+                                                  Variant="Variant.Outlined"
+                                                  Immediate="true" />
+
+                                    <div class="flex items-end">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => RemoveValueRow(index))"
+                                                       title="Xóa dòng" />
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Dark"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="SubmitAsync"
+                               Disabled="@_isSubmitting"
+                               Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                        @(_isSubmitting ? "Đang lưu..." : "Lưu")
+                    </MudButton>
+                </div>
+            </div>
+        </MudForm>
+    </div>
 </div>
 
 @code {
+    private MudForm? _form;
+
+    private readonly AttributeModel _model = new();
+
+    private readonly AttributeSchema.CreateUpdate _validator = new();
+
+    private readonly AttributeSchema.ValueItem _valueValidator = new();
+
+    private bool _isSubmitting;
+
+    private void AddValueRow()
+    {
+        _model.AttributeValues.Add(new AttributeValueModel());
+    }
+
+    private void RemoveValueRow(int index)
+    {
+        if (index >= 0 && index < _model.AttributeValues.Count)
+        {
+            _model.AttributeValues.RemoveAt(index);
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null || _isSubmitting)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        var activeValues = _model.AttributeValues
+            .Where(v => !string.IsNullOrWhiteSpace(v.Value))
+            .ToList();
+
+        if (activeValues.Count == 0)
+        {
+            _snackbar.Add("Vui lòng thêm ít nhất một giá trị.", Severity.Warning);
+            return;
+        }
+
+        foreach (var valueItem in activeValues)
+        {
+            var validation = await _valueValidator.ValidateAsync(valueItem);
+            if (!validation.IsValid)
+            {
+                _snackbar.Add(validation.Errors.First().ErrorMessage, Severity.Error);
+                return;
+            }
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            _model.AttributeValues = activeValues;
+
+            var result = await _adminAttributeService.CreateAsync(_model);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertAttributeErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Tạo thuộc tính thành công.", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.AttributeDetail, result.Data.Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertAttributeErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tạo thuộc tính.",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                : message
+        };
+    }
 }
