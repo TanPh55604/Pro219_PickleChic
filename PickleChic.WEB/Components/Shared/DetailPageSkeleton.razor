@@ -1,0 +1,108 @@
+﻿<div class="mx-auto w-full @MaxWidthClass !space-y-6">
+    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+        <MudSkeleton Width="220px" Height="32px" Animation="Animation.Wave" />
+
+        <div class="flex flex-wrap !gap-3">
+            <MudSkeleton Width="120px" Height="42px" Animation="Animation.Wave" Class="!rounded-xl" />
+            <MudSkeleton Width="130px" Height="42px" Animation="Animation.Wave" Class="!rounded-xl" />
+            @if (ShowDeleteButton)
+            {
+                <MudSkeleton Width="80px" Height="42px" Animation="Animation.Wave" Class="!rounded-xl" />
+            }
+        </div>
+    </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
+        <div class="!border-b !border-slate-200 !p-6 md:!p-8">
+            <div class="flex flex-col !gap-5 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col items-center !gap-4 text-center md:flex-row md:text-left">
+                    @if (ShowImage)
+                    {
+                        <MudSkeleton SkeletonType="SkeletonType.Rectangle"
+                                     Width="128px"
+                                     Height="128px"
+                                     Animation="Animation.Wave"
+                                     Class="shrink-0 !rounded-2xl" />
+                    }
+
+                    <div class="!space-y-3">
+                        <MudSkeleton Width="280px" Height="32px" Animation="Animation.Wave" />
+                        @if (ShowSubtitle)
+                        {
+                            <MudSkeleton Width="200px" Height="20px" Animation="Animation.Wave" />
+                        }
+                    </div>
+                </div>
+
+                @if (ShowStatusBadge)
+                {
+                    <MudSkeleton Width="140px" Height="36px" Animation="Animation.Wave" Class="!rounded-full" />
+                }
+            </div>
+        </div>
+
+        <div class="!p-6 md:!p-8">
+            @if (InfoFieldCount > 0 || DescriptionBlockCount > 0)
+            {
+                <MudSkeleton Width="180px" Height="24px" Animation="Animation.Wave" />
+            }
+
+            @if (InfoFieldCount > 0)
+            {
+                <div class="!mt-5 grid !gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    @for (var i = 0; i < InfoFieldCount; i++)
+                    {
+                        <div class="!rounded-xl !bg-slate-50 !p-4">
+                            <MudSkeleton Width="100px" Height="16px" Animation="Animation.Wave" />
+                            <MudSkeleton Width="70%" Height="20px" Animation="Animation.Wave" Class="!mt-3" />
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (DescriptionBlockCount > 0)
+            {
+                <div class="!mt-6 !space-y-5">
+                    @for (var i = 0; i < DescriptionBlockCount; i++)
+                    {
+                        <div class="!rounded-2xl !border !border-slate-200 !p-5">
+                            <MudSkeleton Width="120px" Height="16px" Animation="Animation.Wave" />
+                            <MudSkeleton Width="100%" Height="20px" Animation="Animation.Wave" Class="!mt-3" />
+                            <MudSkeleton Width="85%" Height="20px" Animation="Animation.Wave" Class="!mt-2" />
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (TableRowCount > 0)
+            {
+                <div class="!mt-6 !space-y-3">
+                    <MudSkeleton Width="160px" Height="24px" Animation="Animation.Wave" />
+
+                    @for (var i = 0; i < TableRowCount; i++)
+                    {
+                        <MudSkeleton Width="100%" Height="48px" Animation="Animation.Wave" Class="!rounded-lg" />
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string MaxWidthClass { get; set; } = "max-w-6xl";
+
+    [Parameter] public bool ShowImage { get; set; }
+
+    [Parameter] public bool ShowSubtitle { get; set; }
+
+    [Parameter] public bool ShowStatusBadge { get; set; } = true;
+
+    [Parameter] public bool ShowDeleteButton { get; set; } = true;
+
+    [Parameter] public int InfoFieldCount { get; set; } = 4;
+
+    [Parameter] public int DescriptionBlockCount { get; set; }
+
+    [Parameter] public int TableRowCount { get; set; }
+}
