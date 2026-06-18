@@ -1,4 +1,4 @@
-﻿@page "/{StatusCode:int}"
+@page "/{StatusCode:int}"
 
 @layout PublicLayout
 
@@ -43,20 +43,20 @@
 
     private string Description => StatusCode switch
     {
-        401 => "Bạn cần đăng nhập để truy cập chức năng hoặc tài nguyên này.",
-        403 => "Bạn không có quyền truy cập vào chức năng hoặc tài nguyên này.",
-        404 => "Trang bạn đang truy cập không tồn tại, đã bị di chuyển hoặc đường dẫn không còn hợp lệ.",
-        500 => "Hệ thống đang gặp sự cố khi xử lý yêu cầu của bạn. Vui lòng thử lại sau.",
-        _ => "Đã có lỗi xảy ra trong quá trình xử lý yêu cầu của bạn. Vui lòng thử lại sau."
+        401 => "Bạn cần đăng nhập để truy cập chức năng hoặc tài nguyên này",
+        403 => "Bạn không có quyền truy cập vào chức năng hoặc tài nguyên này",
+        404 => "Trang bạn đang truy cập không tồn tại, đã bị di chuyển hoặc đường dẫn không còn hợp lệ",
+        500 => "Hệ thống đang gặp sự cố khi xử lý yêu cầu của bạn. Vui lòng thử lại sau",
+        _ => "Đã có lỗi xảy ra trong quá trình xử lý yêu cầu của bạn. Vui lòng thử lại sau"
     };
 
     private string Hint => StatusCode switch
     {
-        401 => "Nếu bạn đang ở khu vực quản trị, vui lòng đăng nhập bằng tài khoản có quyền phù hợp.",
-        403 => "Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ tài khoản quản trị có quyền cao hơn để được cấp quyền phù hợp.",
-        404 => "Nếu bạn đang thao tác trong khu vực quản trị, hãy quay lại trang quản trị. Nếu bạn là khách hàng, hãy quay lại trang bán hàng.",
-        500 => "Nếu lỗi tiếp tục xảy ra, hãy ghi lại thao tác vừa thực hiện và gửi cho bộ phận kỹ thuật để kiểm tra.",
-        _ => "Nếu lỗi tiếp tục xảy ra, hãy quay lại trang trước đó hoặc liên hệ bộ phận kỹ thuật để được hỗ trợ."
+        401 => "Nếu bạn đang ở khu vực quản trị, vui lòng đăng nhập bằng tài khoản có quyền phù hợp",
+        403 => "Nếu bạn cho rằng đây là nhầm lẫn, vui lòng liên hệ tài khoản quản trị có quyền cao hơn để được cấp quyền phù hợp",
+        404 => "Nếu bạn đang thao tác trong khu vực quản trị, hãy quay lại trang quản trị. Nếu bạn là khách hàng, hãy quay lại trang bán hàng",
+        500 => "Nếu lỗi tiếp tục xảy ra, hãy ghi lại thao tác vừa thực hiện và gửi cho bộ phận kỹ thuật để kiểm tra",
+        _ => "Nếu lỗi tiếp tục xảy ra, hãy quay lại trang trước đó hoặc liên hệ bộ phận kỹ thuật để được hỗ trợ"
     };
 
     private string Icon => StatusCode switch

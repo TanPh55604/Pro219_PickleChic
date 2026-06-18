@@ -45,6 +45,7 @@ public class ProductAttributeModifyWithFlagDto
 {
     public int Id { get; set; }
     public string AttributeName { get; set; } = null!;
+    public int? CategoryId { get; set; }
     public List<AttributeValueModifyWithFlagDto> AttributeValues { get; set; } = new();
 }
 

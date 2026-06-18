@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Customer.Login)]
+@attribute [Route(RouterConfig.Customer.Login)]
 @layout MainLayout
 
 <PageTitle>@Constant.metaDataCustomer Login</PageTitle>
@@ -94,7 +94,7 @@
                             disabled="@_isSubmitting"
                             class="inline-flex w-full items-center justify-center !gap-2 !rounded-full !bg-black !px-6 !py-3 text-sm font-bold !text-white shadow-sm transition hover:!bg-red-600 hover:!text-white disabled:!cursor-not-allowed disabled:!opacity-70">
                                 <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" />
-                                @(_isSubmitting ? "Đang đăng nhập..." : "Đăng nhập")
+                                @(_isSubmitting ? "Đang đăng nhập.." : "Đăng nhập")
                             </button>
                         </div>
                     </MudForm>
@@ -151,7 +151,7 @@
                 return;
             }
 
-            _snackbar.Add("Đăng nhập thành công.", Severity.Success);
+            _snackbar.Add("Đăng nhập thành công", Severity.Success);
 
             if (result.Data?.FirstLogin == true)
             {
@@ -171,11 +171,11 @@
     {
         return message switch
         {
-            "Unauthorized" => "Email hoặc mật khẩu không chính xác.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Unauthorized" => "Email hoặc mật khẩu không chính xác",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Đăng nhập không thành công. Vui lòng thử lại."
+                ? "Đăng nhập không thành công. Vui lòng thử lại"
                 : message
         };
     }

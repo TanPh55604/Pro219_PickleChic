@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.CategoryDetail)]
+@attribute [Route(RouterConfig.Admin.CategoryDetail)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Category Detail</PageTitle>
@@ -118,14 +118,14 @@ else
                     <div class="!rounded-2xl !border !border-slate-200 !p-5">
                         <p class="text-sm font-medium text-slate-500">Đường dẫn ảnh</p>
                         <p class="!mt-3 text-base leading-7 break-all text-slate-800">
-                            @(string.IsNullOrWhiteSpace(_model.LinkImage) ? "Chưa có đường dẫn ảnh." : _model.LinkImage)
+                            @(string.IsNullOrWhiteSpace(_model.LinkImage) ? "Chưa có đường dẫn ảnh" : _model.LinkImage)
                         </p>
                     </div>
 
                     <div class="!rounded-2xl !border !border-slate-200 !p-5">
                         <p class="text-sm font-medium text-slate-500">Mô tả</p>
                         <p class="!mt-3 text-base leading-8 text-slate-800">
-                            @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả." : _model.Description)
+                            @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả" : _model.Description)
                         </p>
                     </div>
                 </div>
@@ -199,7 +199,7 @@ else
             return;
         }
 
-        _snackbar.Add("Xóa thể loại thành công.", Severity.Success);
+        _snackbar.Add("Xóa thể loại thành công", Severity.Success);
 
         _navigation.NavigateTo(RouterConfig.Admin.Categories, replace: true);
     }
@@ -208,12 +208,12 @@ else
     {
         return message switch
         {
-            "Không tìm thấy" => "Không tìm thấy thể loại.",
-            "Db Error" => "Không thể xử lý dữ liệu thể loại.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Không tìm thấy" => "Không tìm thấy thể loại",
+            "Db Error" => "Không thể xử lý dữ liệu thể loại",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

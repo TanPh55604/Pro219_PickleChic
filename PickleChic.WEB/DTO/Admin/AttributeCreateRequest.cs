@@ -4,6 +4,8 @@ namespace PickleChic.WEB.DTO.Admin
     {
         public string AttributeName { get; set; } = string.Empty;
 
+        public int? CategoryId { get; set; }
+
         public List<AttributeValueItemRequest> AttributeValues { get; set; } = new();
     }
 

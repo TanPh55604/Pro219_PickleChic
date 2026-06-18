@@ -1,4 +1,4 @@
-﻿using PickleChic.WEB.Services.Auth;
+using PickleChic.WEB.Services.Auth;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -188,7 +188,7 @@ namespace PickleChic.WEB.Services.Api
             catch
             {
                 return ApiResult<TResponse>.Fail(
-                    message: "Không thể đọc dữ liệu trả về từ server.",
+                    message: "Không thể đọc dữ liệu trả về từ server",
                     statusCode: statusCode);
             }
         }
@@ -197,7 +197,7 @@ namespace PickleChic.WEB.Services.Api
         {
             if (string.IsNullOrWhiteSpace(content))
             {
-                return "Có lỗi xảy ra.";
+                return "Có lỗi xảy ra";
             }
 
             content = content.Trim();
@@ -209,7 +209,7 @@ namespace PickleChic.WEB.Services.Api
                     var message = JsonSerializer.Deserialize<string>(content);
 
                     return string.IsNullOrWhiteSpace(message)
-                        ? "Có lỗi xảy ra."
+                        ? "Có lỗi xảy ra"
                         : message;
                 }
                 catch

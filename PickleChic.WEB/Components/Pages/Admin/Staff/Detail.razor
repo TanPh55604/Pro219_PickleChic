@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.StaffDetail)]
+@attribute [Route(RouterConfig.Admin.StaffDetail)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Staff Detail</PageTitle>
@@ -177,12 +177,12 @@ else
     {
         return message switch
         {
-            "Không tìm thấy" => "Không tìm thấy quản trị viên.",
-            "Db Error" => "Không thể tải thông tin quản trị viên.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Không tìm thấy" => "Không tìm thấy quản trị viên",
+            "Db Error" => "Không thể tải thông tin quản trị viên",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

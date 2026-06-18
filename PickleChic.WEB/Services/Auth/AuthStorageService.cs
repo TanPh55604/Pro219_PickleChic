@@ -1,4 +1,4 @@
-﻿using PickleChic.WEB.Model;
+using PickleChic.WEB.Model;
 using PickleChic.WEB.Services.Storage;
 
 namespace PickleChic.WEB.Services.Auth
@@ -24,7 +24,7 @@ namespace PickleChic.WEB.Services.Auth
         {
             if (string.IsNullOrWhiteSpace(accessToken))
             {
-                throw new ArgumentException("Access token is required.", nameof(accessToken));
+                throw new ArgumentException("Access token is required", nameof(accessToken));
             }
 
             await _localStorage.SetItemAsync(AccessTokenKey, accessToken);

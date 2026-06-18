@@ -1,37 +1,230 @@
-﻿@attribute [Route(RouterConfig.Admin.ProductVariantDetail)]
+@attribute [Route(RouterConfig.Admin.ProductVariantDetail)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Product Variant Detail</PageTitle>
 
-<div class="mx-auto w-full max-w-7xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Chi tiết biến thể sản phẩm</h1>
+@if (_isLoading)
+{
+    <DetailPageSkeleton MaxWidthClass="max-w-6xl"
+                        ShowSubtitle="true"
+                        InfoFieldCount="5"
+                        TableRowCount="0" />
+}
+else
+{
+    <div class="mx-auto w-full max-w-6xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Chi tiết biến thể</h1>
+                <p class="!mt-1 text-sm text-slate-500">
+                    Sản phẩm:
+                    <a href="@GetProductDetailUrl()"
+                       class="font-semibold text-slate-800 underline-offset-2 hover:underline">
+                        @_productName
+                    </a>
+                </p>
+            </div>
+
+            <div class="flex flex-wrap !gap-3">
+                <a href="@GetProductDetailUrl()"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                    Quay lại sản phẩm
+                </a>
+
+                <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditProductVariant, Id)"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                    Cập nhật
+                </a>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Delete"
+                           OnClick="OpenDeleteDialog"
+                           Class="!rounded-xl !px-5 !py-2.5 !normal-case">
+                    Xóa
+                </MudButton>
+            </div>
         </div>
 
-        <div class="flex flex-wrap !gap-3">
-            <a href="@RouterConfig.Admin.ProductVariants"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-                Quay lại
-            </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
+            <div class="!border-b !border-slate-200 !p-6 md:!p-8">
+                <div class="flex flex-col !gap-5 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">
+                            @(string.IsNullOrWhiteSpace(_model.VariantName) ? _model.SKU : _model.VariantName)
+                        </h2>
+                        <p class="!mt-2 font-mono text-sm text-slate-500">@_model.SKU</p>
+                    </div>
 
-            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditProductVariant, Id)"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
-                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
-                Cập nhật
-            </a>
+                    @if (_model.IsActive)
+                    {
+                        <span class="inline-flex items-center !rounded-full !bg-green-50 !px-4 !py-2 text-sm font-bold !text-green-700">
+                            Đang hoạt động
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center !rounded-full !bg-slate-100 !px-4 !py-2 text-sm font-bold !text-slate-700">
+                            Tạm ẩn
+                        </span>
+                    }
+                </div>
+            </div>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Error"
-                       StartIcon="@Icons.Material.Filled.Delete"
-                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
-                Xóa
-            </MudButton>
+            <div class="!p-6 md:!p-8">
+                <h3 class="text-lg font-bold text-slate-900">Thông tin biến thể</h3>
+
+                <div class="!mt-5 grid !gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Giá bán</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.Price.ToString("N0") đ
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Tồn kho</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.StockQuantity
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Trạng thái</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @(_model.IsActive ? "Đang hoạt động" : "Tạm ẩn")
+                        </p>
+                    </div>
+                </div>
+
+                <div class="!mt-8">
+                    <h3 class="text-lg font-bold text-slate-900">Thuộc tính</h3>
+
+                    @if (_model.Attributes.Count == 0)
+                    {
+                        <div class="!mt-4 !rounded-xl !border !border-dashed !border-slate-300 !p-6 text-center text-sm text-slate-500">
+                            Chưa gán thuộc tính
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="!mt-4 grid !gap-3 md:grid-cols-2">
+                            @foreach (var attr in _model.Attributes)
+                            {
+                                <div class="!rounded-xl !border !border-slate-200 !p-4">
+                                    <p class="text-sm text-slate-500">@attr.AttributeName</p>
+                                    <p class="!mt-2 text-base font-semibold text-slate-900">@attr.Value</p>
+                                    @if (!string.IsNullOrWhiteSpace(attr.Note))
+                                    {
+                                        <p class="!mt-1 text-xs text-slate-500">@attr.Note</p>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private ProductVariantSummaryResponse _model = new();
+
+    private string _productName = string.Empty;
+
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVariantAsync();
+    }
+
+    private async Task LoadVariantAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var variantResult = await _adminProductVariantService.GetByIdWithDetailsAsync(Id);
+
+            if (!variantResult.Success || variantResult.Data is null)
+            {
+                _snackbar.Add(ConvertVariantErrorMessage(variantResult.Message), Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Products, replace: true);
+                return;
+            }
+
+            _model = variantResult.Data;
+
+            var productResult = await _adminProductService.GetByIdWithDetailsAsync(_model.ProductId);
+
+            if (productResult.Success && productResult.Data is not null)
+            {
+                _productName = productResult.Data.ProductName;
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OpenDeleteDialog()
+    {
+        var parameters = new DialogParameters<ProductVariantDeleteDialog>
+        {
+            { x => x.ProductVariantItem, _model }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<ProductVariantDeleteDialog>("Xóa biến thể", parameters, options);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        var result = await _adminProductVariantService.DeleteAsync(Id);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(ConvertVariantErrorMessage(result.Message), Severity.Error);
+            return;
+        }
+
+        _snackbar.Add("Xóa biến thể thành công", Severity.Success);
+
+        _navigation.NavigateTo(GetProductDetailUrl(), replace: true);
+    }
+
+    private string GetProductDetailUrl()
+    {
+        return RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, _model.ProductId);
+    }
+
+    private static string ConvertVariantErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Không tìm thấy" => "Không tìm thấy biến thể",
+            "Db Error" => "Không thể xử lý dữ liệu biến thể",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
 }

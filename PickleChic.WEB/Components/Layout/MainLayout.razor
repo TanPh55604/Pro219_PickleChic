@@ -1,4 +1,4 @@
-﻿@using PickleChic.WEB.Components.Pages.Customer.Cart
+@using PickleChic.WEB.Components.Pages.Customer.Cart
 @inherits LayoutComponentBase
 @implements IDisposable
 
@@ -33,7 +33,7 @@
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    <a href="" class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
 
@@ -123,7 +123,7 @@
         _isAuthenticated = false;
         _currentUser = null;
 
-        _snackbar.Add("Đã đăng xuất.", Severity.Info);
+        _snackbar.Add("Đã đăng xuất", Severity.Info);
 
         _navigation.NavigateTo(RouterConfig.Customer.Home, replace: true);
     }

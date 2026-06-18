@@ -159,9 +159,15 @@ public class PickleChicDbContext : DbContext
             }
         );
 
+        modelBuilder.Entity<ProductAttribute>()
+            .HasOne(a => a.Category)
+            .WithMany()
+            .HasForeignKey(a => a.CategoryId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<ProductAttribute>().HasData(
-            new ProductAttribute { Id = 1, AttributeName = "Kích thước" },
-            new ProductAttribute { Id = 2, AttributeName = "Màu sắc" }
+            new ProductAttribute { Id = 1, AttributeName = "Kích thước", CategoryId = 1 },
+            new ProductAttribute { Id = 2, AttributeName = "Màu sắc", CategoryId = 1 }
         );
 
         modelBuilder.Entity<AttributeValue>().HasData(

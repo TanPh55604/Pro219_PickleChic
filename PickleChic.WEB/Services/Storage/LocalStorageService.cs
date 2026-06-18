@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Microsoft.JSInterop;
 
 namespace PickleChic.WEB.Services.Storage
@@ -21,7 +21,7 @@ namespace PickleChic.WEB.Services.Storage
         {
             if (string.IsNullOrWhiteSpace(key))
             {
-                throw new ArgumentException("LocalStorage key is required.", nameof(key));
+                throw new ArgumentException("LocalStorage key is required", nameof(key));
             }
 
             var json = JsonSerializer.Serialize(value, _jsonOptions);
@@ -36,7 +36,7 @@ namespace PickleChic.WEB.Services.Storage
         {
             if (string.IsNullOrWhiteSpace(key))
             {
-                throw new ArgumentException("LocalStorage key is required.", nameof(key));
+                throw new ArgumentException("LocalStorage key is required", nameof(key));
             }
 
             var json = await _jsRuntime.InvokeAsync<string?>(
@@ -55,7 +55,7 @@ namespace PickleChic.WEB.Services.Storage
         {
             if (string.IsNullOrWhiteSpace(key))
             {
-                throw new ArgumentException("LocalStorage key is required.", nameof(key));
+                throw new ArgumentException("LocalStorage key is required", nameof(key));
             }
 
             var value = await _jsRuntime.InvokeAsync<string?>(
@@ -81,7 +81,7 @@ namespace PickleChic.WEB.Services.Storage
         {
             if (string.IsNullOrWhiteSpace(key))
             {
-                throw new ArgumentException("LocalStorage key is required.", nameof(key));
+                throw new ArgumentException("LocalStorage key is required", nameof(key));
             }
 
             await _jsRuntime.InvokeVoidAsync(
@@ -98,7 +98,7 @@ namespace PickleChic.WEB.Services.Storage
         {
             if (string.IsNullOrWhiteSpace(key))
             {
-                throw new ArgumentException("LocalStorage key is required.", nameof(key));
+                throw new ArgumentException("LocalStorage key is required", nameof(key));
             }
 
             var value = await _jsRuntime.InvokeAsync<string?>(

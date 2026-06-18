@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.Customers)]
+@attribute [Route(RouterConfig.Admin.Customers)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Customers</PageTitle>
@@ -19,7 +19,7 @@
     <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
         <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
             <MudTextField @bind-Value="_searchText"
-                          Placeholder="Tìm kiếm theo username, tên, email, số điện thoại..."
+                          Placeholder="Tìm kiếm theo username, tên, email, số điện thoại.."
                           Variant="Variant.Outlined"
                           Margin="Margin.Dense"
                           Adornment="Adornment.Start"

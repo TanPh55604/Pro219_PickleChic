@@ -23,9 +23,25 @@ namespace PickleChic.WEB.Services.Admin
                 url += $"?keyword={Uri.EscapeDataString(keyword.Trim())}";
             }
 
-            return await _apiProvider.GetAsync<List<AttributeResponse>>(
+            var result = await _apiProvider.GetAsync<List<AttributeResponse>>(
                 url,
                 requireAuth: true);
+
+            return NormalizeListResult(result);
+        }
+
+        public async Task<ApiResult<List<AttributeResponse>>> GetAllByCategoryIdAsync(int categoryId)
+        {
+            if (categoryId <= 0)
+            {
+                return ApiResult<List<AttributeResponse>>.Ok(new List<AttributeResponse>());
+            }
+
+            var result = await _apiProvider.GetAsync<List<AttributeResponse>>(
+                EndPointConfig.Attribute.GetAllByCategoryId(categoryId),
+                requireAuth: true);
+
+            return NormalizeListResult(result);
         }
 
         public async Task<ApiResult<AttributeResponse>> GetByIdAsync(int id)
@@ -40,6 +56,7 @@ namespace PickleChic.WEB.Services.Admin
             var request = new AttributeCreateRequest
             {
                 AttributeName = model.AttributeName,
+                CategoryId = model.CategoryId,
                 AttributeValues = model.AttributeValues
                     .Where(v => !string.IsNullOrWhiteSpace(v.Value))
                     .Select(v => new AttributeValueItemRequest
@@ -61,11 +78,37 @@ namespace PickleChic.WEB.Services.Admin
             var request = new AttributeUpdateRequest
             {
                 Id = model.Id,
-                AttributeName = model.AttributeName
+                AttributeName = model.AttributeName,
+                CategoryId = model.CategoryId
             };
 
             return await _apiProvider.PatchAsync<AttributeUpdateRequest, AttributeResponse>(
                 EndPointConfig.Attribute.Update,
+                request,
+                requireAuth: true);
+        }
+
+        public async Task<ApiResult<AttributeResponse>> ModifyWithValuesAndFlagAsync(AttributeModel model)
+        {
+            var request = new AttributeModifyWithFlagRequest
+            {
+                Id = model.Id,
+                AttributeName = model.AttributeName.Trim(),
+                CategoryId = model.CategoryId,
+                AttributeValues = model.AttributeValues
+                    .Where(v => v.FlagAction != AttributeValueFlagAction.None)
+                    .Select(v => new AttributeValueModifyWithFlagRequest
+                    {
+                        Id = v.Id,
+                        Value = v.Value.Trim(),
+                        Note = v.Note?.Trim(),
+                        FlagAction = v.FlagAction
+                    })
+                    .ToList()
+            };
+
+            return await _apiProvider.PostAsync<AttributeModifyWithFlagRequest, AttributeResponse>(
+                EndPointConfig.Attribute.ModifyWithFlag,
                 request,
                 requireAuth: true);
         }
@@ -113,6 +156,19 @@ namespace PickleChic.WEB.Services.Admin
             return await _apiProvider.DeleteAsync<bool>(
                 EndPointConfig.AttributeValue.Delete(id),
                 requireAuth: true);
+        }
+
+        private static ApiResult<List<AttributeResponse>> NormalizeListResult(
+            ApiResult<List<AttributeResponse>> result)
+        {
+            if (result.Success && result.Data is null)
+            {
+                return ApiResult<List<AttributeResponse>>.Ok(
+                    new List<AttributeResponse>(),
+                    statusCode: result.StatusCode);
+            }
+
+            return result;
         }
     }
 }

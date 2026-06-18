@@ -8,11 +8,15 @@ namespace PickleChic.WEB.Services.Admin
     {
         Task<ApiResult<List<AttributeResponse>>> GetAllAsync(string? keyword = null);
 
+        Task<ApiResult<List<AttributeResponse>>> GetAllByCategoryIdAsync(int categoryId);
+
         Task<ApiResult<AttributeResponse>> GetByIdAsync(int id);
 
         Task<ApiResult<AttributeResponse>> CreateAsync(AttributeModel model);
 
         Task<ApiResult<AttributeResponse>> UpdateAsync(AttributeModel model);
+
+        Task<ApiResult<AttributeResponse>> ModifyWithValuesAndFlagAsync(AttributeModel model);
 
         Task<ApiResult<bool>> DeleteAsync(int id);
 

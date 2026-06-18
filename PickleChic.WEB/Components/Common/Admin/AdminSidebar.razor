@@ -1,4 +1,4 @@
-﻿<aside class="hidden !h-screen !w-72 shrink-0 flex-col !border-r !border-slate-200 !bg-white lg:flex">
+<aside class="hidden !h-screen !w-72 shrink-0 flex-col !border-r !border-slate-200 !bg-white lg:flex">
     <div class="flex !h-16 shrink-0 items-center gap-3 !border-b !border-slate-200 !px-6">
         <MudAvatar Size="Size.Medium" class="flex !h-10 !w-10 items-center justify-center !rounded-xl !bg-slate-900 !text-white shadow-sm">
             P
@@ -47,10 +47,6 @@
             <AdminNavItem Href="@RouterConfig.Admin.Products"
                           Icon="@Icons.Material.Filled.Inventory2"
                           Text="Sản phẩm" />
-
-            <AdminNavItem Href="@RouterConfig.Admin.ProductVariants"
-                          Icon="@Icons.Material.Filled.ViewInAr"
-                          Text="Biến thể sản phẩm" />
 
             <AdminNavItem Href="@RouterConfig.Admin.Categories"
                           Icon="@Icons.Material.Filled.Category"
@@ -141,7 +137,7 @@
                     <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
                 </span>
 
-                <span>@(_isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất")</span>
+                <span>@(_isLoggingOut ? "Đang đăng xuất.." : "Đăng xuất")</span>
             </button>
         </div>
     </div>
@@ -163,7 +159,7 @@
         {
             await _authService.LogoutAsync();
 
-            _snackbar.Add("Đã đăng xuất.", Severity.Success);
+            _snackbar.Add("Đã đăng xuất", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.Admin.Login, replace: true);
         }

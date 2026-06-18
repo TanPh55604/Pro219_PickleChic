@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Customer.Checkout)]
+@attribute [Route(RouterConfig.Customer.Checkout)]
 @layout MainLayout
 
 <PageTitle>PickleChic WEB - Checkout</PageTitle>
@@ -488,13 +488,13 @@
 
         if (string.IsNullOrWhiteSpace(_couponCode))
         {
-            _couponError = "Vui lòng nhập mã giảm giá.";
+            _couponError = "Vui lòng nhập mã giảm giá";
             return;
         }
 
         if (!_couponCode.Equals("PICKLE500", StringComparison.OrdinalIgnoreCase))
         {
-            _couponError = "Mã giảm giá không hợp lệ.";
+            _couponError = "Mã giảm giá không hợp lệ";
             return;
         }
 
@@ -518,11 +518,11 @@
 
         if (_paymentMethod == PaymentMethod.BankTransfer)
         {
-            _orderMessage = "UI demo: Sau bước này sẽ chuyển sang trang thanh toán chuyển khoản.";
+            _orderMessage = "UI demo: Sau bước này sẽ chuyển sang trang thanh toán chuyển khoản";
             return;
         }
 
-        _orderMessage = "UI demo: Đặt hàng tiền mặt thành công.";
+        _orderMessage = "UI demo: Đặt hàng tiền mặt thành công";
     }
 
     private string GetPaymentMethodClass(PaymentMethod method)

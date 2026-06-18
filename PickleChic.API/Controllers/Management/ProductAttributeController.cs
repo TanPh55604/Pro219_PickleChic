@@ -144,7 +144,11 @@ public class ProductAttributeController : ControllerBase
         try
         {
             var valuesTuple = dto.AttributeValues.Select(v => (v.Id, v.Value, v.Note, v.FlagAction)).ToList();
-            var updated = await _repository.UpdateWithValuesAndFlagAsync(dto.Id, dto.AttributeName, valuesTuple);
+            var updated = await _repository.UpdateWithValuesAndFlagAsync(
+                dto.Id,
+                dto.AttributeName,
+                dto.CategoryId,
+                valuesTuple);
             if (updated is null)
                 return NotFound();
 
@@ -165,6 +169,7 @@ public class ProductAttributeController : ControllerBase
             {
                 Id = dto.Id,
                 AttributeName = dto.AttributeName,
+                CategoryId = dto.CategoryId
             };
 
             var updated = await _repository.UpdateAsync(entity);

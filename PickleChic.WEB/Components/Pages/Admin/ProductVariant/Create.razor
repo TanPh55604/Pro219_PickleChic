@@ -1,21 +1,365 @@
-﻿@attribute [Route(RouterConfig.Admin.CreateProductVariant)]
+@attribute [Route(RouterConfig.Admin.CreateProductVariant)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Create Product Variant</PageTitle>
 
-<div class="mx-auto w-full max-w-5xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Tạo biến thể sản phẩm</h1>
+@if (_isLoading)
+{
+    <EditPageSkeleton FieldCount="4" ExtraSectionCount="2" HasFullWidthField="false" />
+}
+else
+{
+    <div class="mx-auto w-full max-w-5xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Tạo biến thể sản phẩm</h1>
+                <p class="!mt-1 text-sm text-slate-500">
+                    Sản phẩm: <span class="font-semibold text-slate-800">@_productName</span>
+                </p>
+            </div>
+
+            <a href="@GetProductDetailUrl()"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                Quay lại
+            </a>
         </div>
 
-        <a href="@RouterConfig.Admin.ProductVariants"
-           class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-            Quay lại
-        </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+            <MudForm @ref="_form"
+                     Model="@_model"
+                     Validation="@_validator.ValidateValue">
+                <div class="!space-y-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Thông tin biến thể</h2>
+                    </div>
+
+                    <div class="grid !gap-5 md:grid-cols-2">
+                        <MudTextField @bind-Value="_model.SKU"
+                                      For="@(() => _model.SKU)"
+                                      Label="SKU"
+                                      Placeholder="Nhập mã SKU"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      Immediate="true" />
+
+                        <MudNumericField T="decimal"
+                                         @bind-Value="_model.Price"
+                                         For="@(() => _model.Price)"
+                                         Label="Giá (VNĐ)"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Format="N0"
+                                         Required="true"
+                                         Immediate="true" />
+
+                        <MudNumericField T="int"
+                                         @bind-Value="_model.StockQuantity"
+                                         For="@(() => _model.StockQuantity)"
+                                         Label="Tồn kho"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Required="true"
+                                         Immediate="true" />
+
+                        <MudSelect T="int"
+                                   @bind-Value="_model.Status"
+                                   For="@(() => _model.Status)"
+                                   Label="Trạng thái"
+                                   Variant="Variant.Outlined">
+                            <MudSelectItem T="int" Value="1">Đang hoạt động</MudSelectItem>
+                            <MudSelectItem T="int" Value="0">Tạm ẩn</MudSelectItem>
+                        </MudSelect>
+
+                        <div class="md:col-span-2">
+                            <MudTextField @bind-Value="_model.VariantName"
+                                          For="@(() => _model.VariantName)"
+                                          Label="Tên biến thể"
+                                          Placeholder="Tự động gợi ý theo thuộc tính đã chọn"
+                                          Variant="Variant.Outlined"
+                                          Immediate="true"
+                                          HelperText="Có thể chỉnh sửa tên sau khi chọn thuộc tính" />
+                        </div>
+                    </div>
+
+                    <div class="!space-y-4">
+                        <h3 class="text-base font-bold text-slate-900">Thuộc tính</h3>
+
+                        @if (_attributePickers.Count == 0)
+                        {
+                            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Class="!rounded-xl">
+                                Thể loại này chưa có thuộc tính nào
+                                <a href="@RouterConfig.Admin.CreateAttribute" class="!ml-1 font-semibold underline">
+                                    Tạo thuộc tính
+                                </a>
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <div class="grid !gap-4 md:grid-cols-2">
+                                @foreach (var picker in _attributePickers)
+                                {
+                                    <MudSelect T="int"
+                                               Value="picker.SelectedValueId"
+                                               ValueChanged="@(value => OnAttributeValueChanged(picker, value))"
+                                               Label="@picker.AttributeName"
+                                               Variant="Variant.Outlined"
+                                               Required="true">
+                                        <MudSelectItem T="int" Value="0" Disabled="true">-- Chọn @picker.AttributeName --</MudSelectItem>
+                                        @foreach (var option in picker.Values)
+                                        {
+                                            <MudSelectItem T="int" Value="@option.Id">@option.Value</MudSelectItem>
+                                        }
+                                    </MudSelect>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Dark"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   OnClick="SubmitAsync"
+                                   Disabled="@_isSubmitting"
+                                   Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                            @(_isSubmitting ? "Đang lưu.." : "Lưu")
+                        </MudButton>
+                    </div>
+                </div>
+            </MudForm>
+        </div>
     </div>
-</div>
+}
 
 @code {
+    [SupplyParameterFromQuery(Name = "productId")]
+    public int ProductId { get; set; }
+
+    private MudForm? _form;
+
+    private readonly ProductVariantModel _model = new()
+    {
+        Status = 1
+    };
+
+    private readonly ProductVariantSchema.CreateUpdate _validator = new();
+
+    private string _productName = string.Empty;
+
+    private int _categoryId;
+
+    private List<ProductVariantSummaryResponse> _existingVariants = new();
+
+    private List<ProductVariantAttributePickerModel> _attributePickers = new();
+
+    private bool _isLoading = true;
+
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (ProductId <= 0)
+        {
+            _snackbar.Add("Thiếu thông tin sản phẩm", Severity.Error);
+            _navigation.NavigateTo(RouterConfig.Admin.Products, replace: true);
+            return;
+        }
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var productResult = await _adminProductService.GetByIdWithDetailsAsync(ProductId);
+
+            if (!productResult.Success || productResult.Data is null)
+            {
+                _snackbar.Add("Không tìm thấy sản phẩm", Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Products, replace: true);
+                return;
+            }
+
+            _categoryId = productResult.Data.CategoryId;
+            var attributeResult = await _adminAttributeService.GetAllByCategoryIdAsync(_categoryId);
+
+            if (!attributeResult.Success)
+            {
+                _snackbar.Add("Không thể tải danh sách thuộc tính", Severity.Error);
+                return;
+            }
+
+            _productName = productResult.Data.ProductName;
+            _existingVariants = productResult.Data.ProductVariants ?? new();
+            _model.ProductId = ProductId;
+
+            BuildAttributePickers(attributeResult.Data ?? new());
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void BuildAttributePickers(List<AttributeResponse> attributes)
+    {
+        _attributePickers = attributes
+            .Where(a => a.AttributeValues?.Count > 0)
+            .Select(a => new ProductVariantAttributePickerModel
+            {
+                AttributeId = a.Id,
+                AttributeName = a.AttributeName,
+                Values = a.AttributeValues!.Select(v => new AttributeValueOptionModel
+                {
+                    Id = v.Id,
+                    Value = v.Value,
+                    Note = v.Note
+                }).ToList()
+            })
+            .ToList();
+    }
+
+    private void OnAttributeValueChanged(ProductVariantAttributePickerModel picker, int valueId)
+    {
+        picker.SelectedValueId = valueId;
+        UpdateSuggestedVariantName();
+    }
+
+    private void UpdateSuggestedVariantName()
+    {
+        var selectedLabels = _attributePickers
+            .Where(p => p.SelectedValueId > 0)
+            .Select(p => p.Values.First(v => v.Id == p.SelectedValueId).Value)
+            .ToList();
+
+        _model.VariantName = selectedLabels.Count == 0
+            ? _productName
+            : $"{_productName} - {string.Join(" - ", selectedLabels)}";
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null || _isSubmitting)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid)
+        {
+            return;
+        }
+
+        if (!ValidateAttributeSelections(out var attributeValueIds))
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _adminProductVariantService.CreateWithAttributesAsync(_model, attributeValueIds);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertVariantErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Tạo biến thể thành công", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.ProductVariantDetail, result.Data.Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private bool ValidateAttributeSelections(out List<int> attributeValueIds)
+    {
+        attributeValueIds = new List<int>();
+
+        if (_attributePickers.Count == 0)
+        {
+            if (HasDuplicateAttributeCombination(_existingVariants, attributeValueIds))
+            {
+                _snackbar.Add("Sản phẩm đã có biến thể không thuộc tính", Severity.Warning);
+                return false;
+            }
+
+            return true;
+        }
+
+        if (_attributePickers.Any(p => p.SelectedValueId <= 0))
+        {
+            _snackbar.Add("Vui lòng chọn đầy đủ tất cả thuộc tính", Severity.Warning);
+            return false;
+        }
+
+        attributeValueIds = _attributePickers
+            .Select(p => p.SelectedValueId)
+            .OrderBy(id => id)
+            .ToList();
+
+        if (HasDuplicateAttributeCombination(_existingVariants, attributeValueIds))
+        {
+            _snackbar.Add("Tổ hợp thuộc tính này đã tồn tại trên sản phẩm", Severity.Warning);
+            return false;
+        }
+
+        return true;
+    }
+
+    private static bool HasDuplicateAttributeCombination(
+        List<ProductVariantSummaryResponse> existingVariants,
+        List<int> attributeValueIds,
+        int? excludeVariantId = null)
+    {
+        var normalized = attributeValueIds.OrderBy(x => x).ToList();
+
+        foreach (var variant in existingVariants)
+        {
+            if (excludeVariantId.HasValue && variant.Id == excludeVariantId.Value)
+            {
+                continue;
+            }
+
+            var existing = variant.Attributes
+                .Select(a => a.Id)
+                .OrderBy(x => x)
+                .ToList();
+
+            if (existing.SequenceEqual(normalized))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private string GetProductDetailUrl()
+    {
+        return RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, ProductId);
+    }
+
+    private static string ConvertVariantErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tạo biến thể",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
 }

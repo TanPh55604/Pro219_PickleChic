@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.Attributes)]
+@attribute [Route(RouterConfig.Admin.Attributes)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Attributes</PageTitle>
@@ -20,7 +20,7 @@
         <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
             <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
                 <MudTextField @bind-Value="_searchText"
-                              Placeholder="Tìm kiếm theo tên thuộc tính..."
+                              Placeholder="Tìm kiếm theo tên thuộc tính.."
                               Variant="Variant.Outlined"
                               Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search"
@@ -56,6 +56,7 @@
                   RowsPerPage="10">
             <HeaderContent>
                 <MudTh>STT</MudTh>
+                <MudTh>Thể loại</MudTh>
                 <MudTh>Tên thuộc tính</MudTh>
                 <MudTh>Số giá trị</MudTh>
                 <MudTh Class="text-right">Chi tiết</MudTh>
@@ -66,6 +67,10 @@
                     <span class="font-medium text-slate-700">
                         @(_attributes.IndexOf(context) + 1)
                     </span>
+                </MudTd>
+
+                <MudTd DataLabel="Thể loại">
+                    <span class="text-sm text-slate-600">@GetCategoryName(context.CategoryId)</span>
                 </MudTd>
 
                 <MudTd DataLabel="Tên thuộc tính">
@@ -91,7 +96,7 @@
 
             <NoRecordsContent>
                 <div class="!py-10 text-center text-slate-500">
-                    Không có thuộc tính nào.
+                    Không có thuộc tính nào
                 </div>
             </NoRecordsContent>
 
@@ -109,8 +114,13 @@
 
     private List<AttributeResponse> _attributes = new();
 
+    private List<CategoryResponse> _categories = new();
+
     protected override async Task OnInitializedAsync()
     {
+        var categoryResult = await _adminCategoryService.GetAllAsync();
+        _categories = categoryResult.Data?.Where(c => c.IsActive).ToList() ?? new();
+
         await LoadAttributesAsync();
     }
 
@@ -155,15 +165,25 @@
         }
     }
 
+    private string GetCategoryName(int? categoryId)
+    {
+        if (!categoryId.HasValue || categoryId.Value <= 0)
+        {
+            return "Chưa gán";
+        }
+
+        return _categories.FirstOrDefault(c => c.Id == categoryId.Value)?.Name ?? "—";
+    }
+
     private static string ConvertAttributeErrorMessage(string message)
     {
         return message switch
         {
-            "Db Error" => "Không thể tải danh sách thuộc tính.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Db Error" => "Không thể tải danh sách thuộc tính",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

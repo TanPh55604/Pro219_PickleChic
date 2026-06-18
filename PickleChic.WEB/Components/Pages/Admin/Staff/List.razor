@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.Staffs)]
+@attribute [Route(RouterConfig.Admin.Staffs)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Staffs</PageTitle>
@@ -20,7 +20,7 @@
         <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
             <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
                 <MudTextField @bind-Value="_searchText"
-                              Placeholder="Tìm kiếm theo tên quản trị viên..."
+                              Placeholder="Tìm kiếm theo tên quản trị viên.."
                               Variant="Variant.Outlined"
                               
                               Adornment="Adornment.Start"
@@ -203,11 +203,11 @@
     {
         return message switch
         {
-            "Db Error" => "Không thể tải danh sách quản trị viên.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Db Error" => "Không thể tải danh sách quản trị viên",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }
