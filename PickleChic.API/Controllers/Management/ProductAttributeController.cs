@@ -23,6 +23,7 @@ public class ProductAttributeController : ControllerBase
         {
             Id = entity.Id,
             AttributeName = entity.AttributeName,
+            CategoryId = entity.CategoryId,
             AttributeValues = entity.AttributeValues?.Select(v => new AttributeValueDto
             {
                 Id = v.Id,
@@ -58,6 +59,24 @@ public class ProductAttributeController : ControllerBase
         }
     }
 
+    [HttpGet("get-all-by-categoryId")]
+    public async Task<ActionResult<List<ProductAttributeDto>>> GetAllByCategory(int categoryId)
+    {
+        try
+        {
+            var result = await _repository.GetAllByCategoryId(categoryId);
+            if (result.Count == 0)
+                return NoContent();
+            var dtos = result.Select(MapToDto).ToList();
+            return Ok(dtos);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Lỗi hệ thống, vui lòng liên hệ quản trị");
+        }
+    }
+
+
     [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<ProductAttributeDto>> GetById(int id)
     {
@@ -83,6 +102,7 @@ public class ProductAttributeController : ControllerBase
             var entity = new ProductAttribute
             {
                 AttributeName = dto.AttributeName,
+                CategoryId =dto.CategoryId
             };
 
             var created = await _repository.AddAsync(entity);
@@ -102,6 +122,7 @@ public class ProductAttributeController : ControllerBase
             var entity = new ProductAttribute
             {
                 AttributeName = dto.AttributeName,
+                CategoryId = dto.CategoryId,
                 AttributeValues = dto.AttributeValues.Select(v => new AttributeValue
                 {
                     Value = v.Value,

@@ -22,4 +22,5 @@ public class Category
     public bool Delete { get; set; }
 
     public ICollection<Product>? Products { get; set; }
+    public ICollection<ProductAttribute>? ProductAttributes { get; set; }
 }

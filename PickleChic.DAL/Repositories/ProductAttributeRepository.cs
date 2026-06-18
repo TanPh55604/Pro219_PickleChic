@@ -20,6 +20,13 @@ public class ProductAttributeRepository
             .ToListAsync();
     }
 
+    public async Task<List<ProductAttribute>> GetAllByCategoryId(int categoryId)
+    {
+        return await _context.ProductAttributes
+            .Include(a => a.AttributeValues).Where(x=>x.CategoryId== categoryId)
+            .ToListAsync();
+    }
+
     public async Task<ProductAttribute?> GetByIdAsync(int id)
     {
         return await _context.ProductAttributes

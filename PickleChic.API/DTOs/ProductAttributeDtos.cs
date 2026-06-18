@@ -3,6 +3,8 @@ namespace PickleChic.API.DTOs;
 public class ProductAttributeCreateDto
 {
     public string AttributeName { get; set; } = null!;
+
+    public int? CategoryId { get; set; } = null;
 }
 
 public class ProductAttributeUpdateDto : ProductAttributeCreateDto
@@ -13,6 +15,7 @@ public class ProductAttributeUpdateDto : ProductAttributeCreateDto
 public class ProductAttributeDto
 {
     public int Id { get; set; }
+    public int? CategoryId { get; set; } = null;
     public string AttributeName { get; set; } = null!;
     public List<AttributeValueDto>? AttributeValues { get; set; }
 }
@@ -26,6 +29,7 @@ public class AttributeValueCreateWithoutIdDto
 public class ProductAttributeWithValuesCreateDto
 {
     public string AttributeName { get; set; } = null!;
+    public int? CategoryId { get; set; } = null;
     public List<AttributeValueCreateWithoutIdDto> AttributeValues { get; set; } = new();
 }
 
