@@ -1,7 +1,8 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using PickleChic.API.DTOs;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
+using System.Threading.Tasks;
 
 namespace PickleChic.API.Controllers.Management;
 
@@ -107,13 +108,30 @@ public class ProductAttributeController : ControllerBase
                     Note = v.Note
                 }).ToList()
             };
-
             var created = await _repository.AddAsync(entity);
             return Ok(MapToDto(created));
         }
         catch (Exception)
         {
             return StatusCode(500, "Db Error");
+        }
+    }
+
+    [HttpPost("modify-with-flag")]
+    public async Task<ActionResult<ProductAttributeDto>> ModifyWithValuesAndFlag([FromBody] ProductAttributeModifyWithFlagDto dto)
+    {
+        try
+        {
+            var valuesTuple = dto.AttributeValues.Select(v => (v.Id, v.Value, v.Note, v.FlagAction)).ToList();
+            var updated = await _repository.UpdateWithValuesAndFlagAsync(dto.Id, dto.AttributeName, valuesTuple);
+            if (updated is null)
+                return NotFound();
+
+            return Ok(MapToDto(updated));
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Lỗi hệ thống, vui lòng liên hệ quản trị");
         }
     }
 

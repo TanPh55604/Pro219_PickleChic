@@ -52,6 +52,66 @@ public class ProductAttributeRepository
         }
     }
 
+    public async Task<ProductAttribute?> UpdateWithValuesAndFlagAsync(
+        int id,
+        string attributeName,
+        List<(int Id, string Value, string? Note, int FlagAction)> values)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            var existing = await _context.ProductAttributes
+                .Include(a => a.AttributeValues)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (existing is null)
+                return null;
+
+            existing.AttributeName = attributeName;
+
+            foreach (var item in values)
+            {
+                if (item.FlagAction == 1) 
+                {
+                    var newValue = new AttributeValue
+                    {
+                        AttributeId = id,
+                        Value = item.Value,
+                        Note = item.Note
+                    };
+                    _context.AttributeValues.Add(newValue);
+                }
+                else if (item.FlagAction == 2) 
+                {
+                    var existingVal = existing.AttributeValues?.FirstOrDefault(v => v.Id == item.Id);
+                    if (existingVal != null)
+                    {
+                        existingVal.Value = item.Value;
+                        existingVal.Note = item.Note;
+                    }
+                }
+                else if (item.FlagAction == 3) 
+                {
+                    var existingVal = existing.AttributeValues?.FirstOrDefault(v => v.Id == item.Id);
+                    if (existingVal != null)
+                    {
+                        _context.AttributeValues.Remove(existingVal);
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return await GetByIdAsync(id);
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            return null;
+        }
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var entity = await _context.ProductAttributes.FindAsync(id);

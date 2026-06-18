@@ -29,3 +29,19 @@ public class ProductAttributeWithValuesCreateDto
     public List<AttributeValueCreateWithoutIdDto> AttributeValues { get; set; } = new();
 }
 
+public class AttributeValueModifyWithFlagDto
+{
+    public int Id { get; set; }
+    public string Value { get; set; } = null!;
+    public string? Note { get; set; }
+    public int FlagAction { get; set; } = 0; // 0: Do nothing, 1: Add, 2: Update, 3: Delete
+}
+
+public class ProductAttributeModifyWithFlagDto
+{
+    public int Id { get; set; }
+    public string AttributeName { get; set; } = null!;
+    public List<AttributeValueModifyWithFlagDto> AttributeValues { get; set; } = new();
+}
+
+
