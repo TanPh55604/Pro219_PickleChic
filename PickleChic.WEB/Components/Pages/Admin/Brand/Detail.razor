@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.BrandDetail)]
+@attribute [Route(RouterConfig.Admin.BrandDetail)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Brand Detail</PageTitle>
@@ -49,7 +49,7 @@ else
                         </h2>
 
                         <p class="!mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-                            @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả." : _model.Description)
+                            @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả" : _model.Description)
                         </p>
                     </div>
 
@@ -113,7 +113,7 @@ else
                 <div class="!mt-6 !rounded-2xl !border !border-slate-200 !p-5">
                     <p class="text-sm font-medium text-slate-500">Mô tả</p>
                     <p class="!mt-3 text-base leading-8 text-slate-800">
-                        @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả." : _model.Description)
+                        @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả" : _model.Description)
                     </p>
                 </div>
             </div>
@@ -190,7 +190,7 @@ else
             return;
         }
 
-        _snackbar.Add("Xóa thương hiệu thành công.", Severity.Success);
+        _snackbar.Add("Xóa thương hiệu thành công", Severity.Success);
 
         _navigation.NavigateTo(RouterConfig.Admin.Brands, replace: true);
     }
@@ -199,12 +199,12 @@ else
     {
         return message switch
         {
-            "Không tìm thấy" => "Không tìm thấy thương hiệu.",
-            "Db Error" => "Không thể xử lý dữ liệu thương hiệu.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Không tìm thấy" => "Không tìm thấy thương hiệu",
+            "Db Error" => "Không thể xử lý dữ liệu thương hiệu",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.AttributeDetail)]
+@attribute [Route(RouterConfig.Admin.AttributeDetail)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Attribute Detail</PageTitle>
@@ -7,7 +7,7 @@
 {
     <DetailPageSkeleton ShowImage="true"
                         ShowStatusBadge="false"
-                        InfoFieldCount="0"
+                        InfoFieldCount="1"
                         TableRowCount="3" />
 }
 else
@@ -54,7 +54,8 @@ else
                                 @_model.AttributeName
                             </h2>
                             <p class="!mt-1 text-sm text-slate-500">
-                                @(_values.Count) giá trị
+                                Thể loại: <span class="font-medium text-slate-700">@GetCategoryName()</span>
+                                · @(_values.Count) giá trị
                             </p>
                         </div>
                     </div>
@@ -69,7 +70,7 @@ else
                 @if (_values.Count == 0)
                 {
                     <div class="!mt-5 !rounded-xl !border !border-dashed !border-slate-300 !p-8 text-center text-sm text-slate-500">
-                        Chưa có giá trị nào.
+                        Chưa có giá trị nào
                     </div>
                 }
                 else
@@ -115,6 +116,8 @@ else
 
     private List<AttributeValueResponse> _values = new();
 
+    private List<CategoryResponse> _categories = new();
+
     private bool _isLoading = true;
 
     protected override async Task OnInitializedAsync()
@@ -128,6 +131,7 @@ else
 
         try
         {
+            var categoryResult = await _adminCategoryService.GetAllAsync();
             var result = await _adminAttributeService.GetByIdAsync(Id);
 
             if (!result.Success || result.Data is null)
@@ -139,11 +143,22 @@ else
 
             _model = result.Data;
             _values = result.Data.AttributeValues ?? new();
+            _categories = categoryResult.Data ?? new();
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private string GetCategoryName()
+    {
+        if (!_model.CategoryId.HasValue || _model.CategoryId.Value <= 0)
+        {
+            return "Chưa gán";
+        }
+
+        return _categories.FirstOrDefault(c => c.Id == _model.CategoryId.Value)?.Name ?? "—";
     }
 
     private async Task OpenDeleteDialog()
@@ -176,7 +191,7 @@ else
             return;
         }
 
-        _snackbar.Add("Xóa thuộc tính thành công.", Severity.Success);
+        _snackbar.Add("Xóa thuộc tính thành công", Severity.Success);
 
         _navigation.NavigateTo(RouterConfig.Admin.Attributes, replace: true);
     }
@@ -185,12 +200,12 @@ else
     {
         return message switch
         {
-            "Không tìm thấy" => "Không tìm thấy thuộc tính.",
-            "Db Error" => "Không thể xử lý dữ liệu thuộc tính.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Không tìm thấy" => "Không tìm thấy thuộc tính",
+            "Db Error" => "Không thể xử lý dữ liệu thuộc tính",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Customer.SignUp)]
+@attribute [Route(RouterConfig.Customer.SignUp)]
 @layout MainLayout
 
 <PageTitle>@Constant.metaDataCustomer Register</PageTitle>
@@ -117,7 +117,7 @@
                             disabled="@_isSubmitting"
                             class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-8 !py-3 text-sm font-bold !text-white shadow-sm transition hover:!border-red-600 hover:!bg-red-600 hover:!text-white disabled:!cursor-not-allowed disabled:!opacity-70">
                         <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Size="Size.Small" />
-                        @(_isSubmitting ? "Đang đăng ký..." : "Đăng ký")
+                        @(_isSubmitting ? "Đang đăng ký.." : "Đăng ký")
                     </button>
                 </div>
             </MudForm>
@@ -163,7 +163,7 @@
                 return;
             }
 
-            _snackbar.Add("Đăng ký thành công.", Severity.Success);
+            _snackbar.Add("Đăng ký thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.Customer.Login, replace: true);
         }

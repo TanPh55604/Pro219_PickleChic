@@ -1,4 +1,4 @@
-﻿using PickleChic.WEB.Constant;
+using PickleChic.WEB.Constant;
 using PickleChic.WEB.DTO.Auth;
 using PickleChic.WEB.Model;
 using PickleChic.WEB.Services.Api;
@@ -41,7 +41,7 @@ namespace PickleChic.WEB.Services.Auth
             if (!result.Data.LoginSuccess || string.IsNullOrWhiteSpace(result.Data.Token))
             {
                 return ApiResult<LoginResponse>.Fail(
-                    message: "Đăng nhập không thành công.",
+                    message: "Đăng nhập không thành công",
                     statusCode: result.StatusCode);
             }
 
@@ -74,7 +74,7 @@ namespace PickleChic.WEB.Services.Auth
             if (!result.Data.LoginSuccess || string.IsNullOrWhiteSpace(result.Data.Token))
             {
                 return ApiResult<LoginResponse>.Fail(
-                    message: "Đăng nhập không thành công.",
+                    message: "Đăng nhập không thành công",
                     statusCode: result.StatusCode);
             }
 

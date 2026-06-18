@@ -1,11 +1,11 @@
-﻿@attribute [Route(RouterConfig.Admin.EditAttribute)]
+@attribute [Route(RouterConfig.Admin.EditAttribute)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Edit Attribute</PageTitle>
 
 @if (_isLoading)
 {
-    <EditPageSkeleton FieldCount="1"
+    <EditPageSkeleton FieldCount="2"
                       HasFullWidthField="false"
                       ExtraSectionCount="2" />
 }
@@ -33,6 +33,25 @@ else
                         <h2 class="text-lg font-bold text-slate-900">Thông tin thuộc tính</h2>
                     </div>
 
+                    <MudSelect T="int"
+                               @bind-Value="_model.CategoryId"
+                               For="@(() => _model.CategoryId)"
+                               Label="Thể loại"
+                               Variant="Variant.Outlined"
+                               Required="true">
+                        @if (_categories.Count == 0)
+                        {
+                            <MudSelectItem T="int" Value="0" Disabled="true">Chưa có thể loại</MudSelectItem>
+                        }
+                        else
+                        {
+                            @foreach (var category in _categories)
+                            {
+                                <MudSelectItem T="int" Value="@category.Id">@category.Name</MudSelectItem>
+                            }
+                        }
+                    </MudSelect>
+
                     <MudTextField @bind-Value="_model.AttributeName"
                                   For="@(() => _model.AttributeName)"
                                   Label="Tên thuộc tính"
@@ -56,7 +75,7 @@ else
                         @if (!_visibleValues.Any())
                         {
                             <div class="!rounded-xl !border !border-dashed !border-slate-300 !p-6 text-center text-sm text-slate-500">
-                                Chưa có giá trị nào. Nhấn "Thêm giá trị" để bắt đầu.
+                                Chưa có giá trị nào
                             </div>
                         }
                         else
@@ -70,6 +89,7 @@ else
                                                       Placeholder="Nhập giá trị"
                                                       Variant="Variant.Outlined"
                                                       Required="true"
+                                                      RequiredError="Không được để trống"
                                                       Immediate="true" />
 
                                         <MudTextField @bind-Value="valueItem.Note"
@@ -97,7 +117,7 @@ else
                                    OnClick="SubmitAsync"
                                    Disabled="@_isSubmitting"
                                    Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                            @(_isSubmitting ? "Đang cập nhật..." : "Cập nhật")
+                            @(_isSubmitting ? "Đang cập nhật.." : "Cập nhật")
                         </MudButton>
                     </div>
                 </div>
@@ -117,12 +137,16 @@ else
 
     private readonly AttributeSchema.ValueItem _valueValidator = new();
 
+    private List<CategoryResponse> _categories = new();
+
+    private List<AttributeValueModel> _originalValues = new();
+
     private bool _isLoading = true;
 
     private bool _isSubmitting;
 
     private IEnumerable<AttributeValueModel> _visibleValues =>
-        _model.AttributeValues.Where(v => !v.IsDeleted);
+        _model.AttributeValues.Where(v => v.FlagAction != AttributeValueFlagAction.Delete);
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,7 +159,16 @@ else
 
         try
         {
+            var categoryResult = await _adminCategoryService.GetAllAsync();
             var result = await _adminAttributeService.GetByIdAsync(Id);
+
+            if (!categoryResult.Success)
+            {
+                _snackbar.Add("Không thể tải danh sách thể loại", Severity.Error);
+                return;
+            }
+
+            _categories = categoryResult.Data?.Where(c => c.IsActive).ToList() ?? new();
 
             if (!result.Success || result.Data is null)
             {
@@ -145,6 +178,20 @@ else
             }
 
             _model = MapToModel(result.Data);
+            _originalValues = _model.AttributeValues
+                .Select(v => new AttributeValueModel
+                {
+                    Id = v.Id,
+                    AttributeId = v.AttributeId,
+                    Value = v.Value,
+                    Note = v.Note
+                })
+                .ToList();
+
+            if (_model.CategoryId > 0 && !_categories.Any(c => c.Id == _model.CategoryId))
+            {
+                _model.CategoryId = 0;
+            }
         }
         finally
         {
@@ -157,13 +204,15 @@ else
         return new AttributeModel
         {
             Id = response.Id,
+            CategoryId = response.CategoryId ?? 0,
             AttributeName = response.AttributeName,
             AttributeValues = response.AttributeValues?.Select(v => new AttributeValueModel
             {
                 Id = v.Id,
                 AttributeId = v.AttributeId,
                 Value = v.Value,
-                Note = v.Note
+                Note = v.Note,
+                FlagAction = AttributeValueFlagAction.None
             }).ToList() ?? new()
         };
     }
@@ -173,19 +222,47 @@ else
         _model.AttributeValues.Add(new AttributeValueModel
         {
             AttributeId = Id,
-            IsNew = true
+            FlagAction = AttributeValueFlagAction.Create
         });
     }
 
     private void MarkValueDeleted(AttributeValueModel valueItem)
     {
-        if (valueItem.IsNew)
+        if (valueItem.FlagAction == AttributeValueFlagAction.Create)
         {
             _model.AttributeValues.Remove(valueItem);
+            return;
         }
-        else
+
+        valueItem.FlagAction = AttributeValueFlagAction.Delete;
+    }
+
+    private void ApplyUpdateFlags()
+    {
+        foreach (var valueItem in _model.AttributeValues
+                     .Where(v => v.FlagAction == AttributeValueFlagAction.None))
         {
-            valueItem.IsDeleted = true;
+            var original = _originalValues.FirstOrDefault(o => o.Id == valueItem.Id);
+
+            if (original is null)
+            {
+                continue;
+            }
+
+            var valueChanged = !string.Equals(
+                original.Value.Trim(),
+                valueItem.Value.Trim(),
+                StringComparison.Ordinal);
+
+            var noteChanged = !string.Equals(
+                original.Note?.Trim() ?? string.Empty,
+                valueItem.Note?.Trim() ?? string.Empty,
+                StringComparison.Ordinal);
+
+            if (valueChanged || noteChanged)
+            {
+                valueItem.FlagAction = AttributeValueFlagAction.Update;
+            }
         }
     }
 
@@ -193,6 +270,12 @@ else
     {
         if (_form is null || _isSubmitting)
         {
+            return;
+        }
+
+        if (_categories.Count == 0)
+        {
+            _snackbar.Add("Chưa có thể loại hoạt động", Severity.Warning);
             return;
         }
 
@@ -204,12 +287,13 @@ else
         }
 
         var activeValues = _model.AttributeValues
-            .Where(v => !v.IsDeleted && !string.IsNullOrWhiteSpace(v.Value))
+            .Where(v => v.FlagAction != AttributeValueFlagAction.Delete
+                        && !string.IsNullOrWhiteSpace(v.Value))
             .ToList();
 
         if (activeValues.Count == 0)
         {
-            _snackbar.Add("Vui lòng giữ lại ít nhất một giá trị.", Severity.Warning);
+            _snackbar.Add("Vui lòng giữ lại ít nhất một giá trị", Severity.Warning);
             return;
         }
 
@@ -227,59 +311,27 @@ else
 
         try
         {
-            var updateResult = await _adminAttributeService.UpdateAsync(_model);
+            var emptyNewRows = _model.AttributeValues
+                .Where(v => v.FlagAction == AttributeValueFlagAction.Create
+                            && string.IsNullOrWhiteSpace(v.Value))
+                .ToList();
 
-            if (!updateResult.Success)
+            foreach (var row in emptyNewRows)
             {
-                _snackbar.Add(ConvertAttributeErrorMessage(updateResult.Message), Severity.Error);
+                _model.AttributeValues.Remove(row);
+            }
+
+            ApplyUpdateFlags();
+
+            var result = await _adminAttributeService.ModifyWithValuesAndFlagAsync(_model);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertAttributeErrorMessage(result.Message), Severity.Error);
                 return;
             }
 
-            var valuesToDelete = _model.AttributeValues
-                .Where(v => v.IsDeleted && !v.IsNew && v.Id > 0)
-                .ToList();
-
-            foreach (var valueItem in valuesToDelete)
-            {
-                var deleteResult = await _adminAttributeService.DeleteValueAsync(valueItem.Id);
-                if (!deleteResult.Success)
-                {
-                    _snackbar.Add(ConvertAttributeErrorMessage(deleteResult.Message), Severity.Error);
-                    return;
-                }
-            }
-
-            var valuesToUpdate = activeValues
-                .Where(v => !v.IsNew && v.Id > 0)
-                .ToList();
-
-            foreach (var valueItem in valuesToUpdate)
-            {
-                valueItem.AttributeId = Id;
-                var updateValueResult = await _adminAttributeService.UpdateValueAsync(valueItem);
-                if (!updateValueResult.Success)
-                {
-                    _snackbar.Add(ConvertAttributeErrorMessage(updateValueResult.Message), Severity.Error);
-                    return;
-                }
-            }
-
-            var valuesToCreate = activeValues
-                .Where(v => v.IsNew)
-                .ToList();
-
-            foreach (var valueItem in valuesToCreate)
-            {
-                valueItem.AttributeId = Id;
-                var createResult = await _adminAttributeService.CreateValueAsync(valueItem);
-                if (!createResult.Success)
-                {
-                    _snackbar.Add(ConvertAttributeErrorMessage(createResult.Message), Severity.Error);
-                    return;
-                }
-            }
-
-            _snackbar.Add("Cập nhật thuộc tính thành công.", Severity.Success);
+            _snackbar.Add("Cập nhật thuộc tính thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.AttributeDetail, Id));
         }
@@ -293,12 +345,13 @@ else
     {
         return message switch
         {
-            "Không tìm thấy" => "Không tìm thấy thuộc tính.",
-            "Db Error" => "Không thể xử lý dữ liệu thuộc tính.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Không tìm thấy" => "Không tìm thấy thuộc tính",
+            "Db Error" => "Không thể xử lý dữ liệu thuộc tính",
+            "Lỗi hệ thống, vui lòng liên hệ quản trị" => "Không thể cập nhật thuộc tính",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

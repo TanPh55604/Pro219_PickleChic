@@ -4,6 +4,8 @@ namespace PickleChic.WEB.Model
     {
         public int Id { get; set; }
 
+        public int CategoryId { get; set; }
+
         public string AttributeName { get; set; } = string.Empty;
 
         public List<AttributeValueModel> AttributeValues { get; set; } = new();

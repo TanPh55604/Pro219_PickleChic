@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.ProductDetail)]
+@attribute [Route(RouterConfig.Admin.ProductDetail)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Product Detail</PageTitle>
@@ -122,7 +122,7 @@ else
                 <div class="!mt-6 !rounded-2xl !border !border-slate-200 !p-5">
                     <p class="text-sm font-medium text-slate-500">Mô tả</p>
                     <p class="!mt-3 text-base leading-8 text-slate-800">
-                        @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả." : _model.Description)
+                        @(string.IsNullOrWhiteSpace(_model.Description) ? "Chưa có mô tả" : _model.Description)
                     </p>
                 </div>
             </div>
@@ -147,7 +147,7 @@ else
             @if (_variants.Count == 0)
             {
                 <div class="!rounded-xl !border !border-dashed !border-slate-300 !p-10 text-center text-sm text-slate-500">
-                    Chưa có biến thể nào. Nhấn "Thêm biến thể" để tạo mới.
+                    Chưa có biến thể nào
                 </div>
             }
             else
@@ -322,7 +322,7 @@ else
             return;
         }
 
-        _snackbar.Add("Xóa sản phẩm thành công.", Severity.Success);
+        _snackbar.Add("Xóa sản phẩm thành công", Severity.Success);
 
         _navigation.NavigateTo(RouterConfig.Admin.Products, replace: true);
     }
@@ -357,7 +357,7 @@ else
             return;
         }
 
-        _snackbar.Add("Xóa biến thể thành công.", Severity.Success);
+        _snackbar.Add("Xóa biến thể thành công", Severity.Success);
 
         await LoadProductAsync();
     }
@@ -366,12 +366,12 @@ else
     {
         return message switch
         {
-            "Không tìm thấy" => "Không tìm thấy sản phẩm.",
-            "Db Error" => "Không thể xử lý dữ liệu sản phẩm.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Không tìm thấy" => "Không tìm thấy sản phẩm",
+            "Db Error" => "Không thể xử lý dữ liệu sản phẩm",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

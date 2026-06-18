@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.CreateAttribute)]
+@attribute [Route(RouterConfig.Admin.CreateAttribute)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Create Attribute</PageTitle>
@@ -28,10 +28,30 @@
                 <MudTextField @bind-Value="_model.AttributeName"
                               For="@(() => _model.AttributeName)"
                               Label="Tên thuộc tính"
-                              Placeholder="Ví dụ: Kích thước, Màu sắc..."
+                              Placeholder="Ví dụ: Kích thước, Màu sắc.."
                               Variant="Variant.Outlined"
                               Required="true"
                               Immediate="true" />
+
+                <MudSelect T="int"
+                           @bind-Value="_model.CategoryId"
+                           For="@(() => _model.CategoryId)"
+                           Label="Thể loại"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           Disabled="@_isLoadingCategories">
+                    @if (_categories.Count == 0)
+                    {
+                        <MudSelectItem T="int" Value="0" Disabled="true">Chưa có thể loại</MudSelectItem>
+                    }
+                    else
+                    {
+                        @foreach (var category in _categories)
+                        {
+                            <MudSelectItem T="int" Value="@category.Id">@category.Name</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
 
                 <div class="!space-y-4">
                     <div class="flex items-center justify-between">
@@ -48,7 +68,7 @@
                     @if (_model.AttributeValues.Count == 0)
                     {
                         <div class="!rounded-xl !border !border-dashed !border-slate-300 !p-6 text-center text-sm text-slate-500">
-                            Chưa có giá trị nào. Nhấn "Thêm giá trị" để bắt đầu.
+                            Chưa có giá trị nào
                         </div>
                     }
                     else
@@ -92,7 +112,7 @@
                                OnClick="SubmitAsync"
                                Disabled="@_isSubmitting"
                                Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                        @(_isSubmitting ? "Đang lưu..." : "Lưu")
+                        @(_isSubmitting ? "Đang lưu.." : "Lưu")
                     </MudButton>
                 </div>
             </div>
@@ -109,7 +129,43 @@
 
     private readonly AttributeSchema.ValueItem _valueValidator = new();
 
+    private List<CategoryResponse> _categories = new();
+
+    private bool _isLoadingCategories = true;
+
     private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        _isLoadingCategories = true;
+
+        try
+        {
+            var result = await _adminCategoryService.GetAllAsync();
+
+            if (!result.Success)
+            {
+                _snackbar.Add("Không thể tải danh sách thể loại", Severity.Error);
+                return;
+            }
+
+            _categories = result.Data?.Where(c => c.IsActive).ToList() ?? new();
+
+            if (_categories.Count > 0)
+            {
+                _model.CategoryId = _categories[0].Id;
+            }
+        }
+        finally
+        {
+            _isLoadingCategories = false;
+        }
+    }
 
     private void AddValueRow()
     {
@@ -131,6 +187,12 @@
             return;
         }
 
+        if (_categories.Count == 0)
+        {
+            _snackbar.Add("Chưa có thể loại hoạt động. Vui lòng tạo thể loại trước", Severity.Warning);
+            return;
+        }
+
         await _form.ValidateAsync();
 
         if (!_form.IsValid)
@@ -144,7 +206,7 @@
 
         if (activeValues.Count == 0)
         {
-            _snackbar.Add("Vui lòng thêm ít nhất một giá trị.", Severity.Warning);
+            _snackbar.Add("Vui lòng thêm ít nhất một giá trị", Severity.Warning);
             return;
         }
 
@@ -172,7 +234,7 @@
                 return;
             }
 
-            _snackbar.Add("Tạo thuộc tính thành công.", Severity.Success);
+            _snackbar.Add("Tạo thuộc tính thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.AttributeDetail, result.Data.Id));
         }
@@ -186,11 +248,11 @@
     {
         return message switch
         {
-            "Db Error" => "Không thể tạo thuộc tính.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Db Error" => "Không thể tạo thuộc tính",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

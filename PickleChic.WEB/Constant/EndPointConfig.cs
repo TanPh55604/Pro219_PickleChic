@@ -57,8 +57,12 @@
             public const string GetAll = "management/product-attribute/get-all";
             public const string CreateWithValues = "management/product-attribute/create-with-values";
             public const string Update = "management/product-attribute/update";
+            public const string ModifyWithFlag = "management/product-attribute/modify-with-flag";
 
             public static string GetById(int id) => $"management/product-attribute/get-by-id/{id}";
+
+            public static string GetAllByCategoryId(int categoryId) =>
+                $"management/product-attribute/get-all-by-categoryId?categoryId={categoryId}";
 
             public static string Delete(int id) => $"management/product-attribute/delete/{id}";
         }
@@ -84,6 +88,11 @@
 
         public static class ProductVariant
         {
+            public const string CreateWithAttributes = "management/product-variant/create-with-attributes";
+            public const string UpdateWithAttributes = "management/product-variant/update-with-attributes";
+
+            public static string GetByIdWithDetails(int id) => $"management/product-variant/get-by-id-with-details/{id}";
+
             public static string Delete(int id) => $"management/product-variant/delete/{id}";
         }
     }

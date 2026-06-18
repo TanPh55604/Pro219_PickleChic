@@ -50,6 +50,7 @@ public class ProductAttributeRepository
                 return null;
 
             existing.AttributeName = entity.AttributeName;
+            existing.CategoryId = entity.CategoryId;
             await _context.SaveChangesAsync();
             return existing;
         }
@@ -62,6 +63,7 @@ public class ProductAttributeRepository
     public async Task<ProductAttribute?> UpdateWithValuesAndFlagAsync(
         int id,
         string attributeName,
+        int? categoryId,
         List<(int Id, string Value, string? Note, int FlagAction)> values)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
@@ -75,6 +77,7 @@ public class ProductAttributeRepository
                 return null;
 
             existing.AttributeName = attributeName;
+            existing.CategoryId = categoryId;
 
             foreach (var item in values)
             {

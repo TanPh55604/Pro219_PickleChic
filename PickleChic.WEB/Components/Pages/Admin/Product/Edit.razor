@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.EditProduct)]
+@attribute [Route(RouterConfig.Admin.EditProduct)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Edit Product</PageTitle>
@@ -66,6 +66,16 @@ else
                             }
                         </MudSelect>
 
+                        <div class="md:col-span-2">
+                            <MudTextField @bind-Value="_model.Description"
+                                          For="@(() => _model.Description)"
+                                          Label="Mô tả"
+                                          Placeholder="Nhập mô tả sản phẩm"
+                                          Variant="Variant.Outlined"
+                                          Lines="4"
+                                          Immediate="true" />
+                        </div>
+
                         <div>
                             <MudSelect T="int"
                                        @bind-Value="_model.Status"
@@ -86,24 +96,10 @@ else
                                 <MudAlert Severity="Severity.Warning"
                                           Variant="Variant.Outlined"
                                           Class="!rounded-xl">
-                                    Cần ít nhất 1 biến thể để chuyển sản phẩm sang trạng thái "Đang hoạt động".
-                                    <a href="@GetCreateVariantUrl()"
-                                       class="!ml-1 font-semibold text-amber-800 underline">
-                                        Thêm biến thể
-                                    </a>
+                                    Cần ít nhất 1 biến thể để chuyển sản phẩm sang trạng thái "Đang hoạt động"
                                 </MudAlert>
                             </div>
                         }
-
-                        <div class="md:col-span-2">
-                            <MudTextField @bind-Value="_model.Description"
-                                          For="@(() => _model.Description)"
-                                          Label="Mô tả"
-                                          Placeholder="Nhập mô tả sản phẩm"
-                                          Variant="Variant.Outlined"
-                                          Lines="4"
-                                          Immediate="true" />
-                        </div>
                     </div>
 
                     <div class="flex justify-end !border-t !border-slate-200 !pt-6">
@@ -113,7 +109,7 @@ else
                                    OnClick="SubmitAsync"
                                    Disabled="@_isSubmitting"
                                    Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                            @(_isSubmitting ? "Đang cập nhật..." : "Cập nhật")
+                            @(_isSubmitting ? "Đang cập nhật.." : "Cập nhật")
                         </MudButton>
                     </div>
                 </div>
@@ -158,7 +154,7 @@ else
 
             if (!categoryResult.Success || !brandResult.Success)
             {
-                _snackbar.Add("Không thể tải dữ liệu tham chiếu.", Severity.Error);
+                _snackbar.Add("Không thể tải dữ liệu tham chiếu", Severity.Error);
                 _navigation.NavigateTo(RouterConfig.Admin.Products, replace: true);
                 return;
             }
@@ -230,7 +226,7 @@ else
                 return;
             }
 
-            _snackbar.Add("Cập nhật sản phẩm thành công.", Severity.Success);
+            _snackbar.Add("Cập nhật sản phẩm thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, Id));
         }
@@ -249,12 +245,12 @@ else
     {
         return message switch
         {
-            "Không tìm thấy" => "Không tìm thấy sản phẩm.",
-            "Db Error" => "Không thể xử lý dữ liệu sản phẩm.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Không tìm thấy" => "Không tìm thấy sản phẩm",
+            "Db Error" => "Không thể xử lý dữ liệu sản phẩm",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

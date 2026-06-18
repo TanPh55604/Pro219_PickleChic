@@ -13,5 +13,7 @@ namespace PickleChic.WEB.Model
         public bool IsNew { get; set; }
 
         public bool IsDeleted { get; set; }
+
+        public int FlagAction { get; set; }
     }
 }

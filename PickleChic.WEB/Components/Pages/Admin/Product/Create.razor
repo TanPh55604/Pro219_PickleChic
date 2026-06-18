@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.CreateProduct)]
+@attribute [Route(RouterConfig.Admin.CreateProduct)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Create Product</PageTitle>
@@ -67,15 +67,6 @@
                         </MudSelect>
 
                         <div class="md:col-span-2">
-                            <MudAlert Severity="Severity.Info"
-                                      Variant="Variant.Outlined"
-                                      Class="!rounded-xl">
-                                Sản phẩm mới sẽ tự động ở trạng thái <strong>Tạm ẩn</strong>.
-                                Thêm ít nhất một biến thể trước khi chuyển sang <strong>Đang hoạt động</strong>.
-                            </MudAlert>
-                        </div>
-
-                        <div class="md:col-span-2">
                             <MudTextField @bind-Value="_model.Description"
                                           For="@(() => _model.Description)"
                                           Label="Mô tả"
@@ -83,6 +74,14 @@
                                           Variant="Variant.Outlined"
                                           Lines="4"
                                           Immediate="true" />
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <MudAlert Severity="Severity.Info"
+                                      Variant="Variant.Outlined"
+                                      Class="!rounded-xl">
+                                Sản phẩm mới sẽ tự động ở trạng thái <strong>Tạm ẩn</strong>
+                            </MudAlert>
                         </div>
                     </div>
 
@@ -93,7 +92,7 @@
                                    OnClick="SubmitAsync"
                                    Disabled="@_isSubmitting"
                                    Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                            @(_isSubmitting ? "Đang lưu..." : "Lưu")
+                            @(_isSubmitting ? "Đang lưu.." : "Lưu")
                         </MudButton>
                     </div>
                 </div>
@@ -133,13 +132,13 @@
 
             if (!categoryResult.Success)
             {
-                _snackbar.Add("Không thể tải danh sách thể loại.", Severity.Error);
+                _snackbar.Add("Không thể tải danh sách thể loại", Severity.Error);
                 return;
             }
 
             if (!brandResult.Success)
             {
-                _snackbar.Add("Không thể tải danh sách thương hiệu.", Severity.Error);
+                _snackbar.Add("Không thể tải danh sách thương hiệu", Severity.Error);
                 return;
             }
 
@@ -190,7 +189,7 @@
                 return;
             }
 
-            _snackbar.Add("Tạo sản phẩm thành công.", Severity.Success);
+            _snackbar.Add("Tạo sản phẩm thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, result.Data.Id));
         }
@@ -204,11 +203,11 @@
     {
         return message switch
         {
-            "Db Error" => "Không thể tạo sản phẩm.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Db Error" => "Không thể tạo sản phẩm",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }

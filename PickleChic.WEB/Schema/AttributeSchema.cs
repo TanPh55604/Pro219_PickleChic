@@ -9,6 +9,9 @@ namespace PickleChic.WEB.Schema
         {
             public CreateUpdate()
             {
+                RuleFor(x => x.CategoryId)
+                    .GreaterThan(0).WithMessage("Vui lòng chọn thể loại");
+
                 RuleFor(x => x.AttributeName)
                     .NotEmpty().WithMessage("Tên thuộc tính không được để trống")
                     .Length(2, 255).WithMessage("Tên thuộc tính có độ dài từ 2 đến 255 ký tự");

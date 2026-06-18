@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.CreateBrand)]
+@attribute [Route(RouterConfig.Admin.CreateBrand)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Create Brand</PageTitle>
@@ -61,7 +61,7 @@
                                OnClick="SubmitAsync"
                                Disabled="@_isSubmitting"
                                Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                        @(_isSubmitting ? "Đang lưu..." : "Lưu")
+                        @(_isSubmitting ? "Đang lưu.." : "Lưu")
                     </MudButton>
                 </div>
             </div>
@@ -107,7 +107,7 @@
                 return;
             }
 
-            _snackbar.Add("Tạo thương hiệu thành công.", Severity.Success);
+            _snackbar.Add("Tạo thương hiệu thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.BrandDetail, result.Data.Id));
         }
@@ -121,11 +121,11 @@
     {
         return message switch
         {
-            "Db Error" => "Không thể tạo thương hiệu.",
-            "TokenExpired" => "Phiên đăng nhập đã hết hạn.",
-            "InvalidToken" => "Phiên đăng nhập không hợp lệ.",
+            "Db Error" => "Không thể tạo thương hiệu",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
             _ => string.IsNullOrWhiteSpace(message)
-                ? "Có lỗi xảy ra. Vui lòng thử lại."
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
                 : message
         };
     }
