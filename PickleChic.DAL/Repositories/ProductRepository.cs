@@ -118,7 +118,9 @@ public class ProductRepository
         string? keyword,
         decimal? startingPrice = null,
         decimal? toPrice = null,
-        string? sortBy = null)
+        string? sortBy = null,
+        int? pageNumber = null,
+        int? pageSize = null)
     {
         var query = _context.Products
             .Include(p => p.Category)
@@ -158,6 +160,7 @@ public class ProductRepository
         {
             query = query.Where(p => p.ProductVariants!.Any(pv => pv.Price >= startingPrice.Value));
         }
+
         if (toPrice.HasValue)
         {
             query = query.Where(p => p.ProductVariants!.Any(pv => pv.Price <= toPrice.Value));
@@ -173,6 +176,11 @@ public class ProductRepository
                 "price_desc" => query.OrderByDescending(p => p.ProductVariants!.Max(pv => (decimal?)pv.Price) ?? 0),
                 _ => query
             };
+        }
+
+        if (pageNumber.HasValue && pageSize.HasValue)
+        {
+            query = query.Skip((pageNumber.Value - 1) * pageSize.Value).Take(pageSize.Value);
         }
 
         return await query.ToListAsync();

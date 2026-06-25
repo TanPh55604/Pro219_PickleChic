@@ -168,7 +168,7 @@ public class ProductVariantRepository
         return query;
     }
 
-    public async Task<List<ProductVariant>> SearchVariantsAsync(string? keyword, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null)
+    public async Task<List<ProductVariant>> SearchVariantsAsync(string? keyword, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null, int? pageNumber = null, int? pageSize = null)
     {
         var query = _context.ProductVariants
             .Include(pv => pv.ProductVariantImages)
@@ -200,6 +200,11 @@ public class ProductVariantRepository
         }
 
         query = ApplyFiltersAndSorting(query, startingPrice, toPrice, sortBy);
+
+        if (pageNumber.HasValue && pageSize.HasValue)
+        {
+            query = query.Skip((pageNumber.Value - 1) * pageSize.Value).Take(pageSize.Value);
+        }
 
         return await query.ToListAsync();
     }
@@ -258,4 +263,27 @@ public class ProductVariantRepository
 
         return await query.ToListAsync();
     }
+
+    public async Task<bool> DecreaseStockAsync(int variantId, int quantity)
+    {
+        var variant = await _context.ProductVariants.FindAsync(variantId);
+        if (variant == null || variant.StockQuantity < quantity)
+            return false;
+
+        variant.StockQuantity -= quantity;
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> IncreaseStockAsync(int variantId, int quantity)
+    {
+        var variant = await _context.ProductVariants.FindAsync(variantId);
+        if (variant == null)
+            return false;
+
+        variant.StockQuantity += quantity;
+        await _context.SaveChangesAsync();
+        return true;
+    }
 }
+

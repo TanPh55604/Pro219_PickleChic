@@ -88,11 +88,13 @@ public class ProductVariantController : ControllerBase
         string? keyword,
         decimal? startingPrice,
         decimal? toPrice,
-        string? sortBy)// name_asc,name_desc,price_asc,price_desc
+        string? sortBy,
+        int? pageNumber,
+        int? pageSize)// name_asc,name_desc,price_asc,price_desc
     {
         try
         {
-            var variants = await _repository.SearchVariantsAsync(keyword, startingPrice, toPrice, sortBy);
+            var variants = await _repository.SearchVariantsAsync(keyword, startingPrice, toPrice, sortBy, pageNumber, pageSize);
             var result = variants.Select(pv => new ProductVariantSearchResultDto
             {
                 Id = pv.Id,

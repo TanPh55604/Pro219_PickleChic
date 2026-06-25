@@ -161,11 +161,13 @@ public class ProductController : ControllerBase
         string? keyword,
         decimal? startingPrice,
         decimal? toPrice,
-        string? sortBy)
+        string? sortBy,
+        int? pageNumber,
+        int? pageSize)
     {
         try
         {
-            var products = await _repository.SearchProductsWithVariantsAsync(keyword, startingPrice, toPrice, sortBy);
+            var products = await _repository.SearchProductsWithVariantsAsync(keyword, startingPrice, toPrice, sortBy, pageNumber, pageSize);
 
             var dtos = products.Select(p =>
             {
