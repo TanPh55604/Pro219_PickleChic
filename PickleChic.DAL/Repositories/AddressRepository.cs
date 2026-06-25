@@ -32,6 +32,16 @@ public class AddressRepository
             .FirstOrDefaultAsync(a => a.Id == id && !a.Delete);
     }
 
+    public async Task<List<Address>> GetByCustomerIdAsync(int customerId)
+    {
+        return await _context.Addresses
+            .Include(a => a.Ward)
+                .ThenInclude(w => w.District)
+                    .ThenInclude(d => d.Province)
+            .Where(a => a.CustomerId == customerId && !a.Delete)
+            .ToListAsync();
+    }
+
     public async Task<Address> AddAsync(Address entity)
     {
         _context.Addresses.Add(entity);

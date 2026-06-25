@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PickleChic.DAL.Models;
 
@@ -94,28 +98,73 @@ public class PickleChicDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<Province>().HasData(
-            new Province { Id = 1, Name = "Thành phố Hà Nội", Code = "01", InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new Province { Id = 2, Name = "Thành phố Hồ Chí Minh", Code = "79", InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new Province { Id = 3, Name = "Thành phố Đà Nẵng", Code = "48", InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) }
-        );
+        try
+        {
+            var jsonPath = FindJsonPath();
+            var jsonString = File.ReadAllText(jsonPath);
+            var jsonProvinces = JsonSerializer.Deserialize<List<JsonProvince>>(jsonString, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
-        modelBuilder.Entity<District>().HasData(
-            new District { Id = 1, Name = "Quận Ba Đình", Code = "001", ProvinceId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new District { Id = 2, Name = "Quận Hoàn Kiếm", Code = "002", ProvinceId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new District { Id = 3, Name = "Quận 1", Code = "760", ProvinceId = 2, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new District { Id = 4, Name = "Quận Bình Thạnh", Code = "770", ProvinceId = 2, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new District { Id = 5, Name = "Quận Hải Châu", Code = "490", ProvinceId = 3, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) }
-        );
+            if (jsonProvinces != null)
+            {
+                var provinces = new List<Province>();
+                var districts = new List<District>();
+                var wards = new List<Ward>();
 
-        modelBuilder.Entity<Ward>().HasData(
-            new Ward { Id = 1, Name = "Phường Phúc Xá", Code = "00001", DistrictId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new Ward { Id = 2, Name = "Phường Trúc Bạch", Code = "00004", DistrictId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new Ward { Id = 3, Name = "Phường Hàng Bạc", Code = "00037", DistrictId = 2, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new Ward { Id = 4, Name = "Phường Bến Nghé", Code = "26734", DistrictId = 3, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new Ward { Id = 5, Name = "Phường 25", Code = "27139", DistrictId = 4, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
-            new Ward { Id = 6, Name = "Phường Thạch Thang", Code = "20194", DistrictId = 5, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) }
-        );
+                int provinceId = 1;
+                int districtId = 1;
+                int wardId = 1;
+                var now = new DateTime(2026, 6, 25, 12, 0, 0);
+
+                foreach (var jp in jsonProvinces)
+                {
+                    var province = new Province
+                    {
+                        Id = provinceId++,
+                        Name = jp.Name,
+                        Code = jp.Code,
+                        InsertedAt = now
+                    };
+                    provinces.Add(province);
+
+                    foreach (var jd in jp.Districts)
+                    {
+                        var district = new District
+                        {
+                            Id = districtId++,
+                            Name = jd.Name,
+                            Code = jd.Code,
+                            ProvinceId = province.Id,
+                            InsertedAt = now
+                        };
+                        districts.Add(district);
+
+                        foreach (var jw in jd.Wards)
+                        {
+                            var ward = new Ward
+                            {
+                                Id = wardId++,
+                                Name = jw.Name,
+                                Code = jw.Code,
+                                DistrictId = district.Id,
+                                InsertedAt = now
+                            };
+                            wards.Add(ward);
+                        }
+                    }
+                }
+
+                modelBuilder.Entity<Province>().HasData(provinces);
+                modelBuilder.Entity<District>().HasData(districts);
+                modelBuilder.Entity<Ward>().HasData(wards);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to seed locations data: {ex.Message}", ex);
+        }
 
         modelBuilder.Entity<Order>()
             .HasOne(o => o.PaymentMethod)
@@ -283,5 +332,57 @@ public class PickleChicDbContext : DbContext
             new ProductVariantAttribute { Id = 3, ProductVariantId = 2, AttributeValueId = 1 },
             new ProductVariantAttribute { Id = 4, ProductVariantId = 2, AttributeValueId = 3 }
         );
+    }
+
+    private static string FindJsonPath()
+    {
+        var assemblyDir = Path.GetDirectoryName(typeof(PickleChicDbContext).Assembly.Location);
+        if (!string.IsNullOrEmpty(assemblyDir))
+        {
+            var path = Path.Combine(assemblyDir, "Context", "locations.json");
+            if (File.Exists(path)) return path;
+
+            path = Path.Combine(assemblyDir, "locations.json");
+            if (File.Exists(path)) return path;
+        }
+
+        var currentDir = Directory.GetCurrentDirectory();
+        while (!string.IsNullOrEmpty(currentDir))
+        {
+            var path1 = Path.Combine(currentDir, "PickleChic.DAL", "Context", "locations.json");
+            if (File.Exists(path1)) return path1;
+
+            var path2 = Path.Combine(currentDir, "Context", "locations.json");
+            if (File.Exists(path2)) return path2;
+
+            var path3 = Path.Combine(currentDir, "locations.json");
+            if (File.Exists(path3)) return path3;
+
+            var parent = Directory.GetParent(currentDir);
+            if (parent == null || parent.FullName == currentDir) break;
+            currentDir = parent.FullName;
+        }
+
+        throw new FileNotFoundException("Could not find locations.json");
+    }
+
+    private class JsonProvince
+    {
+        public string Code { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public List<JsonDistrict> Districts { get; set; } = new();
+    }
+
+    private class JsonDistrict
+    {
+        public string Code { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public List<JsonWard> Wards { get; set; } = new();
+    }
+
+    private class JsonWard
+    {
+        public string Code { get; set; } = null!;
+        public string Name { get; set; } = null!;
     }
 }
