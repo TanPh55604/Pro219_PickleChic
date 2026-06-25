@@ -113,4 +113,68 @@ public class ProductRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<List<Product>> SearchProductsWithVariantsAsync(
+        string? keyword,
+        decimal? startingPrice = null,
+        decimal? toPrice = null,
+        string? sortBy = null)
+    {
+        var query = _context.Products
+            .Include(p => p.Category)
+            .Include(p => p.Brand)
+            .Include(p => p.ProductVariants!)
+                .ThenInclude(pv => pv.ProductVariantImages)
+            .Include(p => p.ProductVariants!)
+                .ThenInclude(pv => pv.ProductVariantAttributes!)
+                    .ThenInclude(pva => pva.AttributeValue)
+                        .ThenInclude(av => av!.ProductAttribute)
+            .Where(p => !p.IsDeleted
+                && _context.Categories.Any(c => c.Id == p.CategoryId && !c.Delete)
+                && _context.Brands.Any(b => b.Id == p.BrandId && !b.Delete));
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var lowerKeyword = keyword.ToLower();
+            query = query.Where(p =>
+                p.ProductName.ToLower().Contains(lowerKeyword)
+                || (p.Description != null && p.Description.ToLower().Contains(lowerKeyword))
+                || (p.Category != null && p.Category.Name.ToLower().Contains(lowerKeyword))
+                || (p.Brand != null && p.Brand.Name.ToLower().Contains(lowerKeyword))
+                || p.ProductVariants!.Any(pv =>
+                    (pv.VariantName != null && pv.VariantName.ToLower().Contains(lowerKeyword))
+                    || pv.SKU.ToLower().Contains(lowerKeyword)
+                    || pv.ProductVariantAttributes!.Any(pva =>
+                        pva.AttributeValue != null && (
+                            pva.AttributeValue.Value.ToLower().Contains(lowerKeyword)
+                            || (pva.AttributeValue.ProductAttribute != null && pva.AttributeValue.ProductAttribute.AttributeName.ToLower().Contains(lowerKeyword))
+                        )
+                    )
+                )
+            );
+        }
+
+        if (startingPrice.HasValue)
+        {
+            query = query.Where(p => p.ProductVariants!.Any(pv => pv.Price >= startingPrice.Value));
+        }
+        if (toPrice.HasValue)
+        {
+            query = query.Where(p => p.ProductVariants!.Any(pv => pv.Price <= toPrice.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(sortBy))
+        {
+            query = sortBy.ToLower() switch
+            {
+                "name_asc" => query.OrderBy(p => p.ProductName),
+                "name_desc" => query.OrderByDescending(p => p.ProductName),
+                "price_asc" => query.OrderBy(p => p.ProductVariants!.Min(pv => (decimal?)pv.Price) ?? 0),
+                "price_desc" => query.OrderByDescending(p => p.ProductVariants!.Max(pv => (decimal?)pv.Price) ?? 0),
+                _ => query
+            };
+        }
+
+        return await query.ToListAsync();
+    }
 }

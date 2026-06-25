@@ -3,9 +3,9 @@ using PickleChic.API.DTOs;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
 
-namespace PickleChic.API.Controllers.Management;
+namespace PickleChic.API.Controllers.Public;
 
-[Route("management/product")]
+[Route("product")]
 [ApiController]
 public class ProductController : ControllerBase
 {
@@ -16,28 +16,6 @@ public class ProductController : ControllerBase
         _repository = repository;
     }
 
-    [HttpGet("get-all")]
-    public async Task<ActionResult<List<Product>>> GetAll(string? keyword)
-    {
-        try
-        {
-            var result = await _repository.GetAllAsync();
-            if (result.Count == 0)
-                return NoContent();
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                result = result
-                    .Where(p => p.ProductName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-            }
-
-            return Ok(result);
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, "Db Error");
-        }
-    }
 
     [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<Product>> GetById(int id)
@@ -115,7 +93,7 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("get-by-id-with-details/{id}")]
-    public async Task<ActionResult<ProductDetailDto>> GetByIdWithDetails(int id)
+    public async Task<ActionResult<ProductSearchResultDto>> GetByIdWithDetails(int id)
     {
         try
         {
@@ -123,7 +101,7 @@ public class ProductController : ControllerBase
             if (p is null)
                 return NotFound();
 
-            var dto = new ProductDetailDto
+            var dto = new ProductSearchResultDto
             {
                 Id = p.Id,
                 ProductName = p.ProductName,
@@ -136,7 +114,7 @@ public class ProductController : ControllerBase
                 CreatedAt = p.CreatedAt,
                 UpdatedAt = p.UpdatedAt,
                 UpdatedBy = p.UpdatedBy,
-                ProductVariants = p.ProductVariants?.Select(pv => new ProductVariantDetailDto
+                ProductVariants = p.ProductVariants?.Select(pv => new ProductVariantFilterDto
                 {
                     Id = pv.Id,
                     ProductId = pv.ProductId,
@@ -145,6 +123,12 @@ public class ProductController : ControllerBase
                     Price = pv.Price,
                     StockQuantity = pv.StockQuantity,
                     Status = pv.Status,
+                    ProductName = p.ProductName,
+                    ProductDescription = p.Description,
+                    CategoryName = p.Category?.Name,
+                    CategoryDescription = p.Category?.Description,
+                    BrandName = p.Brand?.Name,
+                    BrandDescription = p.Brand?.Description,
                     Images = pv.ProductVariantImages?.Select(pvi => new ProductVariantImageDetailDto
                     {
                         Id = pvi.Id,
@@ -161,7 +145,7 @@ public class ProductController : ControllerBase
                         Value = pva.AttributeValue?.Value ?? string.Empty,
                         Note = pva.AttributeValue?.Note
                     }).ToList() ?? new List<AttributeValueDetailDto>()
-                }).ToList() ?? new List<ProductVariantDetailDto>()
+                }).ToList() ?? new List<ProductVariantFilterDto>()
             };
 
             return Ok(dto);
@@ -182,10 +166,11 @@ public class ProductController : ControllerBase
         try
         {
             var products = await _repository.SearchProductsWithVariantsAsync(keyword, startingPrice, toPrice, sortBy);
-            
-            var dtos = products.Select(p => {
+
+            var dtos = products.Select(p =>
+            {
                 var variantsQuery = p.ProductVariants ?? new List<ProductVariant>();
-                
+
                 if (startingPrice.HasValue)
                 {
                     variantsQuery = variantsQuery.Where(pv => pv.Price >= startingPrice.Value).ToList();
@@ -262,75 +247,5 @@ public class ProductController : ControllerBase
     }
 
 
-    [HttpPost("create")]
-    public async Task<ActionResult<Product>> Create([FromBody] ProductCreateDto dto)
-    {
-        try
-        {
-            var entity = new Product
-            {
-                ProductName = dto.ProductName,
-                Description = dto.Description,
-                CategoryId = dto.CategoryId,
-                BrandId = dto.BrandId,
-                Status = dto.Status,
-                UpdatedBy = dto.UpdatedBy,
-                CreatedAt = DateTime.Now,
-                IsDeleted = false,
-            };
 
-            var created = await _repository.AddAsync(entity);
-            return Ok(created);
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, "Db Error");
-        }
-    }
-
-    [HttpPatch("update")]
-    public async Task<ActionResult> Update([FromBody] ProductUpdateDto dto)
-    {
-        try
-        {
-            var entity = new Product
-            {
-                Id = dto.Id,
-                ProductName = dto.ProductName,
-                Description = dto.Description,
-                CategoryId = dto.CategoryId,
-                BrandId = dto.BrandId,
-                Status = dto.Status,
-                UpdatedBy = dto.UpdatedBy,
-                UpdatedAt = DateTime.Now,
-            };
-
-            var updated = await _repository.UpdateAsync(entity);
-            if (updated is null)
-                return NotFound();
-
-            return Ok(updated);
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, "Db Error");
-        }
-    }
-
-    [HttpDelete("delete/{id}")]
-    public async Task<ActionResult> Delete(int id)
-    {
-        try
-        {
-            var success = await _repository.DeleteAsync(id);
-            if (!success)
-                return NotFound();
-
-            return Ok();
-        }
-        catch (Exception)
-        {
-            return StatusCode(500, "Db Error");
-        }
-    }
 }

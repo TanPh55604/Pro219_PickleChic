@@ -57,7 +57,7 @@ public class ProductVariantController : ControllerBase
     }
 
     [HttpGet("get-by-id-with-details/{id}")]
-    public async Task<ActionResult<ProductVariantDetailDto>> GetByIdWithDetails(int id)
+    public async Task<ActionResult<ProductVariantSearchResultDto>> GetByIdWithDetails(int id)
     {
         try
         {
@@ -65,7 +65,7 @@ public class ProductVariantController : ControllerBase
             if (pv is null)
                 return NotFound();
 
-            var dto = new ProductVariantDetailDto
+            var dto = new ProductVariantSearchResultDto
             {
                 Id = pv.Id,
                 ProductId = pv.ProductId,
@@ -74,6 +74,12 @@ public class ProductVariantController : ControllerBase
                 Price = pv.Price,
                 StockQuantity = pv.StockQuantity,
                 Status = pv.Status,
+                ProductName = pv.Product?.ProductName ?? string.Empty,
+                ProductDescription = pv.Product?.Description,
+                CategoryName = pv.Product?.Category?.Name,
+                CategoryDescription = pv.Product?.Category?.Description,
+                BrandName = pv.Product?.Brand?.Name,
+                BrandDescription = pv.Product?.Brand?.Description,
                 Images = pv.ProductVariantImages?.Select(pvi => new ProductVariantImageDetailDto
                 {
                     Id = pvi.Id,
@@ -244,6 +250,53 @@ public class ProductVariantController : ControllerBase
                 return NotFound();
 
             return Ok();
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
+
+    [HttpGet("search")]
+    public async Task<ActionResult<List<ProductVariantSearchResultDto>>> Search(string? keyword)
+    {
+        try
+        {
+            var variants = await _repository.SearchVariantsAsync(keyword);
+            var result = variants.Select(pv => new ProductVariantSearchResultDto
+            {
+                Id = pv.Id,
+                ProductId = pv.ProductId,
+                SKU = pv.SKU,
+                VariantName = pv.VariantName,
+                Price = pv.Price,
+                StockQuantity = pv.StockQuantity,
+                Status = pv.Status,
+                ProductName = pv.Product?.ProductName ?? string.Empty,
+                ProductDescription = pv.Product?.Description,
+                CategoryName = pv.Product?.Category?.Name,
+                CategoryDescription = pv.Product?.Category?.Description,
+                BrandName = pv.Product?.Brand?.Name,
+                BrandDescription = pv.Product?.Brand?.Description,
+                Images = pv.ProductVariantImages?.Select(pvi => new ProductVariantImageDetailDto
+                {
+                    Id = pvi.Id,
+                    URL = pvi.URL,
+                    Name = pvi.Name,
+                    Description = pvi.Description,
+                    IsMain = pvi.IsMain
+                }).ToList() ?? new List<ProductVariantImageDetailDto>(),
+                Attributes = pv.ProductVariantAttributes?.Select(pva => new AttributeValueDetailDto
+                {
+                    Id = pva.AttributeValue?.Id ?? 0,
+                    AttributeId = pva.AttributeValue?.AttributeId ?? 0,
+                    AttributeName = pva.AttributeValue?.ProductAttribute?.AttributeName ?? string.Empty,
+                    Value = pva.AttributeValue?.Value ?? string.Empty,
+                    Note = pva.AttributeValue?.Note
+                }).ToList() ?? new List<AttributeValueDetailDto>()
+            }).ToList();
+
+            return Ok(result);
         }
         catch (Exception)
         {

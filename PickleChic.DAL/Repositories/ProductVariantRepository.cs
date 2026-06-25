@@ -34,6 +34,10 @@ public class ProductVariantRepository
             .Include(pv => pv.ProductVariantAttributes!)
                 .ThenInclude(pva => pva.AttributeValue)
                     .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
             .FirstOrDefaultAsync(pv => pv.Id == id
                 && _context.Products.Any(p => p.Id == pv.ProductId && !p.IsDeleted));
     }
@@ -132,5 +136,126 @@ public class ProductVariantRepository
         _context.ProductVariants.Remove(entity);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    private IQueryable<ProductVariant> ApplyFiltersAndSorting(
+        IQueryable<ProductVariant> query,
+        decimal? startingPrice,
+        decimal? toPrice,
+        string? sortBy)
+    {
+        if (startingPrice.HasValue)
+        {
+            query = query.Where(pv => pv.Price >= startingPrice.Value);
+        }
+        if (toPrice.HasValue)
+        {
+            query = query.Where(pv => pv.Price <= toPrice.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(sortBy))
+        {
+            query = sortBy.ToLower() switch
+            {
+                "name_asc" => query.OrderBy(pv => pv.Product!.ProductName).ThenBy(pv => pv.VariantName),
+                "name_desc" => query.OrderByDescending(pv => pv.Product!.ProductName).ThenByDescending(pv => pv.VariantName),
+                "price_asc" => query.OrderBy(pv => pv.Price),
+                "price_desc" => query.OrderByDescending(pv => pv.Price),
+                _ => query
+            };
+        }
+
+        return query;
+    }
+
+    public async Task<List<ProductVariant>> SearchVariantsAsync(string? keyword, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null)
+    {
+        var query = _context.ProductVariants
+            .Include(pv => pv.ProductVariantImages)
+            .Include(pv => pv.ProductVariantAttributes!)
+                .ThenInclude(pva => pva.AttributeValue)
+                    .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
+            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status != -1);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var lowerKeyword = keyword.ToLower();
+            query = query.Where(pv =>
+                (pv.VariantName != null && pv.VariantName.ToLower().Contains(lowerKeyword))
+                || pv.SKU.ToLower().Contains(lowerKeyword)
+                || pv.Product!.ProductName.ToLower().Contains(lowerKeyword)
+                || (pv.Product.Category != null && pv.Product.Category.Name.ToLower().Contains(lowerKeyword))
+                || (pv.Product.Brand != null && pv.Product.Brand.Name.ToLower().Contains(lowerKeyword))
+                || pv.ProductVariantAttributes!.Any(pva =>
+                    pva.AttributeValue != null && (
+                        pva.AttributeValue.Value.ToLower().Contains(lowerKeyword)
+                        || (pva.AttributeValue.ProductAttribute != null && pva.AttributeValue.ProductAttribute.AttributeName.ToLower().Contains(lowerKeyword))
+                    )
+                )
+            );
+        }
+
+        query = ApplyFiltersAndSorting(query, startingPrice, toPrice, sortBy);
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<List<ProductVariant>> GetVariantsByBrandIdAsync(int brandId, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null)
+    {
+        var query = _context.ProductVariants
+            .Include(pv => pv.ProductVariantImages)
+            .Include(pv => pv.ProductVariantAttributes!)
+                .ThenInclude(pva => pva.AttributeValue)
+                    .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
+            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status != -1 && pv.Product.BrandId == brandId);
+
+        query = ApplyFiltersAndSorting(query, startingPrice, toPrice, sortBy);
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<List<ProductVariant>> GetVariantsByCategoryIdAsync(int categoryId, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null)
+    {
+        var query = _context.ProductVariants
+            .Include(pv => pv.ProductVariantImages)
+            .Include(pv => pv.ProductVariantAttributes!)
+                .ThenInclude(pva => pva.AttributeValue)
+                    .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
+            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status != -1 && pv.Product.CategoryId == categoryId);
+
+        query = ApplyFiltersAndSorting(query, startingPrice, toPrice, sortBy);
+
+        return await query.ToListAsync();
+    }
+
+    public async Task<List<ProductVariant>> GetVariantsByAttributeIdAsync(int attributeId, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null)
+    {
+        var query = _context.ProductVariants
+            .Include(pv => pv.ProductVariantImages)
+            .Include(pv => pv.ProductVariantAttributes!)
+                .ThenInclude(pva => pva.AttributeValue)
+                    .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
+            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status != -1 && pv.ProductVariantAttributes!.Any(pva =>
+                pva.AttributeValue != null && pva.AttributeValue.AttributeId == attributeId));
+
+        query = ApplyFiltersAndSorting(query, startingPrice, toPrice, sortBy);
+
+        return await query.ToListAsync();
     }
 }
