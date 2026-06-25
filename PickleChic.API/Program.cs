@@ -34,7 +34,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
      };
  });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(opt =>
@@ -75,7 +79,7 @@ builder.Services.AddScoped<ProductVariantImageRepository>();
 builder.Services.AddScoped<ProductAttributeRepository>();
 builder.Services.AddScoped<AttributeValueRepository>();
 builder.Services.AddScoped<ProductVariantAttributeRepository>();
-//builder.Services.AddScoped<CartItemRepository>();
+builder.Services.AddScoped<CartItemRepository>();
 //builder.Services.AddScoped<WishlistRepository>();
 //builder.Services.AddScoped<PointHistoryRepository>();
 //builder.Services.AddScoped<PromotionRepository>();
