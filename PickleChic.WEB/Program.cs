@@ -4,6 +4,7 @@ using PickleChic.WEB.Components;
 using PickleChic.WEB.Services.Admin;
 using PickleChic.WEB.Services.Api;
 using PickleChic.WEB.Services.Auth;
+using PickleChic.WEB.Services.Customer;
 using PickleChic.WEB.Services.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,8 @@ builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<IAttributeService, AttributeService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IVoucherService, PickleChic.WEB.Services.Admin.VoucherService>();
+builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IVoucherService, PickleChic.WEB.Services.Customer.VoucherService>();
 
 builder.Services.AddScoped(sp =>
 {

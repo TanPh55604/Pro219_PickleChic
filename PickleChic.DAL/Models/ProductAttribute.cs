@@ -10,8 +10,8 @@ public class ProductAttribute
     public int Id { get; set; }
 
     public string AttributeName { get; set; } = null!;
-    [ForeignKey("CategoryId")]
-    public int? CategoryId { get; set; } = null;
+
+    public int? CategoryId { get; set; }
 
     public virtual Category? Category { get; set; }
 

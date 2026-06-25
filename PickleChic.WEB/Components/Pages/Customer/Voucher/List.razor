@@ -1,0 +1,199 @@
+﻿@attribute [Route(RouterConfig.Customer.Vouchers)]
+@layout MainLayout
+
+<PageTitle>@Constant.metaDataCustomer Voucher</PageTitle>
+
+<div class="min-h-[calc(100vh-180px)] bg-neutral-50 !px-4 !pt-8 !pb-14">
+    <div class="!mx-auto w-full max-w-7xl">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+                <p class="text-xs font-black tracking-[0.28em] text-[#d71920] uppercase">
+                    Ưu đãi dành cho bạn
+                </p>
+
+                <h1 class="!mt-2 text-3xl font-black tracking-tight text-neutral-950 sm:text-4xl">
+                    Mã giảm giá đang diễn ra
+                </h1>
+
+                <p class="!mt-3 max-w-2xl text-sm leading-6 text-neutral-600">
+                    Các voucher phù hợp với hạng thành viên của bạn và còn hiệu lực tại thời điểm hiện tại
+                </p>
+            </div>
+
+            <a href="@RouterConfig.Customer.Products"
+               class="inline-flex items-center justify-center !gap-2 rounded-full !border !border-neutral-300 bg-white !px-5 !py-2.5 text-sm font-black text-neutral-900 transition hover:!border-[#d71920] hover:text-[#d71920]">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Size="Size.Small" />
+                Mua sắm ngay
+            </a>
+        </div>
+
+        @if (_isLoading)
+        {
+            <div class="!mt-10 flex justify-center !py-20">
+                <MudProgressCircular Indeterminate="true" Color="Color.Error" Size="Size.Large" />
+            </div>
+        }
+        else if (!_vouchers.Any())
+        {
+            <div class="!mt-10 rounded-3xl border border-neutral-200 bg-white !p-12 text-center shadow-sm">
+                <div class="!mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-neutral-400">
+                    <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Large" />
+                </div>
+
+                <h2 class="!mt-5 text-2xl font-black text-neutral-950">
+                    Chưa có voucher khả dụng
+                </h2>
+
+                <p class="!mt-2 text-sm text-neutral-500">
+                    Hãy quay lại sau hoặc nâng hạng thành viên để nhận thêm ưu đãi
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="!mt-10 grid !gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                @foreach (var voucher in _vouchers)
+                {
+                    <div class="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
+                        <div class="bg-gradient-to-r from-[#d71920] to-[#ff4d55] !px-6 !py-5 text-white">
+                            <div class="flex items-start justify-between !gap-3">
+                                <div>
+                                    <p class="text-xs font-black tracking-[0.24em] text-white/80 uppercase">
+                                        @GetDiscountTypeLabel(voucher.DiscountType)
+                                    </p>
+
+                                    <p class="!mt-2 text-3xl font-black tracking-tight">
+                                        @FormatDiscountValue(voucher)
+                                    </p>
+                                </div>
+
+                                <span class="rounded-full bg-white/15 !px-3 !py-1 text-xs font-black uppercase backdrop-blur">
+                                    Đang diễn ra
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="!space-y-4 !p-6">
+                            <div>
+                                <p class="text-xs font-bold tracking-wide text-neutral-500 uppercase">
+                                    Mã voucher
+                                </p>
+
+                                <p class="!mt-1 text-xl font-black tracking-wide text-neutral-950">
+                                    @voucher.VoucherCode
+                                </p>
+                            </div>
+
+                            <div class="!space-y-2 text-sm text-neutral-600">
+                                <p>Đơn tối thiểu: <span class="font-bold text-neutral-900">@voucher.MinOrderValue.ToString("N0")đ</span></p>
+                                <p>Hạng yêu cầu: <span class="font-bold text-neutral-900">@GetRankName(voucher.MinimumRank)</span></p>
+                                <p>Hết hạn: <span class="font-bold text-neutral-900">@voucher.EndDate.ToString("dd/MM/yyyy HH:mm")</span></p>
+                            </div>
+
+                            <div class="border-t border-neutral-100 !pt-4">
+                                <MudButton Variant="Variant.Outlined"
+                                           Color="Color.Error"
+                                           StartIcon="@Icons.Material.Filled.ContentCopy"
+                                           OnClick="@(() => CopyVoucherCodeAsync(voucher.VoucherCode))"
+                                           FullWidth="true"
+                                           Class="!rounded-full !py-2.5 !font-black !normal-case">
+                                    Sao chép mã
+                                </MudButton>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private bool _isLoading = true;
+
+    private List<VoucherResponse> _vouchers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await _authStorageService.IsAuthenticatedAsync())
+        {
+            _navigation.NavigateTo(RouterConfig.Customer.Login, replace: true);
+            return;
+        }
+
+        await LoadVouchersAsync();
+    }
+
+    private async Task LoadVouchersAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _voucherService.GetOngoingAsync();
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _vouchers = result.Data ?? new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task CopyVoucherCodeAsync(string voucherCode)
+    {
+        await _JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", voucherCode);
+        _snackbar.Add("Đã sao chép mã voucher", Severity.Success);
+    }
+
+    private static string GetDiscountTypeLabel(string discountType)
+    {
+        return discountType switch
+        {
+            VoucherDiscountType.Percent => "Giảm theo %",
+            VoucherDiscountType.Fixed => "Giảm cố định",
+            _ => discountType
+        };
+    }
+
+    private static string FormatDiscountValue(VoucherResponse voucher)
+    {
+        if (voucher.DiscountType == VoucherDiscountType.Percent)
+        {
+            return $"{voucher.DiscountValue:N0}%";
+        }
+
+        return $"{voucher.DiscountValue:N0}đ";
+    }
+
+    private static string GetRankName(int? rankId)
+    {
+        return rankId switch
+        {
+            1 => "Đồng",
+            2 => "Bạc",
+            3 => "Vàng",
+            4 => "Kim cương",
+            _ => "Tất cả hạng"
+        };
+    }
+
+    private static string ConvertErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách mã giảm giá",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
+}

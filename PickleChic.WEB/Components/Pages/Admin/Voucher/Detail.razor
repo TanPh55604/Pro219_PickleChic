@@ -3,35 +3,271 @@
 
 <PageTitle>@Constant.metaDataAdmin Voucher Detail</PageTitle>
 
-<div class="mx-auto w-full max-w-7xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Chi tiết mã giảm giá</h1>
+@if (_isLoading)
+{
+    <DetailPageSkeleton ShowSubtitle="true"
+                        InfoFieldCount="8"
+                        DescriptionBlockCount="0" />
+}
+else
+{
+    <div class="!mx-auto w-full max-w-6xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Chi tiết mã giảm giá</h1>
+            </div>
+
+            <div class="flex flex-wrap !gap-3">
+                <a href="@RouterConfig.Admin.Vouchers"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                    Quay lại
+                </a>
+
+                <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditVoucher, Id)"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                    Cập nhật
+                </a>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Delete"
+                           OnClick="OpenDeleteDialog"
+                           Class="!rounded-xl !px-5 !py-2.5 !normal-case">
+                    Xóa
+                </MudButton>
+            </div>
         </div>
 
-        <div class="flex flex-wrap !gap-3">
-            <a href="@RouterConfig.Admin.Vouchers"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-                Quay lại
-            </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
+            <div class="!border-b !border-slate-200 !p-6 md:!p-8">
+                <div class="flex flex-col !gap-5 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">
+                            @_model.VoucherCode
+                        </h2>
 
-            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditVoucher, Id)"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
-                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
-                Cập nhật
-            </a>
+                        <p class="!mt-2 text-sm leading-6 text-slate-500">
+                            @FormatDiscountSummary(_model)
+                        </p>
+                    </div>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Error"
-                       StartIcon="@Icons.Material.Filled.Delete"
-                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
-                Xóa
-            </MudButton>
+                    @if (_model.IsActive)
+                    {
+                        <span class="inline-flex items-center !rounded-full !bg-green-50 !px-4 !py-2 text-sm font-bold !text-green-700">
+                            Đang hoạt động
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center !rounded-full !bg-slate-100 !px-4 !py-2 text-sm font-bold !text-slate-700">
+                            Tạm ẩn
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <div class="!p-6 md:!p-8">
+                <h3 class="text-lg font-bold text-slate-900">
+                    Thông tin mã giảm giá
+                </h3>
+
+                <div class="!mt-5 grid !gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Loại giảm giá</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @GetDiscountTypeLabel(_model.DiscountType)
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Giá trị giảm</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @FormatDiscountValue(_model)
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Giá trị đơn tối thiểu</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.MinOrderValue.ToString("N0")đ
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Hạng khách tối thiểu</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @GetRankName(_model.MinimumRank)
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Ngày bắt đầu</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.StartDate.ToString("dd/MM/yyyy HH:mm")
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Ngày kết thúc</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.EndDate.ToString("dd/MM/yyyy HH:mm")
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Số lượng phát hành</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.UsageLimit
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Số lần dùng tối đa mỗi khách</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.CustomerUsageLimit
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Đã sử dụng</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.UsedCount
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private VoucherResponse _model = new();
+
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVoucherAsync();
+    }
+
+    private async Task LoadVoucherAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminVoucherService.GetByIdAsync(Id);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertVoucherErrorMessage(result.Message), Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Vouchers, replace: true);
+                return;
+            }
+
+            _model = result.Data;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OpenDeleteDialog()
+    {
+        var parameters = new DialogParameters<VoucherDeleteDialog>
+        {
+            { x => x.Voucher, _model }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<VoucherDeleteDialog>(
+            "Xóa mã giảm giá",
+            parameters,
+            options);
+
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult.Canceled)
+        {
+            return;
+        }
+
+        var result = await _adminVoucherService.DeleteAsync(Id);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(ConvertVoucherErrorMessage(result.Message), Severity.Error);
+            return;
+        }
+
+        _snackbar.Add("Xóa mã giảm giá thành công", Severity.Success);
+
+        _navigation.NavigateTo(RouterConfig.Admin.Vouchers, replace: true);
+    }
+
+    private static string GetDiscountTypeLabel(string discountType)
+    {
+        return discountType switch
+        {
+            VoucherDiscountType.Percent => "Phần trăm",
+            VoucherDiscountType.Fixed => "Giá cố định",
+            _ => discountType
+        };
+    }
+
+    private static string FormatDiscountValue(VoucherResponse voucher)
+    {
+        if (voucher.DiscountType == VoucherDiscountType.Percent)
+        {
+            var maxText = voucher.MaxDiscountAmount.HasValue
+                ? $" (tối đa {voucher.MaxDiscountAmount.Value:N0}đ)"
+                : string.Empty;
+
+            return $"{voucher.DiscountValue:N0}%{maxText}";
+        }
+
+        return $"{voucher.DiscountValue:N0}đ";
+    }
+
+    private static string FormatDiscountSummary(VoucherResponse voucher)
+    {
+        return $"Đơn tối thiểu {voucher.MinOrderValue:N0}đ · {FormatDiscountValue(voucher)}";
+    }
+
+    private static string GetRankName(int? rankId)
+    {
+        return rankId switch
+        {
+            1 => "Đồng",
+            2 => "Bạc",
+            3 => "Vàng",
+            4 => "Kim cương",
+            _ => "Không yêu cầu"
+        };
+    }
+
+    private static string ConvertVoucherErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Không tìm thấy" => "Không tìm thấy mã giảm giá",
+            "Db Error" => "Không thể xử lý dữ liệu mã giảm giá",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
 }

@@ -29,7 +29,7 @@
         </a>
 
         <nav class="hidden items-center !gap-8 text-sm font-black tracking-wide uppercase lg:flex">
-            @foreach (var item in _menuItems)
+            @foreach (var item in GetMenuItems())
             {
                 <a href="@item.Url" class="group relative !py-2 text-neutral-900 transition hover:!text-[#d71920]">
                     @item.Name
@@ -100,6 +100,12 @@
                                 Đơn hàng của tôi
                             </a>
 
+                            <a href="@RouterConfig.Customer.Vouchers"
+                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" />
+                                Mã giảm giá
+                            </a>
+
                             <a href="@RouterConfig.Customer.ChangePassword"
                                class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
                                 <MudIcon Icon="@Icons.Material.Filled.Password" Size="Size.Small" />
@@ -143,13 +149,24 @@
         }
     }
 
-    private NavItem[] _menuItems =
+    private NavItem[] GetMenuItems()
     {
-        new("Trang chủ", RouterConfig.Customer.Home),
-        new("Sản phẩm", RouterConfig.Customer.Products),
-        new("Giới thiệu", RouterConfig.Customer.About),
-        new("Liên hệ", RouterConfig.Customer.Contact)
-    };
+        var items = new List<NavItem>
+        {
+            new("Trang chủ", RouterConfig.Customer.Home),
+            new("Sản phẩm", RouterConfig.Customer.Products)
+        };
+
+        if (IsAuthenticated)
+        {
+            items.Add(new("Mã giảm giá", RouterConfig.Customer.Vouchers));
+        }
+
+        items.Add(new("Giới thiệu", RouterConfig.Customer.About));
+        items.Add(new("Liên hệ", RouterConfig.Customer.Contact));
+
+        return items.ToArray();
+    }
 
     private async Task HandleCartClick()
     {
