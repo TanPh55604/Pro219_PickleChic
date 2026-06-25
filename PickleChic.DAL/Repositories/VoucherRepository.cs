@@ -55,6 +55,7 @@ public class VoucherRepository
             existing.StartDate = entity.StartDate;
             existing.EndDate = entity.EndDate;
             existing.UsageLimit = entity.UsageLimit;
+            existing.CustomerUsageLimit = entity.CustomerUsageLimit;
             existing.UsedCount = entity.UsedCount;
             existing.IsActive = entity.IsActive;
             await _context.SaveChangesAsync();

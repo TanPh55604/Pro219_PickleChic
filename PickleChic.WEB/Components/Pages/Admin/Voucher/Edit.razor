@@ -3,20 +3,394 @@
 
 <PageTitle>@Constant.metaDataAdmin Edit Voucher</PageTitle>
 
-<div class="mx-auto w-full max-w-5xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Cập nhật mã giảm giá</h1>
+@if (_isLoading)
+{
+    <EditPageSkeleton FieldCount="8" />
+}
+else
+{
+    <div class="!mx-auto w-full max-w-5xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Cập nhật mã giảm giá</h1>
+            </div>
+
+            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.VoucherDetail, Id)"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                Quay lại
+            </a>
         </div>
 
-        <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.VoucherDetail, Id)"
-           class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-            Quay lại
-        </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+            <MudForm @ref="_form"
+                     Model="@_model"
+                     Validation="@_validator.ValidateValue">
+                <div class="!space-y-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Thông tin mã giảm giá</h2>
+                    </div>
+
+                    <div class="grid !gap-5 md:grid-cols-2">
+                        <MudTextField @bind-Value="_model.VoucherCode"
+                                      For="@(() => _model.VoucherCode)"
+                                      Label="Mã voucher"
+                                      Placeholder="Nhập mã voucher"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      Immediate="true" />
+
+                        <MudSelect T="string"
+                                   Value="_model.DiscountType"
+                                   ValueChanged="OnDiscountTypeChanged"
+                                   For="@(() => _model.DiscountType)"
+                                   Label="Loại giảm giá"
+                                   Variant="Variant.Outlined">
+                            <MudSelectItem T="string" Value="@VoucherDiscountType.Percent">Phần trăm (%)</MudSelectItem>
+                            <MudSelectItem T="string" Value="@VoucherDiscountType.Fixed">Giá cố định</MudSelectItem>
+                        </MudSelect>
+
+                        <MudNumericField T="decimal"
+                                         @bind-Value="_model.DiscountValue"
+                                         For="@(() => _model.DiscountValue)"
+                                         Label="@GetDiscountValueLabel()"
+                                         Placeholder="Nhập giá trị giảm"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Immediate="true" />
+
+                        <MudNumericField T="decimal"
+                                         @bind-Value="_model.MinOrderValue"
+                                         For="@(() => _model.MinOrderValue)"
+                                         Label="Giá trị đơn tối thiểu"
+                                         Placeholder="Nhập giá trị đơn tối thiểu"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Immediate="true" />
+
+                        <MudNumericField T="decimal?"
+                                         @bind-Value="_model.MaxDiscountAmount"
+                                         For="@(() => _model.MaxDiscountAmount)"
+                                         Label="Giảm tối đa"
+                                         Placeholder="Nhập giảm tối đa"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Disabled="@(!_model.IsPercentDiscount)"
+                                         Immediate="true" />
+
+                        <MudSelect T="int?"
+                                   @bind-Value="_model.MinimumRank"
+                                   For="@(() => _model.MinimumRank)"
+                                   Label="Hạng khách tối thiểu"
+                                   Placeholder="Không yêu cầu"
+                                   Variant="Variant.Outlined"
+                                   Clearable="true">
+                            <MudSelectItem T="int?" Value="@((int?)null)">Không yêu cầu</MudSelectItem>
+                            <MudSelectItem T="int?" Value="1">Đồng</MudSelectItem>
+                            <MudSelectItem T="int?" Value="2">Bạc</MudSelectItem>
+                            <MudSelectItem T="int?" Value="3">Vàng</MudSelectItem>
+                            <MudSelectItem T="int?" Value="4">Kim cương</MudSelectItem>
+                        </MudSelect>
+
+                        <div class="md:col-span-2">
+                            <p class="!mb-2 text-sm font-medium text-slate-700">
+                                Ngày bắt đầu <span class="text-red-600">*</span>
+                            </p>
+                            <div class="grid !gap-3 md:grid-cols-2">
+                                <MudDatePicker @bind-Date="_startDatePart"
+                                               @bind-Date:after="OnStartDateTimeChanged"
+                                               Label="Chọn ngày"
+                                               Variant="Variant.Outlined"
+                                               Error="@_hasStartDateError"
+                                               ErrorText="@_startDateError" />
+                                <MudTimePicker @bind-Time="_startTimePart"
+                                               @bind-Time:after="OnStartDateTimeChanged"
+                                               Label="Chọn giờ"
+                                               Variant="Variant.Outlined"
+                                               Error="@_hasStartDateError"
+                                               ErrorText="@_startDateError" />
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <p class="!mb-2 text-sm font-medium text-slate-700">
+                                Ngày kết thúc <span class="text-red-600">*</span>
+                            </p>
+                            <div class="grid !gap-3 md:grid-cols-2">
+                                <MudDatePicker @bind-Date="_endDatePart"
+                                               @bind-Date:after="OnEndDateTimeChanged"
+                                               Label="Chọn ngày"
+                                               Variant="Variant.Outlined"
+                                               Error="@_hasEndDateError"
+                                               ErrorText="@_endDateError" />
+                                <MudTimePicker @bind-Time="_endTimePart"
+                                               @bind-Time:after="OnEndDateTimeChanged"
+                                               Label="Chọn giờ"
+                                               Variant="Variant.Outlined"
+                                               Error="@_hasEndDateError"
+                                               ErrorText="@_endDateError" />
+                            </div>
+                        </div>
+
+                        <MudNumericField T="int"
+                                         @bind-Value="_model.UsageLimit"
+                                         For="@(() => _model.UsageLimit)"
+                                         Label="Số lượng phát hành"
+                                         Placeholder="Nhập số lượng phát hành"
+                                         Variant="Variant.Outlined"
+                                         Min="1"
+                                         Immediate="true" />
+
+                        <MudNumericField T="int"
+                                         @bind-Value="_model.CustomerUsageLimit"
+                                         For="@(() => _model.CustomerUsageLimit)"
+                                         Label="Số lần dùng tối đa mỗi khách"
+                                         Placeholder="Nhập số lần dùng tối đa"
+                                         Variant="Variant.Outlined"
+                                         Min="1"
+                                         Immediate="true" />
+
+                        <MudNumericField T="int"
+                                         Value="_model.UsedCount"
+                                         Label="Đã sử dụng"
+                                         Variant="Variant.Outlined"
+                                         Disabled="true" />
+
+                        <div class="md:col-span-2">
+                            <MudSwitch @bind-Value="_model.IsActive"
+                                       For="@(() => _model.IsActive)"
+                                       Label="Đang hoạt động"
+                                       Color="Color.Success" />
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Dark"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   OnClick="SubmitAsync"
+                                   Disabled="@_isSubmitting"
+                                   Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                            @(_isSubmitting ? "Đang cập nhật.." : "Cập nhật")
+                        </MudButton>
+                    </div>
+                </div>
+            </MudForm>
+        </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private MudForm? _form;
+
+    private VoucherModel _model = new();
+
+    private readonly VoucherSchema.CreateUpdate _validator = new(isEdit: true);
+
+    private DateTime? _startDatePart;
+    private TimeSpan? _startTimePart;
+    private DateTime? _endDatePart;
+    private TimeSpan? _endTimePart;
+
+    private string? _startDateError;
+    private string? _endDateError;
+
+    private bool _hasStartDateError => !string.IsNullOrWhiteSpace(_startDateError);
+    private bool _hasEndDateError => !string.IsNullOrWhiteSpace(_endDateError);
+
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVoucherAsync();
+    }
+
+    private async Task LoadVoucherAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminVoucherService.GetByIdAsync(Id);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertVoucherErrorMessage(result.Message), Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Vouchers, replace: true);
+                return;
+            }
+
+            _model = MapToModel(result.Data);
+            SyncDateTimePartsFromModel();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static VoucherModel MapToModel(VoucherResponse response)
+    {
+        return new VoucherModel
+        {
+            Id = response.Id,
+            VoucherCode = response.VoucherCode,
+            DiscountType = response.DiscountType,
+            DiscountValue = response.DiscountValue,
+            MinOrderValue = response.MinOrderValue,
+            MaxDiscountAmount = response.MaxDiscountAmount,
+            MinimumRank = response.MinimumRank,
+            StartDate = response.StartDate,
+            EndDate = response.EndDate,
+            UsageLimit = response.UsageLimit,
+            CustomerUsageLimit = response.CustomerUsageLimit,
+            UsedCount = response.UsedCount,
+            IsActive = response.IsActive,
+            OriginalStartDate = response.StartDate
+        };
+    }
+
+    private void SyncDateTimePartsFromModel()
+    {
+        if (_model.StartDate.HasValue)
+        {
+            _startDatePart = _model.StartDate.Value.Date;
+            _startTimePart = _model.StartDate.Value.TimeOfDay;
+        }
+
+        if (_model.EndDate.HasValue)
+        {
+            _endDatePart = _model.EndDate.Value.Date;
+            _endTimePart = _model.EndDate.Value.TimeOfDay;
+        }
+    }
+
+    private void UpdateStartDate()
+    {
+        if (!_startDatePart.HasValue || !_startTimePart.HasValue)
+        {
+            _model.StartDate = null;
+            return;
+        }
+
+        _model.StartDate = _startDatePart.Value.Date.Add(_startTimePart.Value);
+    }
+
+    private void OnStartDateTimeChanged()
+    {
+        UpdateStartDate();
+        _startDateError = null;
+        _endDateError = null;
+    }
+
+    private void OnEndDateTimeChanged()
+    {
+        UpdateEndDate();
+        _endDateError = null;
+    }
+
+    private void UpdateEndDate()
+    {
+        if (!_endDatePart.HasValue || !_endTimePart.HasValue)
+        {
+            _model.EndDate = null;
+            return;
+        }
+
+        _model.EndDate = _endDatePart.Value.Date.Add(_endTimePart.Value);
+    }
+
+    private async Task ValidateDateFieldsAsync()
+    {
+        UpdateStartDate();
+        UpdateEndDate();
+
+        var result = await _validator.ValidateAsync(_model);
+
+        _startDateError = result.Errors
+            .FirstOrDefault(e => e.PropertyName == nameof(VoucherModel.StartDate))
+            ?.ErrorMessage;
+
+        _endDateError = result.Errors
+            .FirstOrDefault(e => e.PropertyName == nameof(VoucherModel.EndDate))
+            ?.ErrorMessage;
+    }
+
+    private void OnDiscountTypeChanged(string discountType)
+    {
+        _model.DiscountType = discountType;
+
+        if (discountType == VoucherDiscountType.Fixed)
+        {
+            _model.MaxDiscountAmount = null;
+        }
+        else if (!_model.MaxDiscountAmount.HasValue)
+        {
+            _model.MaxDiscountAmount = 100000;
+        }
+    }
+
+    private string GetDiscountValueLabel()
+    {
+        return _model.IsPercentDiscount
+            ? "Giá trị giảm (%)"
+            : "Giá trị giảm (đ)";
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null || _isSubmitting)
+        {
+            return;
+        }
+
+        UpdateStartDate();
+        UpdateEndDate();
+
+        await _form.ValidateAsync();
+        await ValidateDateFieldsAsync();
+
+        if (!_form.IsValid || _hasStartDateError || _hasEndDateError)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _adminVoucherService.UpdateAsync(_model);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertVoucherErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Cập nhật mã giảm giá thành công", Severity.Success);
+
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.VoucherDetail, Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertVoucherErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Không tìm thấy" => "Không tìm thấy mã giảm giá",
+            "Db Error" => "Không thể xử lý dữ liệu mã giảm giá",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
 }

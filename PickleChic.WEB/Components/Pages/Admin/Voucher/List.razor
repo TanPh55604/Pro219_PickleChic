@@ -15,6 +15,221 @@
             Thêm mã giảm giá
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
+                <MudTextField @bind-Value="_searchText"
+                              Placeholder="Tìm kiếm theo mã voucher.."
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              OnKeyDown="HandleSearchKeyDown"
+                              Class="flex-1" />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="SearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Tìm kiếm
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ResetSearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Làm mới
+                </MudButton>
+            </div>
+        </div>
+
+        <MudTable Items="_vouchers"
+                  Loading="@_isLoading"
+                  Hover="true"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(100vh - 340px)"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Mã voucher</MudTh>
+                <MudTh>Loại giảm</MudTh>
+                <MudTh>Giá trị</MudTh>
+                <MudTh>Thời gian</MudTh>
+                <MudTh>Phát hành</MudTh>
+                <MudTh>Đã dùng</MudTh>
+                <MudTh>Trạng thái</MudTh>
+                <MudTh Class="text-right">Chi tiết</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="STT">
+                    <span class="font-medium text-slate-700">
+                        @(_vouchers.IndexOf(context) + 1)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Mã voucher">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.VoucherDetail, context.Id)"
+                       class="font-semibold text-slate-900 transition hover:text-slate-600">
+                        @context.VoucherCode
+                    </a>
+                </MudTd>
+
+                <MudTd DataLabel="Loại giảm">
+                    <span class="text-sm text-slate-600">
+                        @GetDiscountTypeLabel(context.DiscountType)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Giá trị">
+                    <span class="text-sm font-medium text-slate-700">
+                        @FormatDiscountValue(context)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Thời gian">
+                    <div class="text-sm text-slate-600">
+                        <p>@context.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        <p class="text-slate-400">→ @context.EndDate.ToString("dd/MM/yyyy HH:mm")</p>
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="Phát hành">
+                    <span class="text-sm text-slate-600">@context.UsageLimit</span>
+                </MudTd>
+
+                <MudTd DataLabel="Đã dùng">
+                    <span class="text-sm text-slate-600">@context.UsedCount</span>
+                </MudTd>
+
+                <MudTd DataLabel="Trạng thái">
+                    @if (context.IsActive)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                            Đang hoạt động
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
+                            Tạm ẩn
+                        </MudChip>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="Chi tiết" Class="text-right">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.VoucherDetail, context.Id)"
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                    </a>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="!py-10 text-center text-slate-500">
+                    Không có mã giảm giá nào
+                </div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+            </PagerContent>
+        </MudTable>
+    </div>
 </div>
 
-@code {}
+@code {
+    private string _searchText = string.Empty;
+
+    private bool _isLoading = true;
+
+    private List<VoucherResponse> _vouchers = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVouchersAsync();
+    }
+
+    private async Task LoadVouchersAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminVoucherService.GetAllAsync(_searchText);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertVoucherErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _vouchers = result.Data ?? new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        await LoadVouchersAsync();
+    }
+
+    private async Task ResetSearchAsync()
+    {
+        _searchText = string.Empty;
+        await LoadVouchersAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private static string GetDiscountTypeLabel(string discountType)
+    {
+        return discountType switch
+        {
+            VoucherDiscountType.Percent => "Phần trăm",
+            VoucherDiscountType.Fixed => "Giá cố định",
+            _ => discountType
+        };
+    }
+
+    private static string FormatDiscountValue(VoucherResponse voucher)
+    {
+        if (voucher.DiscountType == VoucherDiscountType.Percent)
+        {
+            var maxText = voucher.MaxDiscountAmount.HasValue
+                ? $" (tối đa {voucher.MaxDiscountAmount.Value:N0}đ)"
+                : string.Empty;
+
+            return $"{voucher.DiscountValue:N0}%{maxText}";
+        }
+
+        return $"{voucher.DiscountValue:N0}đ";
+    }
+
+    private static string ConvertVoucherErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách mã giảm giá",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
+}

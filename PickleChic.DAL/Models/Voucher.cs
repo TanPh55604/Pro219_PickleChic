@@ -29,6 +29,8 @@ public class Voucher
 
     public int UsageLimit { get; set; }
 
+    public int CustomerUsageLimit { get; set; }
+
     public int UsedCount { get; set; }
 
     public bool IsActive { get; set; }

@@ -95,5 +95,23 @@
 
             public static string Delete(int id) => $"management/product-variant/delete/{id}";
         }
+
+        public static class Voucher
+        {
+            public const string GetAvailable = "voucher/get-available-voucher";
+
+            public static string GetById(int id) => $"voucher/get-by-id/{id}";
+
+            public static class Management
+            {
+                public const string GetAll = "management/voucher/get-all";
+                public const string Create = "management/voucher/create";
+                public const string Update = "management/voucher/update";
+
+                public static string GetById(int id) => $"management/voucher/get-by-id/{id}";
+
+                public static string Delete(int id) => $"management/voucher/delete/{id}";
+            }
+        }
     }
 }

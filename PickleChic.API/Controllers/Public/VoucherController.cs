@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace PickleChic.API.Controllers.Public;
 
-[Route("public/voucher")]
+[Route("voucher")]
 [ApiController]
 public class VoucherController : ControllerBase
 {
