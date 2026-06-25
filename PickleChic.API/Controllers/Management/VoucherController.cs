@@ -72,6 +72,7 @@ public class VoucherController : ControllerBase
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 UsageLimit = dto.UsageLimit,
+                CustomerUsageLimit = dto.CustomerUsageLimit,
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
             };
@@ -102,6 +103,7 @@ public class VoucherController : ControllerBase
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 UsageLimit = dto.UsageLimit,
+                CustomerUsageLimit = dto.CustomerUsageLimit,
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
             };

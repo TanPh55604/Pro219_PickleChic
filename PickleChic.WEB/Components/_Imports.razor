@@ -21,6 +21,7 @@
 @using PickleChic.WEB.Services.Auth
 @using PickleChic.WEB.Services.Api
 @using PickleChic.WEB.Services.Admin
+@using PickleChic.WEB.Services.Customer
 @using PickleChic.WEB.Components.Pages.Admin.ProductVariant
 
 @inject IJSRuntime _JSRuntime
@@ -38,4 +39,6 @@
 @inject IAttributeService _adminAttributeService
 @inject IProductService _adminProductService
 @inject IProductVariantService _adminProductVariantService
+@inject PickleChic.WEB.Services.Admin.IVoucherService _adminVoucherService
+@inject PickleChic.WEB.Services.Customer.IVoucherService _voucherService
 

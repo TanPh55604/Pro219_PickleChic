@@ -48,6 +48,9 @@
             public const string Points = "/profile/points";
             public const string Reviews = "/profile/reviews";
 
+            // Voucher
+            public const string Vouchers = "/vouchers";
+
             // About
             public const string About = "/about";
             public const string Contact = "/contact";
