@@ -59,7 +59,10 @@ builder.Services.AddDbContext<PickleChicDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
         ?? "Data Source=localhost;Initial Catalog=PickleChic;TrustServerCertificate=True;User Id=sa; Password=123456"));
 
-//builder.Services.AddScoped<AddressRepository>();
+builder.Services.AddScoped<AddressRepository>();
+builder.Services.AddScoped<ProvinceRepository>();
+builder.Services.AddScoped<DistrictRepository>();
+builder.Services.AddScoped<WardRepository>();
 builder.Services.AddScoped<CustomerRepository>();
 builder.Services.AddScoped<RankRepository>();
 builder.Services.AddScoped<StaffRepository>();
@@ -78,7 +81,7 @@ builder.Services.AddScoped<ProductVariantAttributeRepository>();
 //builder.Services.AddScoped<PromotionRepository>();
 //builder.Services.AddScoped<PromotionDetailRepository>();
 builder.Services.AddScoped<VoucherRepository>();
-//builder.Services.AddScoped<OrderRepository>();
+builder.Services.AddScoped<OrderRepository>();
 //builder.Services.AddScoped<OrderItemRepository>();
 //builder.Services.AddScoped<PaymentMethodRepository>();
 

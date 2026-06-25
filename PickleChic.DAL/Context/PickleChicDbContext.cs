@@ -35,6 +35,9 @@ public class PickleChicDbContext : DbContext
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<PaymentMethod> PaymentMethods { get; set; }
+    public DbSet<Province> Provinces { get; set; }
+    public DbSet<District> Districts { get; set; }
+    public DbSet<Ward> Wards { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -55,10 +58,64 @@ public class PickleChicDbContext : DbContext
             .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Order>()
-            .HasOne(o => o.ShippingAddress)
+            .HasOne(o => o.Address)
             .WithMany(a => a.Orders)
-            .HasForeignKey(o => o.ShippingAddressId)
+            .HasForeignKey(o => o.AddressId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Province>(entity =>
+        {
+            entity.HasIndex(p => p.Code).IsUnique();
+        });
+
+        modelBuilder.Entity<District>(entity =>
+        {
+            entity.HasIndex(d => d.Code).IsUnique();
+            entity.HasOne(d => d.Province)
+                .WithMany(p => p.Districts)
+                .HasForeignKey(d => d.ProvinceId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Ward>(entity =>
+        {
+            entity.HasIndex(w => w.Code).IsUnique();
+            entity.HasOne(w => w.District)
+                .WithMany(d => d.Wards)
+                .HasForeignKey(w => w.DistrictId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Address>(entity =>
+        {
+            entity.HasOne(a => a.Ward)
+                .WithMany(w => w.Addresses)
+                .HasForeignKey(a => a.WardId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Province>().HasData(
+            new Province { Id = 1, Name = "Thành phố Hà Nội", Code = "01", InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new Province { Id = 2, Name = "Thành phố Hồ Chí Minh", Code = "79", InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new Province { Id = 3, Name = "Thành phố Đà Nẵng", Code = "48", InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) }
+        );
+
+        modelBuilder.Entity<District>().HasData(
+            new District { Id = 1, Name = "Quận Ba Đình", Code = "001", ProvinceId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new District { Id = 2, Name = "Quận Hoàn Kiếm", Code = "002", ProvinceId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new District { Id = 3, Name = "Quận 1", Code = "760", ProvinceId = 2, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new District { Id = 4, Name = "Quận Bình Thạnh", Code = "770", ProvinceId = 2, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new District { Id = 5, Name = "Quận Hải Châu", Code = "490", ProvinceId = 3, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) }
+        );
+
+        modelBuilder.Entity<Ward>().HasData(
+            new Ward { Id = 1, Name = "Phường Phúc Xá", Code = "00001", DistrictId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new Ward { Id = 2, Name = "Phường Trúc Bạch", Code = "00004", DistrictId = 1, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new Ward { Id = 3, Name = "Phường Hàng Bạc", Code = "00037", DistrictId = 2, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new Ward { Id = 4, Name = "Phường Bến Nghé", Code = "26734", DistrictId = 3, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new Ward { Id = 5, Name = "Phường 25", Code = "27139", DistrictId = 4, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) },
+            new Ward { Id = 6, Name = "Phường Thạch Thang", Code = "20194", DistrictId = 5, InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0) }
+        );
 
         modelBuilder.Entity<Order>()
             .HasOne(o => o.PaymentMethod)

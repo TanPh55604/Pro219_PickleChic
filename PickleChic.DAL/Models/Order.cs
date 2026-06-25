@@ -13,22 +13,10 @@ public class Order
 
     public string OrderCode { get; set; } = null!;
 
+    [ForeignKey(nameof(Address))]
+    public int AddressId { get; set; }
+
     public DateTime OrderDate { get; set; }
-
-    [ForeignKey(nameof(ShippingAddress))]
-    public int ShippingAddressId { get; set; }
-
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal TotalAmount { get; set; }
-
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal DiscountAmount { get; set; }
-
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal FinalAmount { get; set; }
-
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal ShippingFee { get; set; }
 
     [ForeignKey(nameof(PaymentMethod))]
     public int PaymentMethodId { get; set; }
@@ -42,41 +30,32 @@ public class Order
 
     public string? Notes { get; set; }
 
-    public string? StatusHistory { get; set; }
+    public DateTime? LastUpdate { get; set; }
+
+    public bool Delete { get; set; }
 
     public string? CustomerType { get; set; }
 
-    public bool InOrderPOS { get; set; }
+    public bool IsOrderPOS { get; set; }
 
     public string? PaymentLink { get; set; }
 
     public DateTime? PaymentExpiration { get; set; }
 
-    public string CustomerName { get; set; } = null!;
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal ShippingFee { get; set; }
 
-    public string Phone { get; set; } = null!;
-
-    public string Address { get; set; } = null!;
-
-    public string Ward { get; set; } = null!;
-
-    public string District { get; set; } = null!;
-
-    public string Province { get; set; } = null!;
-
-    public DateTime? LastUpdate { get; set; }
+    public string? StatusHistory { get; set; }
 
     public string? UpdateBy { get; set; }
 
     public DateTime InsertedAt { get; set; }
 
-    public bool Delete { get; set; }
-
     public DateTime? DeleteAt { get; set; }
 
     public Customer? Customer { get; set; }
 
-    public Address? ShippingAddress { get; set; }
+    public Address? Address { get; set; }
 
     public PaymentMethod? PaymentMethod { get; set; }
 
