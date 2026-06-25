@@ -11,3 +11,11 @@ public class WardUpdateDto : WardCreateDto
 {
     public int Id { get; set; }
 }
+
+public class WardResultDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = null!;
+    public string Code { get; set; } = null!;
+    public int DistrictId { get; set; }
+}

@@ -10,10 +10,20 @@ namespace PickleChic.API.Controllers.Public;
 public class AddressController : ControllerBase
 {
     private readonly AddressRepository _repository;
+    private readonly ProvinceRepository _provinceRepository;
+    private readonly DistrictRepository _districtRepository;
+    private readonly WardRepository _wardRepository;
 
-    public AddressController(AddressRepository repository)
+    public AddressController(
+        AddressRepository repository,
+        ProvinceRepository provinceRepository,
+        DistrictRepository districtRepository,
+        WardRepository wardRepository)
     {
         _repository = repository;
+        _provinceRepository = provinceRepository;
+        _districtRepository = districtRepository;
+        _wardRepository = wardRepository;
     }   
 
     [HttpGet("get-by-id/{id}")]
@@ -158,6 +168,89 @@ public class AddressController : ControllerBase
                 return NotFound();
 
             return Ok();
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Lỗi hệ thống");
+        }
+    }
+
+    [HttpGet("provinces")]
+    public async Task<ActionResult<List<ProvinceResultDto>>> GetProvinces()
+    {
+        try
+        {
+            var result = await _provinceRepository.GetAllAsync();
+            var dtos = result.Select(p => new ProvinceResultDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Code = p.Code
+            }).ToList();
+            return Ok(dtos);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Lỗi hệ thống");
+        }
+    }
+
+    [HttpGet("districts-by-province/{provinceId}")]
+    public async Task<ActionResult<List<DistrictResultDto>>> GetDistrictsByProvinceId(int provinceId)
+    {
+        try
+        {
+            var result = await _districtRepository.GetByProvinceIdAsync(provinceId);
+            var dtos = result.Select(d => new DistrictResultDto
+            {
+                Id = d.Id,
+                Name = d.Name,
+                Code = d.Code,
+                ProvinceId = d.ProvinceId
+            }).ToList();
+            return Ok(dtos);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Lỗi hệ thống");
+        }
+    }
+
+    [HttpGet("wards-by-district/{districtId}")]
+    public async Task<ActionResult<List<WardResultDto>>> GetWardsByDistrictId(int districtId)
+    {
+        try
+        {
+            var result = await _wardRepository.GetByDistrictIdAsync(districtId);
+            var dtos = result.Select(w => new WardResultDto
+            {
+                Id = w.Id,
+                Name = w.Name,
+                Code = w.Code,
+                DistrictId = w.DistrictId
+            }).ToList();
+            return Ok(dtos);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Lỗi hệ thống");
+        }
+    }
+
+    [HttpGet("wards")]
+    public async Task<ActionResult<List<WardResultDto>>> GetWards()
+    {
+        try
+        {
+            var result = await _wardRepository.GetAllAsync();
+            var dtos = result.Select(w => new WardResultDto
+            {
+                Id = w.Id,
+                Name = w.Name,
+                Code = w.Code,
+                DistrictId = w.DistrictId
+            }).ToList();
+            return Ok(dtos);
         }
         catch (Exception)
         {
