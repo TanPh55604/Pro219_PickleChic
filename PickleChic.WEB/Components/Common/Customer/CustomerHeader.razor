@@ -46,8 +46,14 @@
 
             <button type="button"
                     @onclick="HandleCartClick"
-                    class="!rounded-full !bg-neutral-950 !px-5 !py-2.5 text-sm font-black !text-white transition hover:!bg-[#d71920]">
+                    class="relative !rounded-full !bg-neutral-950 !px-5 !py-2.5 text-sm font-black !text-white transition hover:!bg-[#d71920]">
                 Giỏ hàng
+                @if (CartItemCount > 0)
+                {
+                    <span class="absolute -top-1.5 -right-1.5 flex !h-5 min-w-5 items-center justify-center !rounded-full bg-[#d71920] !px-1 text-[10px] font-black !text-white ring-2 ring-white">
+                        @GetCartBadgeText()
+                    </span>
+                }
             </button>
 
             @if (!IsAuthenticated)
@@ -132,6 +138,8 @@
 @code {
     [Parameter] public EventCallback OnCartClick { get; set; }
 
+    [Parameter] public int CartItemCount { get; set; }
+
     [Parameter] public bool IsAuthenticated { get; set; }
 
     [Parameter] public AuthModel? CurrentUser { get; set; }
@@ -187,5 +195,10 @@
         }
 
         return fullName.Trim()[0].ToString().ToUpperInvariant();
+    }
+
+    private string GetCartBadgeText()
+    {
+        return CartItemCount > 99 ? "99+" : CartItemCount.ToString();
     }
 }

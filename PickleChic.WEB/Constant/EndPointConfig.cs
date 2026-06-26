@@ -98,6 +98,17 @@
             public static string Delete(int id) => $"management/product-variant/delete/{id}";
         }
 
+        public static class Cart
+        {
+            public const string Create = "cart-item/create";
+
+            public const string Update = "cart-item/update";
+
+            public static string GetByUser(int customerId) => $"cart-item/get-by-user/{customerId}";
+
+            public static string Delete(int id) => $"cart-item/delete/{id}";
+        }
+
         public static class Voucher
         {
             public const string GetAvailable = "voucher/get-available-voucher";

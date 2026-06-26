@@ -13,6 +13,7 @@
 
     <div class="overflow-clip flex min-h-screen flex-col bg-white text-neutral-950">
         <CustomerHeader OnCartClick="OpenQuickCart"
+                        CartItemCount="@_cartItemCount"
                         CurrentUser="@_currentUser"
                         IsAuthenticated="@_isAuthenticated"
                         OnLogout="LogoutAsync" />
@@ -46,9 +47,16 @@
 
     private AuthModel? _currentUser;
 
+    private int _cartItemCount;
+
     private void OpenQuickCart()
     {
         _quickCartOpen = true;
+    }
+
+    protected override void OnInitialized()
+    {
+        _cartService.CartChanged += OnCartChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -61,16 +69,38 @@
         _navigation.LocationChanged += OnLocationChanged;
 
         await LoadCustomerAuthAsync();
+        await RefreshCartCountAsync();
 
         _isCheckingAuth = false;
         await InvokeAsync(StateHasChanged);
     }
 
+    private void OnCartChanged()
+    {
+        _ = InvokeAsync(RefreshCartCountAsync);
+    }
+
+    private async Task RefreshCartCountAsync()
+    {
+        if (!await _cartService.UsesServerCartAsync())
+        {
+            _cartItemCount = 0;
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _cartItemCount = await _cartService.GetTotalQuantityAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
+        _quickCartOpen = false;
+
         _ = InvokeAsync(async () =>
         {
             await LoadCustomerAuthAsync();
+            await RefreshCartCountAsync();
             StateHasChanged();
         });
     }
@@ -122,6 +152,7 @@
 
         _isAuthenticated = false;
         _currentUser = null;
+        _cartItemCount = 0;
 
         _snackbar.Add("Đã đăng xuất", Severity.Info);
 
@@ -151,5 +182,6 @@
     public void Dispose()
     {
         _navigation.LocationChanged -= OnLocationChanged;
+        _cartService.CartChanged -= OnCartChanged;
     }
 }
