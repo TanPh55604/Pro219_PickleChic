@@ -13,18 +13,16 @@
             // Home
             public const string Home = "/";
 
-            // Search
-            public const string Search = "/search";
+            // Product
+            public const string Products = "/product";
+            public const string Search = "/product/search";
+            public const string ProductDetail = "/product/detail/{id:int}";
 
             // Auth
             public const string SignUp = "/register";
             public const string Login = "/login";
             public const string ForgotPassword = "/forgot-password";
             public const string ChangePassword = "/change-password";
-
-            // Product
-            public const string Products = "/products";
-            public const string ProductDetail = "/products/detail/{id:int}";
 
             // Cart
             public const string Cart = "/cart";
@@ -197,6 +195,69 @@
         public static string BuildRoute(string route, int id)
         {
             return route.Replace("{id:int}", id.ToString());
+        }
+
+        public static string BuildSearchUrl(
+            string? keyword = null,
+            int? categoryId = null,
+            int? brandId = null,
+            decimal? minPrice = null,
+            decimal? maxPrice = null,
+            string? sortBy = null,
+            int? pageNumber = null,
+            int? pageSize = null)
+        {
+            var parameters = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
+            {
+                parameters.Add($"q={Uri.EscapeDataString(keyword.Trim())}");
+            }
+
+            if (categoryId.HasValue)
+            {
+                parameters.Add($"categoryId={categoryId.Value}");
+            }
+
+            if (brandId.HasValue)
+            {
+                parameters.Add($"brandId={brandId.Value}");
+            }
+
+            if (minPrice.HasValue)
+            {
+                parameters.Add($"minPrice={minPrice.Value}");
+            }
+
+            if (maxPrice.HasValue)
+            {
+                parameters.Add($"maxPrice={maxPrice.Value}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                parameters.Add($"sort={Uri.EscapeDataString(sortBy)}");
+            }
+
+            var resolvedPageNumber = pageNumber ?? ProductSearchDefaults.DefaultPageNumber;
+            var resolvedPageSize = pageSize ?? ProductSearchDefaults.DefaultPageSize;
+
+            if (resolvedPageNumber > ProductSearchDefaults.DefaultPageNumber)
+            {
+                parameters.Add($"page={resolvedPageNumber}");
+            }
+
+            if (resolvedPageSize != ProductSearchDefaults.DefaultPageSize)
+            {
+                parameters.Add($"pageSize={resolvedPageSize}");
+            }
+
+            if (parameters.Count == 0)
+            {
+                return Customer.Search;
+            }
+
+            return $"{Customer.Search}?{string.Join("&", parameters)}";
         }
     }
 }

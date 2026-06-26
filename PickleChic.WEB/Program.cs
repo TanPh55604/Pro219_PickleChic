@@ -35,10 +35,11 @@ builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<IAttributeService, AttributeService>();
-builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IProductService, PickleChic.WEB.Services.Admin.ProductService>();
 builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IVoucherService, PickleChic.WEB.Services.Admin.VoucherService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IVoucherService, PickleChic.WEB.Services.Customer.VoucherService>();
+builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductService, PickleChic.WEB.Services.Customer.ProductService>();
 
 builder.Services.AddScoped(sp =>
 {
