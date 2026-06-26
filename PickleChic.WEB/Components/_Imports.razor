@@ -16,6 +16,7 @@
 @using PickleChic.WEB.Constant
 @using PickleChic.WEB.Model
 @using PickleChic.WEB.DTO.Admin
+@using PickleChic.WEB.DTO.Customer
 @using PickleChic.WEB.Schema
 @using PickleChic.WEB.Services.Storage
 @using PickleChic.WEB.Services.Auth
@@ -37,8 +38,9 @@
 @inject ICategoryService _adminCategoryService
 @inject IBrandService _adminBrandService
 @inject IAttributeService _adminAttributeService
-@inject IProductService _adminProductService
+@inject PickleChic.WEB.Services.Admin.IProductService _adminProductService
 @inject IProductVariantService _adminProductVariantService
 @inject PickleChic.WEB.Services.Admin.IVoucherService _adminVoucherService
 @inject PickleChic.WEB.Services.Customer.IVoucherService _voucherService
+@inject PickleChic.WEB.Services.Customer.IProductService _productService
 

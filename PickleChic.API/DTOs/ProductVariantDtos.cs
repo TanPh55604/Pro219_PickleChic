@@ -66,4 +66,15 @@ public class ProductVariantSearchResultDto : ProductVariantFilterDto
 {
 }
 
+public class ProductVariantSearchPageDto
+{
+    public List<ProductVariantSearchResultDto> Items { get; set; } = new();
+
+    public int TotalCount { get; set; }
+
+    public int PageNumber { get; set; }
+
+    public int PageSize { get; set; }
+}
+
 

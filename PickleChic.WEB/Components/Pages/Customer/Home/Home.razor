@@ -137,10 +137,11 @@
         <div class="mx-auto max-w-7xl px-4">
             @SectionHeading("New arrivals", "Sản phẩm mới", "Xem tất cả", "/products/new")
 
-            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach (var product in _newProducts)
                 {
-                    @ProductCard(product)
+                    <CustomerProductCard Item="@ToProductCard(product)"
+                                         ShowStockStatus="false" />
                 }
             </div>
         </div>
@@ -150,10 +151,11 @@
         <div class="mx-auto max-w-7xl !px-4">
             @SectionHeading("Best sellers", "Sản phẩm bán chạy", "Xem tất cả", "/products/best-sellers")
 
-            <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach (var product in _bestSellerProducts)
                 {
-                    @ProductCard(product)
+                    <CustomerProductCard Item="@ToProductCard(product)"
+                                         ShowStockStatus="false" />
                 }
             </div>
         </div>
@@ -267,13 +269,14 @@
     {
         public string Eyebrow { get; set; }
         public string Name { get; set; }
-        public string Url { get; set; }
+        public int CategoryId { get; set; }
+        public string Url => RouterConfig.BuildSearchUrl(categoryId: CategoryId);
 
-        public CategoryItem(string eyebrow, string name, string url)
+        public CategoryItem(string eyebrow, string name, int categoryId)
         {
             Eyebrow = eyebrow;
             Name = name;
-            Url = url;
+            CategoryId = categoryId;
         }
     }
 
@@ -370,10 +373,10 @@
 
     private CategoryItem[] _categories = new CategoryItem[]
     {
-        new CategoryItem("Paddles", "Vợt Pickleball", "/products/paddles"),
-        new CategoryItem("Accessories", "Phụ kiện", "/products/accessories"),
-        new CategoryItem("Apparel", "Trang phục", "/products/apparel"),
-        new CategoryItem("Balls", "Bóng Pickleball", "/products/balls")
+        new CategoryItem("Paddles", "Vợt Pickleball", 1),
+        new CategoryItem("Accessories", "Phụ kiện", 2),
+        new CategoryItem("Apparel", "Trang phục", 3),
+        new CategoryItem("Balls", "Bóng Pickleball", 4)
     };
 
     private ProductItem[] _newProducts = new ProductItem[]
@@ -428,6 +431,18 @@
         )
     };
 
+    private static ProductCardModel ToProductCard(ProductItem product)
+    {
+        return ProductCardModel.FromDisplay(
+            name: product.Name,
+            imageUrl: product.ImageUrl,
+            priceDisplay: product.Price,
+            oldPriceDisplay: product.OldPrice,
+            discountPercent: product.Discount,
+            tag: product.Tag,
+            detailUrl: product.Url);
+    }
+
     private RenderFragment SectionHeading(string eyebrow, string title, string buttonText, string buttonUrl)
     {
         return @<div class="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -445,61 +460,5 @@
                 @buttonText
             </a>
         </div>;
-    }
-
-    private RenderFragment ProductCard(ProductItem product)
-    {
-        return @<article class="group relative overflow-hidden rounded-[1.75rem] border border-neutral-200 bg-white text-neutral-950 shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
-            @if (product.Discount > 0)
-            {
-                <div class="absolute top-4 left-4 z-10 rounded-full bg-[#d71920] !px-3 !py-1 text-xs font-black !text-white">
-                    -@product.Discount%
-                </div>
-            }
-
-            <div class="absolute top-4 right-4 z-10 rounded-full bg-neutral-950 !px-3 !py-1 text-xs font-black !text-white">
-                @product.Tag
-            </div>
-
-            <a href="@product.Url" class="block aspect-square bg-neutral-100 p-5">
-                <div class="flex h-full items-center justify-center rounded-[1.25rem] bg-white text-center">
-                    <img src="@product.ImageUrl"
-                         alt="@product.Name"
-                         class="max-h-full max-w-full object-contain transition duration-500 group-hover:scale-105" />
-                </div>
-            </a>
-
-            <div class="!p-5">
-
-                <h3 class="min-h-12 overflow-hidden text-sm leading-6 font-black tracking-[-0.02em] uppercase">
-                    <a href="@product.Url" class="transition hover:text-[#d71920]">
-                        @product.Name
-                    </a>
-                </h3>
-
-                <div class="mt-4 flex flex-wrap items-center gap-2">
-                    <p class="text-lg font-black text-[#d71920]">
-                        @product.Price
-                    </p>
-
-                    @if (!string.IsNullOrWhiteSpace(product.OldPrice))
-                    {
-                        <p class="text-sm font-bold text-neutral-400 line-through">
-                            @product.OldPrice
-                        </p>
-                    }
-                </div>
-
-                <div class="mt-5 grid grid-cols-2 gap-2">
-                    <button class="!rounded-full !border !border-neutral-300 !px-3 !py-2 text-xs font-black uppercase transition hover:!border-neutral-950">
-                        Xem nhanh
-                    </button>
-
-                    <button class="!rounded-full !bg-neutral-950 !px-3 !py-2 text-xs font-black !text-white uppercase transition hover:bg-[#d71920]">
-                        Chọn
-                    </button>
-                </div>
-            </div>
-        </article>;
     }
 }

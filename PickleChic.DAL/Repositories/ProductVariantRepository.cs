@@ -168,6 +168,71 @@ public class ProductVariantRepository
         return query;
     }
 
+    public async Task<PagedResult<ProductVariant>> SearchVariantsPagedAsync(
+        string? keyword,
+        decimal? startingPrice,
+        decimal? toPrice,
+        string? sortBy,
+        int pageNumber,
+        int pageSize)
+    {
+        if (pageNumber < 1)
+        {
+            pageNumber = 1;
+        }
+
+        if (pageSize < 1)
+        {
+            pageSize = 1;
+        }
+
+        var query = _context.ProductVariants
+            .Include(pv => pv.ProductVariantImages)
+            .Include(pv => pv.ProductVariantAttributes!)
+                .ThenInclude(pva => pva.AttributeValue)
+                    .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
+            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status != -1);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var lowerKeyword = keyword.ToLower();
+            query = query.Where(pv =>
+                (pv.VariantName != null && pv.VariantName.ToLower().Contains(lowerKeyword))
+                || pv.SKU.ToLower().Contains(lowerKeyword)
+                || pv.Product!.ProductName.ToLower().Contains(lowerKeyword)
+                || (pv.Product.Category != null && pv.Product.Category.Name.ToLower().Contains(lowerKeyword))
+                || (pv.Product.Brand != null && pv.Product.Brand.Name.ToLower().Contains(lowerKeyword))
+                || pv.ProductVariantAttributes!.Any(pva =>
+                    pva.AttributeValue != null && (
+                        pva.AttributeValue.Value.ToLower().Contains(lowerKeyword)
+                        || (pva.AttributeValue.ProductAttribute != null && pva.AttributeValue.ProductAttribute.AttributeName.ToLower().Contains(lowerKeyword))
+                    )
+                )
+            );
+        }
+
+        query = ApplyFiltersAndSorting(query, startingPrice, toPrice, sortBy);
+
+        var totalCount = await query.CountAsync();
+
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<ProductVariant>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<List<ProductVariant>> SearchVariantsAsync(string? keyword, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null, int? pageNumber = null, int? pageSize = null)
     {
         var query = _context.ProductVariants

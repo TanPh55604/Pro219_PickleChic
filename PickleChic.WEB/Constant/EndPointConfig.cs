@@ -77,6 +77,8 @@
 
         public static class Product
         {
+            public const string Search = "product-variant/search";
+
             public const string GetAllWithDetails = "management/product/get-all-with-details";
             public const string Create = "management/product/create";
             public const string Update = "management/product/update";

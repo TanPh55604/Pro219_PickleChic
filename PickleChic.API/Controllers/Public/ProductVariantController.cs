@@ -84,18 +84,28 @@ public class ProductVariantController : ControllerBase
     }
 
     [HttpGet("search")]
-    public async Task<ActionResult<List<ProductVariantSearchResultDto>>> Search(
+    public async Task<ActionResult<ProductVariantSearchPageDto>> Search(
         string? keyword,
         decimal? startingPrice,
         decimal? toPrice,
         string? sortBy,
         int? pageNumber,
-        int? pageSize)// name_asc,name_desc,price_asc,price_desc
+        int? pageSize)
     {
         try
         {
-            var variants = await _repository.SearchVariantsAsync(keyword, startingPrice, toPrice, sortBy, pageNumber, pageSize);
-            var result = variants.Select(pv => new ProductVariantSearchResultDto
+            var resolvedPageNumber = pageNumber.GetValueOrDefault(1);
+            var resolvedPageSize = pageSize.GetValueOrDefault(12);
+
+            var pagedResult = await _repository.SearchVariantsPagedAsync(
+                keyword,
+                startingPrice,
+                toPrice,
+                sortBy,
+                resolvedPageNumber,
+                resolvedPageSize);
+
+            var result = pagedResult.Items.Select(pv => new ProductVariantSearchResultDto
             {
                 Id = pv.Id,
                 ProductId = pv.ProductId,
@@ -128,7 +138,13 @@ public class ProductVariantController : ControllerBase
                 }).ToList() ?? new List<AttributeValueDetailDto>()
             }).ToList();
 
-            return Ok(result);
+            return Ok(new ProductVariantSearchPageDto
+            {
+                Items = result,
+                TotalCount = pagedResult.TotalCount,
+                PageNumber = pagedResult.PageNumber,
+                PageSize = pagedResult.PageSize
+            });
         }
         catch (Exception)
         {
