@@ -110,7 +110,21 @@
             return;
         }
 
-        _snackbar.Add("Xem nhanh sẽ sớm hỗ trợ chọn biến thể và thêm giỏ", Severity.Info);
+        var parameters = new DialogParameters<ProductQuickViewDialog>
+        {
+            { x => x.Item, Item }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Large,
+            FullWidth = true,
+            CloseButton = true,
+            CloseOnEscapeKey = true,
+            NoHeader = true
+        };
+
+        await _dialogService.ShowAsync<ProductQuickViewDialog>(null, parameters, options);
     }
 
     private async Task HandleBuyNowAsync()
@@ -121,15 +135,28 @@
             return;
         }
 
-        if (Item.ProductId > 0)
+        if (Item.VariantId <= 0)
         {
-            _navigation.NavigateTo(RouterConfig.Customer.Checkout);
+            _snackbar.Add("Không xác định được biến thể sản phẩm", Severity.Warning);
             return;
         }
 
-        if (!string.IsNullOrWhiteSpace(Item.DetailUrl))
+        if (!await _cartService.UsesServerCartAsync())
         {
-            _navigation.NavigateTo(Item.DetailUrl);
+            _snackbar.Add("Vui lòng đăng nhập để thêm vào giỏ hàng", Severity.Info);
+            _navigation.NavigateTo(RouterConfig.Customer.Login);
+            return;
         }
+
+        var result = await _cartService.AddItemAsync(Item.VariantId, 1);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            return;
+        }
+
+        _snackbar.Add(result.Message, Severity.Success);
+        _navigation.NavigateTo(RouterConfig.Customer.Checkout);
     }
 }

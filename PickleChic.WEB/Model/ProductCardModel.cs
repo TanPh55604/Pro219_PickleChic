@@ -31,6 +31,8 @@ namespace PickleChic.WEB.Model
 
         public bool InStock { get; set; } = true;
 
+        public int StockQuantity { get; set; }
+
         public string? DetailUrl { get; set; }
 
         public string DisplayPrice =>
@@ -56,6 +58,7 @@ namespace PickleChic.WEB.Model
                 BrandName = variant.BrandName,
                 CategoryName = variant.CategoryName,
                 InStock = variant.InStock,
+                StockQuantity = variant.StockQuantity,
                 Tag = variant.InStock ? null : "Hết hàng"
             };
         }
