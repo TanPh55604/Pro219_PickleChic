@@ -23,7 +23,7 @@ public class ProductController : ControllerBase
         try
         {
             var result = await _repository.GetByIdAsync(id);
-            if (result is null)
+            if (result is null || result.IsDeleted || result.Status != 1)
                 return NotFound();
 
             return Ok(result);
@@ -39,7 +39,32 @@ public class ProductController : ControllerBase
     {
         try
         {
-            var products = await _repository.GetProductsWithDetailsAsync(keyword);
+            var products = (await _repository.GetProductsWithDetailsAsync(keyword))
+                .Where(p => !p.IsDeleted
+                    && p.Status == 1
+                    && p.Category is not null && !p.Category.Delete && p.Category.Status == 1
+                    && p.Brand is not null && !p.Brand.Delete && p.Brand.Status == 1)
+                .ToList();
+
+            foreach (var product in products)
+            {
+                if (product.ProductVariants is null)
+                {
+                    continue;
+                }
+
+                product.ProductVariants = product.ProductVariants
+                    .Where(pv => pv.Status == 1
+                        && (pv.ProductVariantAttributes == null
+                            || !pv.ProductVariantAttributes.Any()
+                            || pv.ProductVariantAttributes.All(pva =>
+                                pva.AttributeValue != null
+                                && pva.AttributeValue.ProductAttribute != null)))
+                    .ToList();
+            }
+
+            products = products.Where(p => p.ProductVariants?.Any() == true).ToList();
+
             if (products.Count == 0)
                 return NoContent();
 
@@ -98,7 +123,25 @@ public class ProductController : ControllerBase
         try
         {
             var p = await _repository.GetProductWithDetailsByIdAsync(id);
-            if (p is null)
+            if (p is null
+                || p.IsDeleted
+                || p.Status != 1
+                || p.Category is null || p.Category.Delete || p.Category.Status != 1
+                || p.Brand is null || p.Brand.Delete || p.Brand.Status != 1)
+            {
+                return NotFound();
+            }
+
+            p.ProductVariants = p.ProductVariants?
+                .Where(pv => pv.Status == 1
+                    && (pv.ProductVariantAttributes == null
+                        || !pv.ProductVariantAttributes.Any()
+                        || pv.ProductVariantAttributes.All(pva =>
+                            pva.AttributeValue != null
+                            && pva.AttributeValue.ProductAttribute != null)))
+                .ToList() ?? new List<ProductVariant>();
+
+            if (!p.ProductVariants.Any())
                 return NotFound();
 
             var dto = new ProductSearchResultDto
@@ -114,7 +157,7 @@ public class ProductController : ControllerBase
                 CreatedAt = p.CreatedAt,
                 UpdatedAt = p.UpdatedAt,
                 UpdatedBy = p.UpdatedBy,
-                ProductVariants = p.ProductVariants?.Select(pv => new ProductVariantFilterDto
+                ProductVariants = p.ProductVariants.Select(pv => new ProductVariantFilterDto
                 {
                     Id = pv.Id,
                     ProductId = pv.ProductId,
@@ -145,7 +188,7 @@ public class ProductController : ControllerBase
                         Value = pva.AttributeValue?.Value ?? string.Empty,
                         Note = pva.AttributeValue?.Note
                     }).ToList() ?? new List<AttributeValueDetailDto>()
-                }).ToList() ?? new List<ProductVariantFilterDto>()
+                }).ToList()
             };
 
             return Ok(dto);
@@ -167,7 +210,31 @@ public class ProductController : ControllerBase
     {
         try
         {
-            var products = await _repository.SearchProductsWithVariantsAsync(keyword, startingPrice, toPrice, sortBy, pageNumber, pageSize);
+            var products = (await _repository.SearchProductsWithVariantsAsync(keyword, startingPrice, toPrice, sortBy))
+                .Where(p => !p.IsDeleted
+                    && p.Status == 1
+                    && p.Category is not null && !p.Category.Delete && p.Category.Status == 1
+                    && p.Brand is not null && !p.Brand.Delete && p.Brand.Status == 1)
+                .ToList();
+
+            foreach (var product in products)
+            {
+                if (product.ProductVariants is null)
+                {
+                    continue;
+                }
+
+                product.ProductVariants = product.ProductVariants
+                    .Where(pv => pv.Status == 1
+                        && (pv.ProductVariantAttributes == null
+                            || !pv.ProductVariantAttributes.Any()
+                            || pv.ProductVariantAttributes.All(pva =>
+                                pva.AttributeValue != null
+                                && pva.AttributeValue.ProductAttribute != null)))
+                    .ToList();
+            }
+
+            products = products.Where(p => p.ProductVariants?.Any() == true).ToList();
 
             var dtos = products.Select(p =>
             {
@@ -238,7 +305,7 @@ public class ProductController : ControllerBase
                         }).ToList() ?? new List<AttributeValueDetailDto>()
                     }).ToList()
                 };
-            }).ToList();
+            }).Where(dto => dto.ProductVariants.Any()).ToList();
 
             return Ok(dtos);
         }
@@ -247,7 +314,4 @@ public class ProductController : ControllerBase
             return StatusCode(500, "Db Error");
         }
     }
-
-
-
 }
