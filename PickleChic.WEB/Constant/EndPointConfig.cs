@@ -79,6 +79,8 @@
         {
             public const string Search = "product-variant/search";
 
+            public static string GetByIdWithDetailsPublic(int id) => $"product/get-by-id-with-details/{id}";
+
             public const string GetAllWithDetails = "management/product/get-all-with-details";
             public const string Create = "management/product/create";
             public const string Update = "management/product/update";
@@ -90,6 +92,8 @@
 
         public static class ProductVariant
         {
+            public static string GetByCategory(int categoryId) => $"product-variant/get-by-category/{categoryId}";
+
             public const string CreateWithAttributes = "management/product-variant/create-with-attributes";
             public const string UpdateWithAttributes = "management/product-variant/update-with-attributes";
 
@@ -107,6 +111,27 @@
             public static string GetByUser(int customerId) => $"cart-item/get-by-user/{customerId}";
 
             public static string Delete(int id) => $"cart-item/delete/{id}";
+        }
+
+        public static class Address
+        {
+            public const string Create = "address/create";
+
+            public const string Update = "address/update";
+
+            public const string Provinces = "address/provinces";
+
+            public static string GetById(int id) => $"address/get-by-id/{id}";
+
+            public static string GetByUser(int customerId) => $"address/get-by-user/{customerId}";
+
+            public static string Delete(int id) => $"address/delete/{id}";
+
+            public static string DistrictsByProvince(int provinceId) =>
+                $"address/districts-by-province/{provinceId}";
+
+            public static string WardsByDistrict(int districtId) =>
+                $"address/wards-by-district/{districtId}";
         }
 
         public static class Voucher

@@ -1,0 +1,57 @@
+<MudDialog Class="!rounded-2xl">
+    <TitleContent>
+        <p class="text-lg font-black text-slate-950">Xóa địa chỉ</p>
+    </TitleContent>
+
+    <DialogContent>
+        <div class="!px-2 !py-2 sm:!px-4">
+            <div class="!space-y-4">
+                <p class="text-base font-semibold text-slate-900">
+                    Bạn chắc chắn muốn xóa địa chỉ này?
+                </p>
+
+                <div class="!rounded-xl !bg-slate-50 !p-4 text-sm text-slate-600">
+                    <p class="font-bold text-slate-900">@Address.FullName — @Address.PhoneNumber</p>
+                    <p class="!mt-2 leading-6">@Address.DisplayLocation</p>
+                </div>
+            </div>
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="flex w-full justify-end !gap-3 !px-2 !pb-2 !pt-1 sm:!px-4">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Default"
+                       OnClick="Cancel"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Hủy
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.Delete"
+                       OnClick="Confirm"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Xóa
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public AddressResponse Address { get; set; } = new();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Confirm()
+    {
+        MudDialog.Close(DialogResult.Ok(Address.Id));
+    }
+}

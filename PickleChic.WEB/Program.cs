@@ -41,6 +41,7 @@ builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IVoucherService, Pickle
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IVoucherService, PickleChic.WEB.Services.Customer.VoucherService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductService, PickleChic.WEB.Services.Customer.ProductService>();
 builder.Services.AddScoped<ICustomerCartService, CustomerCartService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
 
 builder.Services.AddScoped(sp =>
 {
