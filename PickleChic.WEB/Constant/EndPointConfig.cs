@@ -39,6 +39,10 @@
             public static string GetById(int id) => $"management/category/get-by-id/{id}";
 
             public static string Delete(int id) => $"management/category/delete/{id}";
+
+            public static string UploadImage(int id) => $"management/category/upload-image/{id}";
+
+            public static string DeleteImage(int id) => $"management/category/delete-image/{id}";
         }
 
         public static class Brand
@@ -100,6 +104,18 @@
             public static string GetByIdWithDetails(int id) => $"management/product-variant/get-by-id-with-details/{id}";
 
             public static string Delete(int id) => $"management/product-variant/delete/{id}";
+        }
+
+        public static class ProductVariantImage
+        {
+            public const string Upload = "management/product-variant-image/upload";
+
+            public static string GetByVariant(int variantId) =>
+                $"management/product-variant-image/get-by-variant/{variantId}";
+
+            public static string SetMain(int id) => $"management/product-variant-image/set-main/{id}";
+
+            public static string Delete(int id) => $"management/product-variant-image/delete/{id}";
         }
 
         public static class Cart

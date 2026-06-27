@@ -43,25 +43,10 @@ else
         <div class="!rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
             <div class="!border-b !border-slate-200 !p-6 md:!p-8">
                 <div class="flex flex-col !gap-5 md:flex-row md:items-center md:justify-between">
-                    <div class="flex flex-col items-center !gap-4 text-center md:flex-row md:text-left">
-                        <div class="flex !h-32 !w-32 shrink-0 items-center justify-center overflow-hidden !rounded-2xl !bg-slate-100 text-slate-400 shadow-sm">
-                            @if (!string.IsNullOrWhiteSpace(_model.LinkImage))
-                            {
-                                <img src="@_model.LinkImage"
-                                     alt="@_model.Name"
-                                     class="h-full w-full object-cover" />
-                            }
-                            else
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Large" />
-                            }
-                        </div>
-
-                        <div>
-                            <h2 class="text-2xl font-bold text-slate-900">
-                                @_model.Name
-                            </h2>
-                        </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">
+                            @_model.Name
+                        </h2>
                     </div>
 
                     @if (_model.IsActive)
@@ -116,10 +101,9 @@ else
 
                 <div class="!mt-6 !space-y-5">
                     <div class="!rounded-2xl !border !border-slate-200 !p-5">
-                        <p class="text-sm font-medium text-slate-500">Đường dẫn ảnh</p>
-                        <p class="!mt-3 text-base leading-7 break-all text-slate-800">
-                            @(string.IsNullOrWhiteSpace(_model.LinkImage) ? "Chưa có đường dẫn ảnh" : _model.LinkImage)
-                        </p>
+                        <CategoryImagePicker CategoryId="Id"
+                                             LinkImage="@_model.LinkImage"
+                                             ReadOnly="true" />
                     </div>
 
                     <div class="!rounded-2xl !border !border-slate-200 !p-5">
