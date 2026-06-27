@@ -1,0 +1,402 @@
+@attribute [Route(RouterConfig.Customer.Profile)]
+@layout MainLayout
+
+<PageTitle>PickleChic WEB - Tài khoản</PageTitle>
+
+<div class="min-h-[calc(100vh-180px)] !bg-slate-50 !px-4 !pt-8 !pb-14">
+    <div class="mx-auto w-full max-w-7xl">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-sm font-bold tracking-[0.25em] text-[#d71920] uppercase">
+                    PickleChic WEB
+                </p>
+
+                <h1 class="!mt-2 text-3xl font-black tracking-tight text-slate-950">
+                    Tài khoản của bạn
+                </h1>
+            </div>
+
+            <a href="@RouterConfig.Customer.Home"
+               class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-5 !py-2.5 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920]">
+                <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" />
+                Về trang chủ
+            </a>
+        </div>
+
+        @if (!_hasLoaded && _isLoading)
+        {
+            <div class="!mt-8 grid !gap-6 lg:grid-cols-12">
+                <div class="!h-48 !animate-pulse !rounded-3xl !bg-slate-200 lg:col-span-4"></div>
+                <div class="!h-96 !animate-pulse !rounded-3xl !bg-slate-200 lg:col-span-8"></div>
+            </div>
+        }
+        else if (!_isAuthenticated)
+        {
+            <div class="!mt-8 !rounded-3xl !border !border-slate-200 !bg-white !p-10 text-center shadow-sm">
+                <div class="mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
+                    <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Large" />
+                </div>
+
+                <h2 class="!mt-5 text-2xl font-black text-slate-950">
+                    Đăng nhập để xem tài khoản
+                </h2>
+
+                <a href="@RouterConfig.Customer.Login"
+                   class="!mt-6 inline-flex items-center justify-center !rounded-full !bg-black !px-7 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
+                    Đăng nhập
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="!mt-8 grid items-start !gap-6 lg:grid-cols-12">
+                <aside class="lg:col-span-4">
+                    <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                        <p class="text-xs font-black tracking-[0.22em] text-[#d71920] uppercase">
+                            Thông tin cá nhân
+                        </p>
+
+                        <h2 class="!mt-2 text-xl font-black text-slate-950">
+                            @_currentUser?.FullName
+                        </h2>
+
+                        <div class="!mt-5 !space-y-3 text-sm">
+                            <div>
+                                <p class="font-semibold text-slate-500">Email</p>
+                                <p class="font-bold text-slate-900">@(_currentUser?.Email ?? "—")</p>
+                            </div>
+
+                            <div>
+                                <p class="font-semibold text-slate-500">Số điện thoại</p>
+                                <p class="font-bold text-slate-900">@(_currentUser?.PhoneNumber ?? "—")</p>
+                            </div>
+
+                            <div>
+                                <p class="font-semibold text-slate-500">Hạng thành viên</p>
+                                <p class="font-bold text-[#d71920]">@(_currentUser?.RankName ?? "—")</p>
+                            </div>
+
+                            <div>
+                                <p class="font-semibold text-slate-500">Điểm tích lũy</p>
+                                <p class="font-bold text-slate-900">@(_currentUser?.TotalPoints ?? 0) điểm</p>
+                            </div>
+                        </div>
+
+                        <p class="!mt-5 text-xs leading-5 text-slate-500">
+                            Chỉnh sửa thông tin cá nhân sẽ được bổ sung sau khi có API profile.
+                        </p>
+                    </div>
+                </aside>
+
+                <section class="lg:col-span-8 @(IsBusy ? "pointer-events-none opacity-60" : string.Empty)">
+                    <div class="!rounded-3xl !border !border-slate-200 !bg-white shadow-sm">
+                        <div class="flex flex-col !gap-4 !border-b !border-slate-200 !px-6 !py-5 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-xs font-black tracking-[0.22em] text-[#d71920] uppercase">
+                                    Giao hàng
+                                </p>
+
+                                <h2 class="!mt-1 text-xl font-black text-slate-950">
+                                    Sổ địa chỉ
+                                </h2>
+                            </div>
+
+                            <button type="button"
+                                    disabled="@IsBusy"
+                                    @onclick="OpenCreateDialogAsync"
+                                    class="inline-flex items-center justify-center !gap-2 !rounded-full !bg-neutral-950 !px-5 !py-2.5 text-sm font-black !text-white transition hover:!bg-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
+                                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                Thêm địa chỉ
+                            </button>
+                        </div>
+
+                        @if (_hasLoaded && !_addresses.Any())
+                        {
+                            <div class="!p-10 text-center">
+                                <div class="mx-auto flex !h-14 !w-14 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
+                                    <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Medium" />
+                                </div>
+
+                                <h3 class="!mt-4 text-lg font-black text-slate-950">
+                                    Chưa có địa chỉ nào
+                                </h3>
+
+                                <p class="!mt-2 text-sm text-slate-500">
+                                    Thêm địa chỉ để giao hàng nhanh hơn khi thanh toán.
+                                </p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="divide-y divide-slate-200">
+                                @foreach (var address in _addresses)
+                                {
+                                    <div class="!p-6">
+                                        <div class="flex flex-col !gap-4 md:flex-row md:items-start md:justify-between">
+                                            <div class="min-w-0 flex-1">
+                                                <div class="flex flex-wrap items-center !gap-2">
+                                                    <h3 class="text-base font-black text-slate-950">
+                                                        @address.FullName
+                                                    </h3>
+
+                                                    @if (address.IsDefault)
+                                                    {
+                                                        <span class="!rounded-full bg-[#d71920]/10 !px-3 !py-1 text-xs font-black text-[#d71920]">
+                                                            Mặc định
+                                                        </span>
+                                                    }
+                                                </div>
+
+                                                <p class="!mt-1 text-sm font-semibold text-slate-600">
+                                                    @address.PhoneNumber
+                                                </p>
+
+                                                <p class="!mt-3 text-sm leading-6 text-slate-700">
+                                                    @address.DisplayLocation
+                                                </p>
+                                            </div>
+
+                                            <div class="flex flex-wrap !gap-2">
+                                                @if (!address.IsDefault)
+                                                {
+                                                    <button type="button"
+                                                            disabled="@IsBusy"
+                                                            @onclick="() => SetDefaultAsync(address)"
+                                                            class="!rounded-full !border !border-slate-300 !px-4 !py-2 text-xs font-black text-slate-700 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
+                                                        Đặt mặc định
+                                                    </button>
+                                                }
+
+                                                <button type="button"
+                                                        disabled="@IsBusy"
+                                                        @onclick="() => OpenEditDialogAsync(address)"
+                                                        class="!rounded-full !border !border-slate-300 !px-4 !py-2 text-xs font-black text-slate-700 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
+                                                    Sửa
+                                                </button>
+
+                                                <button type="button"
+                                                        disabled="@IsBusy"
+                                                        @onclick="() => OpenDeleteDialogAsync(address)"
+                                                        class="!rounded-full !border !border-red-200 !px-4 !py-2 text-xs font-black text-red-600 transition hover:!bg-red-50 disabled:opacity-50">
+                                                    Xóa
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </section>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private AuthModel? _currentUser;
+
+    private List<AddressResponse> _addresses = new();
+
+    private int? _customerId;
+
+    private bool _isAuthenticated;
+
+    private bool _isLoading = true;
+
+    private bool _isBusy;
+
+    private bool _hasLoaded;
+
+    private bool IsBusy => _isLoading || _isBusy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isAuthenticated = await _authStorageService.IsAuthenticatedAsync();
+
+        if (!_isAuthenticated)
+        {
+            _isLoading = false;
+            _hasLoaded = true;
+            return;
+        }
+
+        _currentUser = await _authStorageService.GetUserAsync();
+        _customerId = await _addressService.GetCustomerIdAsync();
+
+        if (_customerId is null)
+        {
+            _isLoading = false;
+            _hasLoaded = true;
+            _navigation.NavigateTo(RouterConfig.Customer.Login);
+            return;
+        }
+
+        await LoadAddressesAsync();
+    }
+
+    private async Task LoadAddressesAsync()
+    {
+        if (_customerId is null)
+        {
+            return;
+        }
+
+        _isLoading = true;
+        StateHasChanged();
+
+        var result = await _addressService.GetByCustomerIdAsync(_customerId.Value);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            _addresses = new List<AddressResponse>();
+        }
+        else
+        {
+            _addresses = (result.Data ?? new List<AddressResponse>())
+                .OrderByDescending(x => x.IsDefault)
+                .ThenByDescending(x => x.UpdatedAt ?? x.InsertedAt)
+                .ToList();
+        }
+
+        _isLoading = false;
+        _hasLoaded = true;
+        StateHasChanged();
+    }
+
+    private async Task OpenCreateDialogAsync()
+    {
+        if (_customerId is null)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<AddressFormDialog>
+        {
+            { x => x.CustomerId, _customerId.Value },
+            { x => x.EditItem, null }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<AddressFormDialog>(null, parameters, options);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is not null && !dialogResult.Canceled)
+        {
+            await LoadAddressesAsync();
+        }
+    }
+
+    private async Task OpenEditDialogAsync(AddressResponse address)
+    {
+        if (_customerId is null)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<AddressFormDialog>
+        {
+            { x => x.CustomerId, _customerId.Value },
+            { x => x.EditItem, address }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<AddressFormDialog>(null, parameters, options);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is not null && !dialogResult.Canceled)
+        {
+            await LoadAddressesAsync();
+        }
+    }
+
+    private async Task OpenDeleteDialogAsync(AddressResponse address)
+    {
+        var parameters = new DialogParameters<AddressDeleteDialog>
+        {
+            { x => x.Address, address }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true,
+            CloseButton = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<AddressDeleteDialog>(null, parameters, options);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is null || dialogResult.Canceled || dialogResult.Data is not int addressId)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        StateHasChanged();
+
+        var result = await _addressService.DeleteAsync(addressId);
+
+        _isBusy = false;
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            StateHasChanged();
+            return;
+        }
+
+        _snackbar.Add(result.Message, Severity.Info);
+        await LoadAddressesAsync();
+    }
+
+    private async Task SetDefaultAsync(AddressResponse address)
+    {
+        if (_customerId is null || address.IsDefault)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        StateHasChanged();
+
+        var result = await _addressService.UpdateAsync(new AddressUpdateRequest
+        {
+            Id = address.Id,
+            CustomerId = _customerId.Value,
+            FullName = address.FullName,
+            PhoneNumber = address.PhoneNumber,
+            DetailInfo = address.DetailInfo,
+            WardId = address.WardId,
+            IsDefault = true,
+            Status = address.Status
+        });
+
+        _isBusy = false;
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            StateHasChanged();
+            return;
+        }
+
+        _snackbar.Add("Đã đặt làm địa chỉ mặc định", Severity.Success);
+        await LoadAddressesAsync();
+    }
+}

@@ -1,0 +1,353 @@
+﻿<MudDialog Class="!rounded-2xl">
+    <DialogContent>
+        <div class="!px-2 !pt-2 !pb-1 sm:!px-4">
+            <div class="!space-y-1 !pb-4">
+                <p class="text-xs font-black tracking-[0.22em] text-[#d71920] uppercase">
+                    @(IsEdit ? "Cập nhật" : "Thêm mới")
+                </p>
+
+                <h2 class="text-xl font-black text-slate-950">
+                    @(IsEdit ? "Sửa địa chỉ" : "Thêm địa chỉ giao hàng")
+                </h2>
+            </div>
+
+            <MudForm @ref="_form">
+                <div class="!space-y-4">
+                    <MudTextField @bind-Value="_model.FullName"
+                                  For="@(() => _model.FullName)"
+                                  Label="Họ và tên người nhận"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Không được để trống"
+                                  Immediate="true" />
+
+                    <MudTextField @bind-Value="_model.PhoneNumber"
+                                  For="@(() => _model.PhoneNumber)"
+                                  Label="Số điện thoại"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Không được để trống"
+                                  Immediate="true" />
+
+                    <MudTextField @bind-Value="_model.DetailInfo"
+                                  For="@(() => _model.DetailInfo)"
+                                  Label="Địa chỉ chi tiết"
+                                  Placeholder="Số nhà, tên đường..."
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Không được để trống"
+                                  Immediate="true" />
+
+                    <MudSelect T="int?"
+                               Value="_model.ProvinceId"
+                               ValueChanged="OnProvinceChanged"
+                               For="@(() => _model.ProvinceId)"
+                               Label="Tỉnh / Thành phố"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               RequiredError="Không được để trống"
+                               Disabled="@_isLoadingLocations">
+                        @foreach (var province in _provinces)
+                        {
+                            <MudSelectItem T="int?" Value="@province.Id">@province.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="int?"
+                               Value="_model.DistrictId"
+                               ValueChanged="OnDistrictChanged"
+                               For="@(() => _model.DistrictId)"
+                               Label="Quận / Huyện"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               RequiredError="Không được để trống"
+                               Disabled="@(!_model.ProvinceId.HasValue || _isLoadingLocations)">
+                        @foreach (var district in _districts)
+                        {
+                            <MudSelectItem T="int?" Value="@district.Id">@district.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudSelect T="int?"
+                               @bind-Value="_model.WardId"
+                               For="@(() => _model.WardId)"
+                               Label="Phường / Xã"
+                               Variant="Variant.Outlined"
+                               Required="true"
+                               RequiredError="Không được để trống"
+                               Disabled="@(!_model.DistrictId.HasValue || _isLoadingLocations)">
+                        @foreach (var ward in _wards)
+                        {
+                            <MudSelectItem T="int?" Value="@ward.Id">@ward.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudCheckBox @bind-Value="_model.IsDefault"
+                                 Label="Đặt làm địa chỉ mặc định"
+                                 Color="Color.Error" />
+                </div>
+            </MudForm>
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="flex w-full justify-end !gap-3 !px-2 !pb-2 !pt-1 sm:!px-4">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Default"
+                       OnClick="Cancel"
+                       Disabled="@_isSubmitting"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Hủy
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       OnClick="SaveAsync"
+                       Disabled="@_isSubmitting"
+                       Class="!rounded-xl !px-4 !normal-case">
+                @(IsEdit ? "Lưu thay đổi" : "Thêm địa chỉ")
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public AddressResponse? EditItem { get; set; }
+
+    [Parameter, EditorRequired]
+    public int CustomerId { get; set; }
+
+    private MudForm? _form;
+
+    private AddressFormModel _model = new();
+
+    private List<ProvinceResponse> _provinces = new();
+
+    private List<DistrictResponse> _districts = new();
+
+    private List<WardResponse> _wards = new();
+
+    private bool _isLoadingLocations;
+
+    private bool _isSubmitting;
+
+    private bool IsEdit => EditItem is not null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProvincesAsync();
+
+        if (EditItem is not null)
+        {
+            _model = new AddressFormModel
+            {
+                FullName = EditItem.FullName,
+                PhoneNumber = EditItem.PhoneNumber,
+                DetailInfo = EditItem.DetailInfo,
+                IsDefault = EditItem.IsDefault,
+                ProvinceId = EditItem.ProvinceId > 0 ? EditItem.ProvinceId : null,
+                DistrictId = EditItem.DistrictId > 0 ? EditItem.DistrictId : null,
+                WardId = EditItem.WardId > 0 ? EditItem.WardId : null
+            };
+
+            if (_model.ProvinceId.HasValue)
+            {
+                await LoadDistrictsAsync(_model.ProvinceId.Value, preserveSelection: true);
+            }
+
+            if (_model.DistrictId.HasValue)
+            {
+                await LoadWardsAsync(_model.DistrictId.Value, preserveSelection: true);
+            }
+        }
+    }
+
+    private async Task LoadProvincesAsync()
+    {
+        _isLoadingLocations = true;
+        StateHasChanged();
+
+        var result = await _addressService.GetProvincesAsync();
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            _provinces = new List<ProvinceResponse>();
+        }
+        else
+        {
+            _provinces = result.Data ?? new List<ProvinceResponse>();
+        }
+
+        _isLoadingLocations = false;
+        StateHasChanged();
+    }
+
+    private async Task OnProvinceChanged(int? provinceId)
+    {
+        _model.ProvinceId = provinceId;
+        _model.DistrictId = null;
+        _model.WardId = null;
+        _districts = new List<DistrictResponse>();
+        _wards = new List<WardResponse>();
+
+        if (provinceId.HasValue)
+        {
+            await LoadDistrictsAsync(provinceId.Value);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnDistrictChanged(int? districtId)
+    {
+        _model.DistrictId = districtId;
+        _model.WardId = null;
+        _wards = new List<WardResponse>();
+
+        if (districtId.HasValue)
+        {
+            await LoadWardsAsync(districtId.Value);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task LoadDistrictsAsync(int provinceId, bool preserveSelection = false)
+    {
+        _isLoadingLocations = true;
+        StateHasChanged();
+
+        var result = await _addressService.GetDistrictsByProvinceAsync(provinceId);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            _districts = new List<DistrictResponse>();
+        }
+        else
+        {
+            _districts = result.Data ?? new List<DistrictResponse>();
+        }
+
+        if (!preserveSelection)
+        {
+            _model.DistrictId = null;
+            _model.WardId = null;
+            _wards = new List<WardResponse>();
+        }
+
+        _isLoadingLocations = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadWardsAsync(int districtId, bool preserveSelection = false)
+    {
+        _isLoadingLocations = true;
+        StateHasChanged();
+
+        var result = await _addressService.GetWardsByDistrictAsync(districtId);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            _wards = new List<WardResponse>();
+        }
+        else
+        {
+            _wards = result.Data ?? new List<WardResponse>();
+        }
+
+        if (!preserveSelection)
+        {
+            _model.WardId = null;
+        }
+
+        _isLoadingLocations = false;
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_form is not null)
+        {
+            await _form.Validate();
+
+            if (!_form.IsValid)
+            {
+                return;
+            }
+        }
+
+        _isSubmitting = true;
+        StateHasChanged();
+
+        ApiResult<bool> result;
+
+        if (IsEdit)
+        {
+            result = await _addressService.UpdateAsync(new AddressUpdateRequest
+            {
+                Id = EditItem!.Id,
+                CustomerId = CustomerId,
+                FullName = _model.FullName.Trim(),
+                PhoneNumber = _model.PhoneNumber.Trim(),
+                DetailInfo = _model.DetailInfo.Trim(),
+                WardId = _model.WardId!.Value,
+                IsDefault = _model.IsDefault,
+                Status = EditItem.Status
+            });
+        }
+        else
+        {
+            result = await _addressService.CreateAsync(new AddressCreateRequest
+            {
+                CustomerId = CustomerId,
+                FullName = _model.FullName.Trim(),
+                PhoneNumber = _model.PhoneNumber.Trim(),
+                DetailInfo = _model.DetailInfo.Trim(),
+                WardId = _model.WardId!.Value,
+                IsDefault = _model.IsDefault,
+                Status = 1
+            });
+        }
+
+        _isSubmitting = false;
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            StateHasChanged();
+            return;
+        }
+
+        _snackbar.Add(result.Message, Severity.Success);
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private class AddressFormModel
+    {
+        public string FullName { get; set; } = string.Empty;
+
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        public string DetailInfo { get; set; } = string.Empty;
+
+        public int? ProvinceId { get; set; }
+
+        public int? DistrictId { get; set; }
+
+        public int? WardId { get; set; }
+
+        public bool IsDefault { get; set; }
+    }
+}
