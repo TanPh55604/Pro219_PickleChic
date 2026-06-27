@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PickleChic.API.DTOs;
+using PickleChic.API.Services;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
 
@@ -10,10 +11,14 @@ namespace PickleChic.API.Controllers.Management;
 public class CategoryController : ControllerBase
 {
     private readonly CategoryRepository _repository;
+    private readonly LocalImageFileService _fileService;
 
-    public CategoryController(CategoryRepository repository)
+    public CategoryController(
+        CategoryRepository repository,
+        LocalImageFileService fileService)
     {
         _repository = repository;
+        _fileService = fileService;
     }
 
     [HttpGet("get-all")]
@@ -72,6 +77,68 @@ public class CategoryController : ControllerBase
 
             var created = await _repository.AddAsync(entity);
             return Ok(created);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
+
+    [HttpPost("upload-image/{id}")]
+    [RequestSizeLimit(10 * 1024 * 1024)]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<Category>> UploadImage(int id, IFormFile file)
+    {
+        try
+        {
+            var category = await _repository.GetByIdAsync(id);
+            if (category is null)
+            {
+                return NotFound("Không tìm thấy thể loại");
+            }
+
+            _fileService.DeleteByPublicUrl(category.LinkImage);
+
+            var (_, publicUrl) = await _fileService.SaveCategoryImageAsync(file, id);
+            var updated = await _repository.UpdateLinkImageAsync(id, publicUrl);
+
+            if (updated is null)
+            {
+                return NotFound("Không tìm thấy thể loại");
+            }
+
+            return Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
+
+    [HttpDelete("delete-image/{id}")]
+    public async Task<ActionResult> DeleteImage(int id)
+    {
+        try
+        {
+            var category = await _repository.GetByIdAsync(id);
+            if (category is null)
+            {
+                return NotFound("Không tìm thấy thể loại");
+            }
+
+            _fileService.DeleteByPublicUrl(category.LinkImage);
+
+            var updated = await _repository.UpdateLinkImageAsync(id, null);
+            if (updated is null)
+            {
+                return NotFound("Không tìm thấy thể loại");
+            }
+
+            return Ok();
         }
         catch (Exception)
         {

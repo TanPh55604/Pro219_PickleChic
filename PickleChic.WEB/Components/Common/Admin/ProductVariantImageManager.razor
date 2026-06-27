@@ -1,0 +1,473 @@
+﻿@inject IProductVariantImageService _productVariantImageService
+
+<div class="!space-y-4">
+    <div class="flex flex-col !gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h3 class="text-base font-bold text-slate-900">@Title</h3>
+            <p class="text-sm text-slate-500">
+                Tối đa @MaxImages ảnh
+            </p>
+        </div>
+
+        @if (!ReadOnly && CanUpload)
+        {
+            <div>
+                <InputFile id="@_inputId"
+                           OnChange="OnFilesSelectedAsync"
+                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                           multiple
+                           class="hidden"
+                           disabled="@_isBusy" />
+                <label for="@_inputId"
+                       class="inline-flex cursor-pointer items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-4 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50 @(_isBusy ? "pointer-events-none opacity-60" : string.Empty)">
+                    <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" />
+                    Chọn ảnh
+                </label>
+            </div>
+        }
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="grid !gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @for (var i = 0; i < 3; i++)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="180px" Class="!rounded-xl" />
+            }
+        </div>
+    }
+    else if (_displayItems.Count == 0)
+    {
+        <div class="!rounded-xl !border !border-dashed !border-slate-300 !p-8 text-center text-sm text-slate-500">
+            @(ReadOnly ? "Chưa có ảnh" : "Chưa có ảnh. Hãy chọn ảnh để tải lên.")
+        </div>
+    }
+    else
+    {
+        <div class="grid !gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            @foreach (var item in _displayItems)
+            {
+                <div class="group relative overflow-hidden !rounded-xl !border !border-slate-200 !bg-slate-50">
+                    <div class="aspect-[4/3] overflow-hidden !bg-white">
+                        @if (!string.IsNullOrWhiteSpace(item.PreviewUrl))
+                        {
+                            <img src="@item.PreviewUrl"
+                                 alt="@item.Name"
+                                 class="h-full w-full object-cover" />
+                        }
+                        else
+                        {
+                            <div class="flex h-full items-center justify-center text-slate-400">
+                                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" />
+                            </div>
+                        }
+                    </div>
+
+                    <div class="!p-3">
+                        <p class="truncate text-sm font-medium text-slate-800" title="@item.Name">@item.Name</p>
+
+                        @if (item.IsMain)
+                        {
+                            <span class="!mt-2 inline-flex items-center !rounded-full !bg-amber-50 !px-2.5 !py-1 text-xs font-semibold !text-amber-700">
+                                Ảnh đại diện
+                            </span>
+                        }
+                    </div>
+
+                    @if (!ReadOnly)
+                    {
+                        <div class="absolute top-2 right-2 flex !gap-1 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+                            @if (!item.IsMain && item.ImageId > 0)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Filled.Star"
+                                               Size="Size.Small"
+                                               Color="Color.Warning"
+                                               title="Đặt làm ảnh đại diện"
+                                               Disabled="@_isBusy"
+                                               OnClick="@(() => SetMainAsync(item))" />
+                            }
+
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           title="Xóa ảnh"
+                                           Disabled="@_isBusy"
+                                           OnClick="@(() => DeleteAsync(item))" />
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private const int MaxImages = 6;
+
+    [Parameter] public string Title { get; set; } = "Ảnh biến thể";
+
+    [Parameter] public int VariantId { get; set; }
+
+    [Parameter] public bool ReadOnly { get; set; }
+
+    [Parameter] public List<IBrowserFile> PendingFiles { get; set; } = new();
+
+    [Parameter] public EventCallback<List<IBrowserFile>> PendingFilesChanged { get; set; }
+
+    private readonly string _inputId = $"pvi-{Guid.NewGuid():N}";
+
+    private readonly List<ProductVariantImageResponse> _images = new();
+
+    private readonly List<StagedPreview> _stagedPreviews = new();
+
+    private bool _isLoading;
+
+    private bool _isBusy;
+
+    private int _loadedVariantId;
+
+    private bool IsStaging => VariantId <= 0;
+
+    private bool CanUpload => GetCurrentImageCount() < MaxImages;
+
+    private int GetCurrentImageCount() =>
+        IsStaging ? _stagedPreviews.Count : _images.Count;
+
+    private List<DisplayItem> _displayItems => IsStaging
+        ? _stagedPreviews.Select((s, index) => new DisplayItem
+        {
+            ImageId = 0,
+            Name = s.File.Name,
+            PreviewUrl = s.PreviewUrl,
+            IsMain = index == 0
+        }).ToList()
+        : _images.Select(i => new DisplayItem
+        {
+            ImageId = i.Id,
+            Name = string.IsNullOrWhiteSpace(i.Name) ? "Ảnh biến thể" : i.Name!,
+            PreviewUrl = i.URL,
+            IsMain = i.IsMain
+        }).ToList();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsStaging && VariantId > 0 && VariantId != _loadedVariantId)
+        {
+            _loadedVariantId = VariantId;
+            await LoadImagesAsync();
+        }
+    }
+
+    public async Task UploadPendingFilesAsync(int variantId)
+    {
+        if (PendingFiles.Count == 0)
+        {
+            return;
+        }
+
+        _isBusy = true;
+
+        try
+        {
+            for (var i = 0; i < PendingFiles.Count; i++)
+            {
+                var file = PendingFiles[i];
+
+                await using var stream = file.OpenReadStream(ProductVariantImageService.GetMaxFileSizeBytes());
+                var result = await _productVariantImageService.UploadAsync(
+                    variantId,
+                    stream,
+                    file.Name,
+                    isMain: i == 0);
+
+                if (!result.Success)
+                {
+                    _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                }
+            }
+
+            await ClearStagingAsync();
+            VariantId = variantId;
+            await LoadImagesAsync();
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task LoadImagesAsync()
+    {
+        if (VariantId <= 0)
+        {
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var result = await _productVariantImageService.GetByVariantIdAsync(VariantId);
+
+            _images.Clear();
+
+            if (result.Success && result.Data is not null)
+            {
+                _images.AddRange(result.Data);
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OnFilesSelectedAsync(InputFileChangeEventArgs args)
+    {
+        if (ReadOnly || _isBusy)
+        {
+            return;
+        }
+
+        if (args.FileCount <= 0)
+        {
+            return;
+        }
+
+        var currentCount = GetCurrentImageCount();
+
+        if (currentCount + args.FileCount > MaxImages)
+        {
+            _snackbar.Add($"Tối đa {MaxImages} ảnh cho mỗi biến thể", Severity.Warning);
+            return;
+        }
+
+        var selectedFiles = args.GetMultipleFiles(args.FileCount).ToList();
+
+        if (IsStaging)
+        {
+            await AddStagingFilesAsync(selectedFiles);
+            return;
+        }
+
+        _isBusy = true;
+
+        try
+        {
+            foreach (var file in selectedFiles)
+            {
+                await using var stream = file.OpenReadStream(ProductVariantImageService.GetMaxFileSizeBytes());
+                var isMain = _images.Count == 0;
+                var result = await _productVariantImageService.UploadAsync(
+                    VariantId,
+                    stream,
+                    file.Name,
+                    isMain);
+
+                if (!result.Success || result.Data is null)
+                {
+                    _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                    continue;
+                }
+
+                if (result.Data.IsMain)
+                {
+                    foreach (var image in _images)
+                    {
+                        image.IsMain = false;
+                    }
+                }
+
+                _images.Add(result.Data);
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task AddStagingFilesAsync(IReadOnlyList<IBrowserFile> files)
+    {
+        foreach (var file in files)
+        {
+            if (PendingFiles.Count >= MaxImages)
+            {
+                break;
+            }
+
+            if (!IsAllowedImage(file))
+            {
+                _snackbar.Add($"\"{file.Name}\" không được hỗ trợ", Severity.Warning);
+                continue;
+            }
+
+            if (file.Size > ProductVariantImageService.GetMaxFileSizeBytes())
+            {
+                _snackbar.Add($"\"{file.Name}\" vượt quá 5MB", Severity.Warning);
+                continue;
+            }
+
+            PendingFiles.Add(file);
+
+            var previewUrl = await CreatePreviewUrlAsync(file);
+            _stagedPreviews.Add(new StagedPreview
+            {
+                File = file,
+                PreviewUrl = previewUrl
+            });
+        }
+
+        await PendingFilesChanged.InvokeAsync(PendingFiles);
+    }
+
+    private async Task SetMainAsync(DisplayItem item)
+    {
+        if (item.ImageId <= 0 || _isBusy)
+        {
+            return;
+        }
+
+        _isBusy = true;
+
+        try
+        {
+            var result = await _productVariantImageService.SetMainAsync(item.ImageId);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            foreach (var image in _images)
+            {
+                image.IsMain = image.Id == item.ImageId;
+            }
+
+            _snackbar.Add("Đã đặt ảnh đại diện", Severity.Success);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task DeleteAsync(DisplayItem item)
+    {
+        if (_isBusy)
+        {
+            return;
+        }
+
+        if (IsStaging)
+        {
+            var index = _stagedPreviews.FindIndex(s => s.File.Name == item.Name && s.PreviewUrl == item.PreviewUrl);
+
+            if (index >= 0)
+            {
+                PendingFiles.RemoveAt(index);
+                _stagedPreviews.RemoveAt(index);
+                await PendingFilesChanged.InvokeAsync(PendingFiles);
+            }
+
+            return;
+        }
+
+        if (item.ImageId <= 0)
+        {
+            return;
+        }
+
+        _isBusy = true;
+
+        try
+        {
+            var result = await _productVariantImageService.DeleteAsync(item.ImageId);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            var removed = _images.FirstOrDefault(i => i.Id == item.ImageId);
+            _images.RemoveAll(i => i.Id == item.ImageId);
+
+            if (removed?.IsMain == true && _images.Count > 0)
+            {
+                _images[0].IsMain = true;
+            }
+
+            _snackbar.Add("Đã xóa ảnh", Severity.Success);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task ClearStagingAsync()
+    {
+        PendingFiles.Clear();
+        _stagedPreviews.Clear();
+        await PendingFilesChanged.InvokeAsync(PendingFiles);
+    }
+
+    private static bool IsAllowedImage(IBrowserFile file)
+    {
+        var extension = Path.GetExtension(file.Name);
+
+        return extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".webp", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task<string> CreatePreviewUrlAsync(IBrowserFile file)
+    {
+        await using var stream = file.OpenReadStream(ProductVariantImageService.GetMaxFileSizeBytes());
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        var base64 = Convert.ToBase64String(memory.ToArray());
+        var contentType = file.ContentType;
+
+        if (string.IsNullOrWhiteSpace(contentType))
+        {
+            contentType = "image/jpeg";
+        }
+
+        return $"data:{contentType};base64,{base64}";
+    }
+
+    private static string ConvertErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể xử lý ảnh",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
+
+    private sealed class StagedPreview
+    {
+        public IBrowserFile File { get; set; } = default!;
+
+        public string PreviewUrl { get; set; } = string.Empty;
+    }
+
+    private sealed class DisplayItem
+    {
+        public int ImageId { get; set; }
+
+        public string Name { get; set; } = string.Empty;
+
+        public string PreviewUrl { get; set; } = string.Empty;
+
+        public bool IsMain { get; set; }
+    }
+}
