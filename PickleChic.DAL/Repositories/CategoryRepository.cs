@@ -57,6 +57,20 @@ public class CategoryRepository
         }
     }
 
+    public async Task<Category?> UpdateLinkImageAsync(int id, string? linkImage)
+    {
+        var existing = await _context.Categories.FindAsync(id);
+        if (existing is null || existing.Delete)
+        {
+            return null;
+        }
+
+        existing.LinkImage = linkImage;
+        existing.UpdatedAt = DateTime.Now;
+        await _context.SaveChangesAsync();
+        return existing;
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var entity = await _context.Categories.FirstOrDefaultAsync(c => c.Id == id);

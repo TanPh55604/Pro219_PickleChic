@@ -24,5 +24,10 @@
         Task<ApiResult<TResponse>> DeleteAsync<TResponse>(
             string url,
             bool requireAuth = false);
+
+        Task<ApiResult<TResponse>> PostMultipartAsync<TResponse>(
+            string url,
+            MultipartFormDataContent content,
+            bool requireAuth = false);
     }
 }

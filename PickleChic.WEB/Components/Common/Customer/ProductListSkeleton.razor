@@ -1,61 +1,54 @@
-﻿<div class="!space-y-4">
-    <MudSkeleton Width="120px"
-                 Height="20px"
-                 Animation="Animation.Wave"
-                 Class="!rounded-md" />
+﻿<div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    @for (var i = 0; i < Count; i++)
+    {
+        <article class="overflow-hidden !rounded-[1.75rem] border border-neutral-200 bg-white shadow-sm">
+            <MudSkeleton SkeletonType="SkeletonType.Rectangle"
+                            Animation="Animation.Wave"
+                            Class="!h-72 !w-full !rounded-none" />
 
-    <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        @for (var i = 0; i < Count; i++)
-        {
-            <article class="overflow-hidden !rounded-[1.75rem] border border-neutral-200 bg-white shadow-sm">
-                <MudSkeleton SkeletonType="SkeletonType.Rectangle"
-                             Animation="Animation.Wave"
-                             Class="!h-72 !w-full !rounded-none" />
+            <div class="!space-y-3 !p-5">
+                <MudSkeleton Width="35%"
+                                Height="14px"
+                                Animation="Animation.Wave"
+                                Class="!rounded-md" />
 
-                <div class="!space-y-3 !p-5">
-                    <MudSkeleton Width="35%"
-                                 Height="14px"
-                                 Animation="Animation.Wave"
-                                 Class="!rounded-md" />
+                <MudSkeleton Width="92%"
+                                Height="18px"
+                                Animation="Animation.Wave"
+                                Class="!rounded-md" />
 
-                    <MudSkeleton Width="92%"
-                                 Height="18px"
-                                 Animation="Animation.Wave"
-                                 Class="!rounded-md" />
+                <MudSkeleton Width="75%"
+                                Height="18px"
+                                Animation="Animation.Wave"
+                                Class="!rounded-md" />
 
-                    <MudSkeleton Width="75%"
-                                 Height="18px"
-                                 Animation="Animation.Wave"
-                                 Class="!rounded-md" />
+                <MudSkeleton Width="45%"
+                                Height="14px"
+                                Animation="Animation.Wave"
+                                Class="!rounded-md" />
 
-                    <MudSkeleton Width="45%"
-                                 Height="14px"
-                                 Animation="Animation.Wave"
-                                 Class="!rounded-md" />
+                <MudSkeleton Width="55%"
+                                Height="24px"
+                                Animation="Animation.Wave"
+                                Class="!rounded-md" />
 
-                    <MudSkeleton Width="55%"
-                                 Height="24px"
-                                 Animation="Animation.Wave"
-                                 Class="!rounded-md" />
+                <MudSkeleton Width="40%"
+                                Height="14px"
+                                Animation="Animation.Wave"
+                                Class="!rounded-md" />
 
-                    <MudSkeleton Width="40%"
-                                 Height="14px"
-                                 Animation="Animation.Wave"
-                                 Class="!rounded-md" />
+                <div class="grid grid-cols-2 !gap-2 !pt-1">
+                    <MudSkeleton Height="36px"
+                                    Animation="Animation.Wave"
+                                    Class="!rounded-full" />
 
-                    <div class="grid grid-cols-2 !gap-2 !pt-1">
-                        <MudSkeleton Height="36px"
-                                     Animation="Animation.Wave"
-                                     Class="!rounded-full" />
-
-                        <MudSkeleton Height="36px"
-                                     Animation="Animation.Wave"
-                                     Class="!rounded-full" />
-                    </div>
+                    <MudSkeleton Height="36px"
+                                    Animation="Animation.Wave"
+                                    Class="!rounded-full" />
                 </div>
-            </article>
-        }
-    </div>
+            </div>
+        </article>
+    }
 </div>
 
 @code {

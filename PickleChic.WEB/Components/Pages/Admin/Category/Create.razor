@@ -34,13 +34,6 @@
                                   Required="true"
                                   Immediate="true" />
 
-                    <MudTextField @bind-Value="_model.LinkImage"
-                                  For="@(() => _model.LinkImage)"
-                                  Label="Đường dẫn ảnh"
-                                  Placeholder="Nhập đường dẫn ảnh"
-                                  Variant="Variant.Outlined"
-                                  Immediate="true" />
-
                     <MudSelect T="int"
                                @bind-Value="_model.Status"
                                For="@(() => _model.Status)"
@@ -50,7 +43,12 @@
                         <MudSelectItem T="int" Value="0">Tạm ẩn</MudSelectItem>
                     </MudSelect>
 
-                    <div class="hidden md:block"></div>
+                    <div class="md:col-span-2">
+                        <CategoryImagePicker @ref="_imagePicker"
+                                             CategoryId="0"
+                                             PendingFile="_pendingFile"
+                                             PendingFileChanged="OnPendingFileChanged" />
+                    </div>
 
                     <div class="md:col-span-2">
                         <MudTextField @bind-Value="_model.Description"
@@ -90,6 +88,10 @@
 
     private bool _isSubmitting;
 
+    private CategoryImagePicker? _imagePicker;
+
+    private IBrowserFile? _pendingFile;
+
     private async Task SubmitAsync()
     {
         if (_form is null || _isSubmitting)
@@ -116,6 +118,11 @@
                 return;
             }
 
+            if (_imagePicker is not null && _pendingFile is not null)
+            {
+                await _imagePicker.UploadPendingFileAsync(result.Data.Id);
+            }
+
             _snackbar.Add("Tạo thể loại thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.CategoryDetail, result.Data.Id));
@@ -124,6 +131,12 @@
         {
             _isSubmitting = false;
         }
+    }
+
+    private Task OnPendingFileChanged(IBrowserFile? file)
+    {
+        _pendingFile = file;
+        return Task.CompletedTask;
     }
 
     private static string ConvertCategoryErrorMessage(string message)

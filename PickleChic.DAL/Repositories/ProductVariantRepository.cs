@@ -94,7 +94,6 @@ public class ProductVariantRepository
 
             if (attributeValueIds != null)
             {
-                // Remove attributes no longer present
                 var toRemove = existing.ProductVariantAttributes?
                     .Where(pva => !attributeValueIds.Contains(pva.AttributeValueId))
                     .ToList();
@@ -103,7 +102,6 @@ public class ProductVariantRepository
                     _context.ProductVariantAttributes.RemoveRange(toRemove);
                 }
 
-                // Add new attributes
                 var existingIds = existing.ProductVariantAttributes?.Select(pva => pva.AttributeValueId).ToList() ?? new List<int>();
                 var toAdd = attributeValueIds
                     .Where(id => !existingIds.Contains(id))
@@ -197,7 +195,7 @@ public class ProductVariantRepository
                 .ThenInclude(p => p!.Category)
             .Include(pv => pv.Product)
                 .ThenInclude(p => p!.Brand)
-            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status != -1);
+            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status > 0);
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -246,7 +244,7 @@ public class ProductVariantRepository
                 .ThenInclude(p => p!.Category)
             .Include(pv => pv.Product)
                 .ThenInclude(p => p!.Brand)
-            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status != -1);
+            .Where(pv => pv.Product != null && !pv.Product.IsDeleted && pv.Status > 0);
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
@@ -390,4 +388,3 @@ public class ProductVariantRepository
         return false;
     }
 }
-

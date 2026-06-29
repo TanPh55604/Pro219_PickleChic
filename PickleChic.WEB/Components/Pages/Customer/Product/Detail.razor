@@ -1,0 +1,593 @@
+﻿@attribute [Route(RouterConfig.Customer.ProductDetail)]
+@layout MainLayout
+
+<PageTitle>@GetPageTitle()</PageTitle>
+
+<div class="min-h-[calc(100vh-180px)] bg-neutral-50 !px-4 !pt-8 !pb-16">
+    <div class="!mx-auto w-full max-w-7xl">
+        @if (_isLoading)
+        {
+            <ProductDetailSkeleton />
+        }
+        else if (_product is null)
+        {
+            <div class="!rounded-3xl border border-neutral-200 bg-white !p-12 text-center shadow-sm">
+                <div class="!mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full bg-neutral-100 text-neutral-400">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Large" />
+                </div>
+
+                <h1 class="!mt-5 text-2xl font-black text-neutral-950">
+                    Không tìm thấy sản phẩm
+                </h1>
+
+                <p class="!mt-2 text-sm text-neutral-500">
+                    Sản phẩm có thể đã bị xóa hoặc không còn hiển thị.
+                </p>
+
+                <a href="@RouterConfig.Customer.Search"
+                   class="!mt-6 inline-flex !rounded-full !bg-neutral-950 !px-6 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
+                    Xem tất cả sản phẩm
+                </a>
+            </div>
+        }
+        else
+        {
+            <nav class="!mb-6 flex flex-wrap items-center !gap-2 text-xs font-bold text-neutral-500">
+                <a href="@RouterConfig.Customer.Home" class="transition hover:text-[#d71920]">Trang chủ</a>
+                <span>/</span>
+                <a href="@RouterConfig.Customer.Search" class="transition hover:text-[#d71920]">Sản phẩm</a>
+                @if (!string.IsNullOrWhiteSpace(_product.CategoryName))
+                {
+                    <span>/</span>
+                    <span class="text-neutral-700">@_product.CategoryName</span>
+                }
+                <span>/</span>
+                <span class="text-neutral-950">@_product.ProductName</span>
+            </nav>
+
+            <section class="!rounded-3xl border border-neutral-200 bg-white !p-5 shadow-sm md:!p-8">
+                <div class="grid !gap-8 lg:!gap-12 lg:grid-cols-2">
+                    <div class="!space-y-4">
+                        <div class="flex aspect-square items-center justify-center overflow-hidden !rounded-[1.75rem] bg-neutral-100 !p-6">
+                            @if (!string.IsNullOrWhiteSpace(_activeImageUrl))
+                            {
+                                <img src="@_activeImageUrl"
+                                     alt="@GetDisplayName()"
+                                     class="max-h-full max-w-full object-contain" />
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" Class="text-neutral-400" />
+                            }
+                        </div>
+
+                        @if (_galleryImages.Count > 1)
+                        {
+                            <div class="flex flex-wrap !gap-3">
+                                @foreach (var image in _galleryImages)
+                                {
+                                    <button type="button"
+                                            @onclick="() => SelectImage(image.URL)"
+                                            class="flex !h-20 !w-20 items-center justify-center overflow-hidden !rounded-2xl border !p-2 transition @GetThumbnailClass(image.URL)">
+                                        <img src="@image.URL"
+                                             alt="@(image.Name ?? GetDisplayName())"
+                                             class="max-h-full max-w-full object-contain" />
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <div class="flex flex-col">
+                        @if (!string.IsNullOrWhiteSpace(_product.BrandName))
+                        {
+                            <p class="text-xs font-black tracking-[0.22em] !text-[#d71920] uppercase">
+                                @_product.BrandName
+                            </p>
+                        }
+
+                        <h1 class="!mt-2 text-3xl leading-tight font-black tracking-[-0.03em] text-neutral-950 uppercase sm:text-4xl">
+                            @_product.ProductName
+                        </h1>
+
+                        @if (!string.IsNullOrWhiteSpace(_selectedVariant?.VariantName))
+                        {
+                            <p class="!mt-2 text-base font-bold text-neutral-600">
+                                @_selectedVariant.VariantName
+                            </p>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(_product.CategoryName))
+                        {
+                            <p class="!mt-2 text-sm font-semibold text-neutral-500">
+                                @_product.CategoryName
+                            </p>
+                        }
+
+                        <div class="!mt-5 flex flex-wrap items-center !gap-3">
+                            <p class="text-3xl font-black text-[#d71920]">
+                                @GetDisplayPrice()
+                            </p>
+                        </div>
+
+                        <p class="!mt-3 text-sm font-bold @(SelectedInStock ? "text-green-600" : "text-neutral-400")">
+                            @GetStockLabel()
+                        </p>
+
+                        @if (!string.IsNullOrWhiteSpace(_selectedVariant?.SKU))
+                        {
+                            <p class="!mt-2 text-xs font-semibold text-neutral-500">
+                                SKU: @_selectedVariant.SKU
+                            </p>
+                        }
+
+                        @if (_selectedVariant?.Attributes.Count > 0)
+                        {
+                            <div class="!mt-5 !space-y-2">
+                                <p class="text-sm font-black text-neutral-900">Thông số</p>
+
+                                <div class="flex flex-wrap !gap-2">
+                                    @foreach (var attribute in _selectedVariant.Attributes)
+                                    {
+                                        <span class="inline-flex !rounded-full bg-neutral-100 !px-3 !py-1 text-xs font-bold text-neutral-700">
+                                            @(string.IsNullOrWhiteSpace(attribute.AttributeName)
+                                                ? attribute.Value
+                                                : $"{attribute.AttributeName}: {attribute.Value}")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (HasMultipleVariants)
+                        {
+                            <div class="!mt-6 !space-y-3">
+                                <p class="text-sm font-black text-neutral-900">Chọn biến thể</p>
+
+                                <div class="flex flex-wrap !gap-2">
+                                    @foreach (var variant in _activeVariants)
+                                    {
+                                        <button type="button"
+                                                @onclick="() => SelectVariant(variant)"
+                                                class="!rounded-full !border !px-4 !py-2 text-xs font-black uppercase transition @GetVariantButtonClass(variant)">
+                                            @GetVariantLabel(variant)
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        @if (SelectedInStock)
+                        {
+                            <div class="!mt-6">
+                                <p class="text-sm font-bold text-neutral-700">Số lượng</p>
+
+                                <div class="!mt-3 flex items-center !gap-3">
+                                    <button type="button"
+                                            disabled="@(_isSubmitting || _quantity <= 1)"
+                                            @onclick="DecreaseQuantity"
+                                            class="flex !h-11 !w-11 items-center justify-center !rounded-full !border !border-neutral-300 !bg-white text-neutral-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
+                                        <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
+                                    </button>
+
+                                    <div class="flex !h-11 !w-16 items-center justify-center !rounded-full !border !border-neutral-300 text-base font-black text-neutral-900">
+                                        @_quantity
+                                    </div>
+
+                                    <button type="button"
+                                            disabled="@(_isSubmitting || !CanIncrease)"
+                                            @onclick="IncreaseQuantity"
+                                            class="flex !h-11 !w-11 items-center justify-center !rounded-full !border !border-neutral-300 !bg-white text-neutral-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
+                                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                    </button>
+
+                                    @if (!CanIncrease && EffectiveStock > 0)
+                                    {
+                                        <span class="text-xs font-semibold text-[#d71920]">
+                                            Tối đa @EffectiveStock
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="!mt-8 grid !gap-3 sm:grid-cols-2">
+                            <button type="button"
+                                    disabled="@(!CanPurchase || _isSubmitting)"
+                                    @onclick="AddToCartAsync"
+                                    class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-950 !bg-white !px-6 !py-3.5 text-sm font-black text-neutral-950 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
+                                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" />
+                                Thêm giỏ hàng
+                            </button>
+
+                            <button type="button"
+                                    disabled="@(!CanPurchase || _isSubmitting)"
+                                    @onclick="BuyNowAsync"
+                                    class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-950 !bg-neutral-950 !px-6 !py-3.5 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
+                                <MudIcon Icon="@Icons.Material.Filled.Bolt" Size="Size.Small" />
+                                Mua ngay
+                            </button>
+                        </div>
+
+                        <button type="button"
+                                @onclick="ToggleFavorite"
+                                class="!mt-4 inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-300 !px-6 !py-3 text-sm font-black text-neutral-700 transition hover:!border-[#d71920] hover:!text-[#d71920]">
+                            <MudIcon Icon="@(_isFavorite ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.FavoriteBorder)"
+                                     Size="Size.Small"
+                                     Class="@(_isFavorite ? "text-[#d71920]" : string.Empty)" />
+                            @(_isFavorite ? "Đã yêu thích" : "Yêu thích")
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="!mt-8 !rounded-3xl border border-neutral-200 bg-white !p-6 shadow-sm md:!p-8">
+                <h2 class="text-xl font-black tracking-tight text-neutral-950">
+                    Mô tả sản phẩm
+                </h2>
+
+                <div class="!mt-5 text-sm leading-7 whitespace-pre-wrap text-neutral-700">
+                    @if (string.IsNullOrWhiteSpace(_product.Description))
+                    {
+                        <span class="text-neutral-400">Chưa có mô tả cho sản phẩm này.</span>
+                    }
+                    else
+                    {
+                        @_product.Description
+                    }
+                </div>
+            </section>
+
+            @if (_relatedProducts.Count > 0)
+            {
+                <section class="!mt-12">
+                    <div class="!mb-6 flex flex-col !gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p class="text-xs font-black tracking-[0.28em] text-[#d71920] uppercase">
+                                Gợi ý cho bạn
+                            </p>
+                            <h2 class="!mt-1 text-2xl font-black tracking-tight text-neutral-950 sm:text-3xl">
+                                Sản phẩm liên quan
+                            </h2>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(_product.CategoryName))
+                        {
+                            <a href="@RouterConfig.BuildSearchUrl(categoryId: _product.CategoryId)"
+                               class="text-sm font-black text-neutral-700 transition hover:text-[#d71920]">
+                                Xem thêm @_product.CategoryName
+                            </a>
+                        }
+                    </div>
+
+                    <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        @foreach (var product in _relatedProducts)
+                        {
+                            <CustomerProductCard Item="@ProductCardModel.FromVariant(product)"
+                                                 ShowStockStatus="false" />
+                        }
+                    </div>
+                </section>
+            }
+        }
+    </div>
+</div>
+
+@code {
+  [Parameter]
+  public int Id { get; set; }
+
+  [SupplyParameterFromQuery(Name = "variantId")]
+  public int? VariantId { get; set; }
+
+  private ProductDetailResponse? _product;
+
+  private ProductVariantSummaryResponse? _selectedVariant;
+
+  private List<ProductVariantImageResponse> _galleryImages = new();
+
+  private string? _activeImageUrl;
+
+  private List<ProductVariantSearchResponse> _relatedProducts = new();
+
+  private int _quantity = 1;
+
+  private bool _isLoading = true;
+
+  private bool _isSubmitting;
+
+  private bool _isFavorite;
+
+  private bool HasMultipleVariants => _activeVariants.Count > 1;
+
+  private List<ProductVariantSummaryResponse> _activeVariants =>
+      _product?.ProductVariants
+          .Where(v => v.Status != -1)
+          .ToList() ?? new();
+
+  private bool SelectedInStock =>
+      _selectedVariant is not null
+      && _selectedVariant.StockQuantity > 0
+      && _selectedVariant.Status != -1;
+
+  private int EffectiveStock =>
+      _selectedVariant?.StockQuantity > 0
+          ? _selectedVariant.StockQuantity
+          : SelectedInStock ? 99 : 0;
+
+  private bool CanIncrease => _quantity < EffectiveStock;
+
+  private bool CanPurchase => SelectedInStock && _selectedVariant?.Id > 0;
+
+  protected override async Task OnParametersSetAsync()
+  {
+    await LoadProductAsync();
+  }
+
+  private async Task LoadProductAsync()
+  {
+    _isLoading = true;
+    StateHasChanged();
+
+    try
+    {
+      var result = await _productService.GetByIdWithDetailsAsync(Id);
+
+      if (!result.Success || result.Data is null)
+      {
+        if (result.StatusCode != 404)
+        {
+          _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+        }
+
+        _product = null;
+        _relatedProducts = new();
+        return;
+      }
+
+      _product = result.Data;
+
+      if (!_product.IsActive)
+      {
+        _product = null;
+        _relatedProducts = new();
+        return;
+      }
+
+      SelectInitialVariant();
+      await LoadRelatedProductsAsync();
+    }
+    finally
+    {
+      _isLoading = false;
+    }
+  }
+
+  private async Task LoadRelatedProductsAsync()
+  {
+    if (_product is null || _product.CategoryId <= 0)
+    {
+      _relatedProducts = new();
+      return;
+    }
+
+    var result = await _productService.GetRelatedByCategoryAsync(
+      _product.CategoryId,
+      _product.Id,
+      limit: 6);
+
+    _relatedProducts = result.Success && result.Data is not null
+      ? result.Data
+      : new();
+  }
+
+  private void SelectInitialVariant()
+  {
+    if (_product is null || _activeVariants.Count == 0)
+    {
+      _selectedVariant = null;
+      _galleryImages = new();
+      _activeImageUrl = null;
+      _quantity = 0;
+      return;
+    }
+
+    var preferredVariant = VariantId.HasValue
+      ? _activeVariants.FirstOrDefault(v => v.Id == VariantId.Value)
+      : null;
+
+    var selected = preferredVariant
+      ?? _activeVariants.FirstOrDefault(v => v.StockQuantity > 0)
+      ?? _activeVariants.First();
+
+    SelectVariant(selected);
+  }
+
+  private void SelectVariant(ProductVariantSummaryResponse variant)
+  {
+    _selectedVariant = variant;
+    _galleryImages = variant.Images.Count > 0
+      ? variant.Images
+      : new();
+
+    _activeImageUrl = variant.MainImageUrl;
+    _quantity = SelectedInStock ? 1 : 0;
+  }
+
+  private void SelectImage(string imageUrl)
+  {
+    _activeImageUrl = imageUrl;
+  }
+
+  private string GetThumbnailClass(string imageUrl) =>
+      string.Equals(_activeImageUrl, imageUrl, StringComparison.OrdinalIgnoreCase)
+        ? "!border-[#d71920] ring-2 ring-[#d71920]/20"
+        : "!border-neutral-200 hover:!border-neutral-400";
+
+  private string GetVariantButtonClass(ProductVariantSummaryResponse variant)
+  {
+    var isSelected = _selectedVariant?.Id == variant.Id;
+    var inStock = variant.StockQuantity > 0;
+
+    if (isSelected)
+    {
+      return "!border-[#d71920] !bg-[#d71920] !text-white";
+    }
+
+    return inStock
+      ? "!border-neutral-300 !bg-white text-neutral-900 hover:!border-neutral-950"
+      : "!border-neutral-200 !bg-neutral-100 text-neutral-400";
+  }
+
+  private static string GetVariantLabel(ProductVariantSummaryResponse variant)
+  {
+    if (!string.IsNullOrWhiteSpace(variant.VariantName))
+    {
+      return variant.VariantName;
+    }
+
+    if (variant.Attributes.Count > 0)
+    {
+      return string.Join(" / ", variant.Attributes.Select(a => a.Value));
+    }
+
+    return variant.SKU;
+  }
+
+  private string GetDisplayName()
+  {
+    if (_product is null)
+    {
+      return string.Empty;
+    }
+
+    if (_selectedVariant is null || string.IsNullOrWhiteSpace(_selectedVariant.VariantName))
+    {
+      return _product.ProductName;
+    }
+
+    return $"{_product.ProductName} - {_selectedVariant.VariantName}";
+  }
+
+  private string GetDisplayPrice()
+  {
+    var price = _selectedVariant?.Price ?? _activeVariants.FirstOrDefault()?.Price ?? 0;
+    return price > 0 ? $"{price:N0}đ" : "—";
+  }
+
+  private string GetStockLabel()
+  {
+    if (!SelectedInStock)
+    {
+      return "Hết hàng";
+    }
+
+    if (EffectiveStock > 0 && EffectiveStock < 99)
+    {
+      return $"Còn {EffectiveStock} sản phẩm";
+    }
+
+    return "Còn hàng";
+  }
+
+  private string GetPageTitle()
+  {
+    return _product is null
+      ? $"{Constant.metaDataCustomer} Chi tiết sản phẩm"
+      : $"{Constant.metaDataCustomer} {_product.ProductName}";
+  }
+
+  private void IncreaseQuantity()
+  {
+    if (!CanIncrease)
+    {
+      _snackbar.Add("Không đủ số lượng trong kho", Severity.Warning);
+      return;
+    }
+
+    _quantity++;
+  }
+
+  private void DecreaseQuantity()
+  {
+    if (_quantity > 1)
+    {
+      _quantity--;
+    }
+  }
+
+  private async Task AddToCartAsync()
+  {
+    await TryAddToCartAsync(navigateToCheckout: false);
+  }
+
+  private async Task BuyNowAsync()
+  {
+    await TryAddToCartAsync(navigateToCheckout: true);
+  }
+
+  private async Task TryAddToCartAsync(bool navigateToCheckout)
+  {
+    if (!CanPurchase || _selectedVariant is null)
+    {
+      _snackbar.Add("Sản phẩm hiện không khả dụng", Severity.Warning);
+      return;
+    }
+
+    if (!await _cartService.UsesServerCartAsync())
+    {
+      _snackbar.Add("Vui lòng đăng nhập để thêm vào giỏ hàng", Severity.Info);
+      _navigation.NavigateTo(RouterConfig.Customer.Login);
+      return;
+    }
+
+    if (_quantity > EffectiveStock)
+    {
+      _snackbar.Add("Không đủ số lượng trong kho", Severity.Warning);
+      return;
+    }
+
+    _isSubmitting = true;
+    StateHasChanged();
+
+    var result = await _cartService.AddItemAsync(_selectedVariant.Id, _quantity);
+
+    _isSubmitting = false;
+    StateHasChanged();
+
+    if (!result.Success)
+    {
+      _snackbar.Add(result.Message, Severity.Error);
+      return;
+    }
+
+    _snackbar.Add(result.Message, Severity.Success);
+
+    if (navigateToCheckout)
+    {
+      _navigation.NavigateTo(RouterConfig.Customer.Checkout);
+    }
+  }
+
+  private void ToggleFavorite()
+  {
+    _isFavorite = !_isFavorite;
+
+    _snackbar.Add(
+      _isFavorite
+        ? "Đã thêm vào danh sách yêu thích (demo)"
+        : "Đã bỏ khỏi danh sách yêu thích (demo)",
+      Severity.Info);
+  }
+
+  private static string ConvertErrorMessage(string message)
+  {
+    return message switch
+    {
+      "Db Error" => "Không thể tải thông tin sản phẩm",
+      _ => string.IsNullOrWhiteSpace(message)
+        ? "Có lỗi xảy ra. Vui lòng thử lại"
+        : message
+    };
+  }
+}

@@ -1,4 +1,5 @@
 using PickleChic.WEB.Constant;
+using PickleChic.WEB.DTO.Admin;
 using PickleChic.WEB.DTO.Customer;
 using PickleChic.WEB.Model;
 using PickleChic.WEB.Services.Api;
@@ -21,6 +22,37 @@ namespace PickleChic.WEB.Services.Customer
             return await _apiProvider.GetAsync<ProductVariantSearchPageResponse>(
                 url,
                 requireAuth: false);
+        }
+
+        public async Task<ApiResult<ProductDetailResponse>> GetByIdWithDetailsAsync(int id)
+        {
+            return await _apiProvider.GetAsync<ProductDetailResponse>(
+                EndPointConfig.Product.GetByIdWithDetailsPublic(id),
+                requireAuth: false);
+        }
+
+        public async Task<ApiResult<List<ProductVariantSearchResponse>>> GetRelatedByCategoryAsync(
+            int categoryId,
+            int excludeProductId,
+            int limit = 6)
+        {
+            var result = await _apiProvider.GetAsync<List<ProductVariantSearchResponse>>(
+                EndPointConfig.ProductVariant.GetByCategory(categoryId),
+                requireAuth: false);
+
+            if (!result.Success || result.Data is null)
+            {
+                return result;
+            }
+
+            var related = result.Data
+                .Where(v => v.ProductId != excludeProductId)
+                .GroupBy(v => v.ProductId)
+                .Select(g => g.First())
+                .Take(limit)
+                .ToList();
+
+            return ApiResult<List<ProductVariantSearchResponse>>.Ok(related);
         }
 
         private static string BuildSearchUrl(ProductSearchQuery query)

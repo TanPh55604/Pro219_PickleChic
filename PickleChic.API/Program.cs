@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using PickleChic.API.Options;
+using PickleChic.API.Services;
 using PickleChic.DAL.Context;
 using PickleChic.DAL.Repositories;
 using Hangfire;
@@ -77,6 +80,9 @@ builder.Services.AddScoped<BrandRepository>();
 builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<ProductVariantRepository>();
 builder.Services.AddScoped<ProductVariantImageRepository>();
+builder.Services.Configure<FileStorageOptions>(
+    builder.Configuration.GetSection(FileStorageOptions.SectionName));
+builder.Services.AddSingleton<LocalImageFileService>();
 builder.Services.AddScoped<ProductAttributeRepository>();
 builder.Services.AddScoped<AttributeValueRepository>();
 builder.Services.AddScoped<ProductVariantAttributeRepository>();
@@ -111,6 +117,10 @@ builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
+var webRootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+Directory.CreateDirectory(Path.Combine(webRootPath, "uploads", "products"));
+Directory.CreateDirectory(Path.Combine(webRootPath, "uploads", "categories"));
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -122,6 +132,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(webRootPath),
+    RequestPath = ""
+});
 app.UseHangfireDashboard();
 app.UseAuthentication();
 app.UseAuthorization();

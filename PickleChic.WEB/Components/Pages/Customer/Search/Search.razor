@@ -61,6 +61,13 @@
 
             @if (_isLoading)
             {
+                <div class="mb-6 flex items-center justify-between">
+                    <MudSkeleton Width="80px" Height="20px" />
+                    <div class="flex items-center !gap-3">
+                        <MudSkeleton Width="128px" Height="68px" />
+                        <MudSkeleton Width="240px" Height="68px" />
+                    </div>
+                </div>
                 <ProductListSkeleton Count="@_pageSize" />
             }
             else

@@ -37,10 +37,12 @@ builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<IAttributeService, AttributeService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IProductService, PickleChic.WEB.Services.Admin.ProductService>();
 builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+builder.Services.AddScoped<IProductVariantImageService, ProductVariantImageService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IVoucherService, PickleChic.WEB.Services.Admin.VoucherService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IVoucherService, PickleChic.WEB.Services.Customer.VoucherService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductService, PickleChic.WEB.Services.Customer.ProductService>();
 builder.Services.AddScoped<ICustomerCartService, CustomerCartService>();
+builder.Services.AddScoped<IAddressService, AddressService>();
 
 builder.Services.AddScoped(sp =>
 {

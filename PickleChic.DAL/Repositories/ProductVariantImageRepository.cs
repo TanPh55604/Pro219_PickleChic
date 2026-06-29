@@ -31,6 +31,34 @@ public class ProductVariantImageRepository
                     && _context.Products.Any(p => p.Id == pv.ProductId && !p.IsDeleted)));
     }
 
+    public async Task<List<ProductVariantImage>> GetByVariantIdAsync(int variantId)
+    {
+        return await _context.ProductVariantImages
+            .Where(img => img.ProductVariantId == variantId)
+            .OrderByDescending(img => img.IsMain)
+            .ThenBy(img => img.Id)
+            .ToListAsync();
+    }
+
+    public async Task<int> CountByVariantIdAsync(int variantId)
+    {
+        return await _context.ProductVariantImages.CountAsync(img => img.ProductVariantId == variantId);
+    }
+
+    public async Task SetMainAsync(int imageId, int variantId)
+    {
+        var images = await _context.ProductVariantImages
+            .Where(img => img.ProductVariantId == variantId)
+            .ToListAsync();
+
+        foreach (var image in images)
+        {
+            image.IsMain = image.Id == imageId;
+        }
+
+        await _context.SaveChangesAsync();
+    }
+
     public async Task<ProductVariantImage> AddAsync(ProductVariantImage entity)
     {
         _context.ProductVariantImages.Add(entity);

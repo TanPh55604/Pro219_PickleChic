@@ -1,0 +1,254 @@
+@inject ICategoryService _adminCategoryService
+
+<div class="!space-y-4">
+    @if (!ReadOnly)
+    {
+        <div class="flex flex-col !gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h3 class="text-base font-bold text-slate-900">@Title</h3>
+                <p class="text-sm text-slate-500">1 ảnh, tối đa 5MB (JPG, PNG, WEBP)</p>
+            </div>
+
+            <div class="flex flex-wrap !gap-2">
+                <InputFile id="@_inputId"
+                           OnChange="OnFileSelectedAsync"
+                           accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                           class="hidden"
+                           disabled="@_isBusy" />
+                <label for="@_inputId"
+                       class="inline-flex cursor-pointer items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-4 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50 @(_isBusy ? "pointer-events-none opacity-60" : string.Empty)">
+                    <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" />
+                    @(HasImage ? "Thay ảnh" : "Chọn ảnh")
+                </label>
+
+                @if (HasImage)
+                {
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="DeleteImageAsync"
+                               Disabled="@_isBusy"
+                               Class="!rounded-xl !normal-case">
+                        Xóa ảnh
+                    </MudButton>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <h3 class="text-base font-bold text-slate-900">@Title</h3>
+    }
+
+    <div class="@PreviewFrameClass">
+        @if (HasImage)
+        {
+            <img src="@ImageUrl"
+                 alt="@Title"
+                 class="h-full w-full object-cover" />
+        }
+        else
+        {
+            <div class="flex h-full w-full flex-col items-center justify-center !gap-2 text-slate-400">
+                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Large" />
+                <span class="px-3 text-center text-xs">
+                    @(ReadOnly ? "Chưa có ảnh" : "Chưa chọn ảnh")
+                </span>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Ảnh thể loại";
+
+    [Parameter] public int CategoryId { get; set; }
+
+    [Parameter] public string? LinkImage { get; set; }
+
+    [Parameter] public EventCallback<string?> LinkImageChanged { get; set; }
+
+    [Parameter] public IBrowserFile? PendingFile { get; set; }
+
+    [Parameter] public EventCallback<IBrowserFile?> PendingFileChanged { get; set; }
+
+    [Parameter] public bool ReadOnly { get; set; }
+
+    private readonly string _inputId = $"cat-img-{Guid.NewGuid():N}";
+
+    private string? _stagingPreview;
+
+    private bool _isBusy;
+
+    private bool IsStaging => CategoryId <= 0;
+
+    private string? ImageUrl => IsStaging ? _stagingPreview : LinkImage;
+
+    private bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
+
+    private string PreviewFrameClass =>
+        ReadOnly
+            ? "h-44 w-44 overflow-hidden !rounded-2xl !border !border-slate-200 !bg-slate-100 shadow-sm"
+            : "h-40 w-40 overflow-hidden !rounded-2xl !border !border-dashed !border-slate-300 !bg-slate-50";
+
+    public async Task UploadPendingFileAsync(int categoryId)
+    {
+        if (PendingFile is null)
+        {
+            return;
+        }
+
+        _isBusy = true;
+
+        try
+        {
+            await using var stream = PendingFile.OpenReadStream(CategoryService.GetMaxFileSizeBytes());
+            var result = await _adminCategoryService.UploadImageAsync(
+                categoryId,
+                stream,
+                PendingFile.Name);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            await ClearStagingAsync();
+            await LinkImageChanged.InvokeAsync(result.Data.LinkImage);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task OnFileSelectedAsync(InputFileChangeEventArgs args)
+    {
+        if (ReadOnly || _isBusy)
+        {
+            return;
+        }
+
+        var file = args.File;
+
+        if (!IsAllowedImage(file))
+        {
+            _snackbar.Add($"\"{file.Name}\" không được hỗ trợ", Severity.Warning);
+            return;
+        }
+
+        if (file.Size > CategoryService.GetMaxFileSizeBytes())
+        {
+            _snackbar.Add($"\"{file.Name}\" vượt quá 5MB", Severity.Warning);
+            return;
+        }
+
+        if (IsStaging)
+        {
+            PendingFile = file;
+            _stagingPreview = await CreatePreviewUrlAsync(file);
+            await PendingFileChanged.InvokeAsync(PendingFile);
+            return;
+        }
+
+        _isBusy = true;
+
+        try
+        {
+            await using var stream = file.OpenReadStream(CategoryService.GetMaxFileSizeBytes());
+            var result = await _adminCategoryService.UploadImageAsync(
+                CategoryId,
+                stream,
+                file.Name);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            await LinkImageChanged.InvokeAsync(result.Data.LinkImage);
+            _snackbar.Add("Đã cập nhật ảnh", Severity.Success);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task DeleteImageAsync()
+    {
+        if (ReadOnly || _isBusy)
+        {
+            return;
+        }
+
+        if (IsStaging)
+        {
+            await ClearStagingAsync();
+            return;
+        }
+
+        _isBusy = true;
+
+        try
+        {
+            var result = await _adminCategoryService.DeleteImageAsync(CategoryId);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            await LinkImageChanged.InvokeAsync(null);
+            _snackbar.Add("Đã xóa ảnh", Severity.Success);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task ClearStagingAsync()
+    {
+        PendingFile = null;
+        _stagingPreview = null;
+        await PendingFileChanged.InvokeAsync(null);
+    }
+
+    private static bool IsAllowedImage(IBrowserFile file)
+    {
+        var extension = Path.GetExtension(file.Name);
+
+        return extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".png", StringComparison.OrdinalIgnoreCase)
+            || extension.Equals(".webp", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task<string> CreatePreviewUrlAsync(IBrowserFile file)
+    {
+        await using var stream = file.OpenReadStream(CategoryService.GetMaxFileSizeBytes());
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory);
+        var base64 = Convert.ToBase64String(memory.ToArray());
+        var contentType = string.IsNullOrWhiteSpace(file.ContentType) ? "image/jpeg" : file.ContentType;
+
+        return $"data:{contentType};base64,{base64}";
+    }
+
+    private static string ConvertErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể xử lý ảnh",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
+}

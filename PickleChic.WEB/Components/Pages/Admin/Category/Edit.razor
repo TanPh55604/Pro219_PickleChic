@@ -40,13 +40,6 @@ else
                                       Required="true"
                                       Immediate="true" />
 
-                        <MudTextField @bind-Value="_model.LinkImage"
-                                      For="@(() => _model.LinkImage)"
-                                      Label="Đường dẫn ảnh"
-                                      Placeholder="Nhập đường dẫn ảnh"
-                                      Variant="Variant.Outlined"
-                                      Immediate="true" />
-
                         <MudSelect T="int"
                                    @bind-Value="_model.Status"
                                    For="@(() => _model.Status)"
@@ -56,7 +49,11 @@ else
                             <MudSelectItem T="int" Value="0">Tạm ẩn</MudSelectItem>
                         </MudSelect>
 
-                        <div class="hidden md:block"></div>
+                        <div class="md:col-span-2">
+                            <CategoryImagePicker CategoryId="Id"
+                                                 LinkImage="_model.LinkImage"
+                                                 LinkImageChanged="OnLinkImageChanged" />
+                        </div>
 
                         <div class="md:col-span-2">
                             <MudTextField @bind-Value="_model.Description"
@@ -136,6 +133,12 @@ else
             Description = response.Description,
             Status = response.Status
         };
+    }
+
+    private Task OnLinkImageChanged(string? linkImage)
+    {
+        _model.LinkImage = linkImage;
+        return Task.CompletedTask;
     }
 
     private async Task SubmitAsync()

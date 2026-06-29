@@ -128,6 +128,27 @@ namespace PickleChic.WEB.Services.Api
             }
         }
 
+        public async Task<ApiResult<TResponse>> PostMultipartAsync<TResponse>(
+            string url,
+            MultipartFormDataContent content,
+            bool requireAuth = false)
+        {
+            try
+            {
+                await AddAuthorizationHeaderAsync(requireAuth);
+
+                var response = await _httpClient.PostAsync(url, content);
+
+                return await ReadResponseAsync<TResponse>(response);
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<TResponse>.Fail(
+                    message: ex.Message,
+                    statusCode: 0);
+            }
+        }
+
         private async Task AddAuthorizationHeaderAsync(bool requireAuth)
         {
             _httpClient.DefaultRequestHeaders.Authorization = null;
