@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PickleChic.DAL.Context;
 using PickleChic.DAL.Repositories;
+using Hangfire;
 using System.Text;
 
 
@@ -86,8 +87,27 @@ builder.Services.AddScoped<CartItemRepository>();
 //builder.Services.AddScoped<PromotionDetailRepository>();
 builder.Services.AddScoped<VoucherRepository>();
 builder.Services.AddScoped<OrderRepository>();
-//builder.Services.AddScoped<OrderItemRepository>();
-//builder.Services.AddScoped<PaymentMethodRepository>();
+builder.Services.AddScoped<OrderItemRepository>();
+builder.Services.AddScoped<PaymentMethodRepository>();
+
+builder.Services.AddScoped<PickleChic.API.Services.OrderManagerService>();
+
+builder.Services.AddSingleton(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    return new Net.payOS.PayOS(
+        config["PayOS:ClientId"] ?? "09b8a42b-6105-4cd4-a4ee-8492e42e909c",
+        config["PayOS:ApiKey"] ?? "15cfbaf8-79a4-48a0-908f-248c30538001",
+        config["PayOS:ChecksumKey"] ?? "00b20c6b94e21bf27e6cb0ae2f26515637c93d70b2eeb832e7b51e299cba433d"
+    );
+});
+
+builder.Services.AddHangfire(configuration => configuration
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UseSqlServerStorage(builder.Configuration.GetConnectionString("DefaultConnection") 
+        ?? "Data Source=localhost;Initial Catalog=PickleChic;TrustServerCertificate=True;User Id=sa; Password=123456"));
+builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
@@ -102,6 +122,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseHangfireDashboard();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

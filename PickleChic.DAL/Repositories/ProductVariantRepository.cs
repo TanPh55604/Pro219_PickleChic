@@ -38,6 +38,8 @@ public class ProductVariantRepository
                 .ThenInclude(p => p!.Category)
             .Include(pv => pv.Product)
                 .ThenInclude(p => p!.Brand)
+            .Include(pv => pv.PromotionDetails!)
+                .ThenInclude(pd => pd.Promotion)
             .FirstOrDefaultAsync(pv => pv.Id == id
                 && _context.Products.Any(p => p.Id == pv.ProductId && !p.IsDeleted));
     }
@@ -332,12 +334,32 @@ public class ProductVariantRepository
     public async Task<bool> DecreaseStockAsync(int variantId, int quantity)
     {
         var variant = await _context.ProductVariants.FindAsync(variantId);
-        if (variant == null || variant.StockQuantity < quantity)
+        if (variant == null)
             return false;
 
-        variant.StockQuantity -= quantity;
-        await _context.SaveChangesAsync();
-        return true;
+        int retries = 5;
+        while (retries > 0)
+        {
+            try
+            {
+                if (variant.StockQuantity < quantity)
+                    return false;
+
+                variant.StockQuantity -= quantity;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                retries--;
+                if (retries == 0)
+                    return false;
+
+                await _context.Entry(variant).ReloadAsync();
+                await Task.Delay(50);
+            }
+        }
+        return false;
     }
 
     public async Task<bool> IncreaseStockAsync(int variantId, int quantity)
@@ -346,9 +368,26 @@ public class ProductVariantRepository
         if (variant == null)
             return false;
 
-        variant.StockQuantity += quantity;
-        await _context.SaveChangesAsync();
-        return true;
+        int retries = 5;
+        while (retries > 0)
+        {
+            try
+            {
+                variant.StockQuantity += quantity;
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                retries--;
+                if (retries == 0)
+                    return false;
+
+                await _context.Entry(variant).ReloadAsync();
+                await Task.Delay(50);
+            }
+        }
+        return false;
     }
 }
 
