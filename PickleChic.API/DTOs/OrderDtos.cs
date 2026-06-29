@@ -25,3 +25,33 @@ public class OrderUpdateDto : OrderCreateDto
     public int Id { get; set; }
     public DateTime? LastUpdate { get; set; }
 }
+
+public class CheckoutParamsDTO
+{
+    public List<CartItemCheckoutDTO> ListItemCheckout { get; set; } = null!;
+    public AddressCreateDto? AddressDTO { get; set; }
+}
+
+public class CartItemCheckoutDTO
+{
+    public int ProductVariantId { get; set; }
+    public int Quantity { get; set; }
+    public string ProductName { get; set; } = null!;
+}
+
+public class CheckoutDTO
+{
+    public string OrderCode { get; set; } = null!;
+    public int OrderId { get; set; }
+    public int? PaymentType { get; set; }
+    public string? URLPayment { get; set; }
+}
+
+public class StatusHistoryEntry
+{
+    public int Index { get; set; }
+    public string Status { get; set; } = null!;
+    public string OrderStatus { get; set; } = null!;
+    public string PaymentStatus { get; set; } = null!;
+    public string DateTime { get; set; } = null!;
+}

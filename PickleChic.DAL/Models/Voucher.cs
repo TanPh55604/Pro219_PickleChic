@@ -10,7 +10,7 @@ public class Voucher
 
     public string VoucherCode { get; set; } = null!;
 
-    public string DiscountType { get; set; } = null!;
+    public string DiscountType { get; set; } = null!; //  "Percentage" or "FixedAmount"
 
     [Column(TypeName = "decimal(18,2)")]
     public decimal DiscountValue { get; set; }
@@ -21,7 +21,7 @@ public class Voucher
     [Column(TypeName = "decimal(18,2)")]
     public decimal? MaxDiscountAmount { get; set; }
 
-    public int? MinimumRank { get; set; }
+    public int? MinimumPointRank { get; set; }
 
     public DateTime StartDate { get; set; }
 

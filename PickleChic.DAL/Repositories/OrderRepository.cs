@@ -84,6 +84,71 @@ public class OrderRepository
         }
     }
 
+    public async Task<int> GetVoucherUsageCountAsync(int customerId, int voucherId, string? phoneNumber = null)
+    {
+        if (customerId != -1)
+        {
+            return await _context.Orders
+                .CountAsync(o => o.CustomerId == customerId 
+                                 && o.VoucherId == voucherId 
+                                 && !o.Delete 
+                                 && o.OrderStatus != "Cancelled"
+                                 && o.OrderStatus != "Expired");
+        }
+        else if (!string.IsNullOrEmpty(phoneNumber))
+        {
+            return await _context.Orders
+                .Include(o => o.Address)
+                .CountAsync(o => o.VoucherId == voucherId 
+                                 && o.Address != null 
+                                 && o.Address.PhoneNumber == phoneNumber 
+                                 && !o.Delete 
+                                 && o.OrderStatus != "Cancelled"
+                                 && o.OrderStatus != "Expired");
+        }
+        return 0;
+    }
+
+    public async Task<Order?> GetOrderDetailForUserAsync(int orderId, int customerId)
+    {
+        return await _context.Orders
+            .Include(o => o.Address)
+                .ThenInclude(a => a!.Ward)
+                    .ThenInclude(w => w!.District)
+                        .ThenInclude(d => d!.Province)
+            .Include(o => o.Voucher)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.Product)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.ProductVariantAttributes!)
+                        .ThenInclude(pva => pva.AttributeValue!)
+                            .ThenInclude(av => av.ProductAttribute)
+            .FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == customerId && !o.Delete);
+    }
+
+    public async Task<List<Order>> GetOrdersForUserAsync(int customerId)
+    {
+        return await _context.Orders
+            .Include(o => o.Address)
+                .ThenInclude(a => a!.Ward)
+                    .ThenInclude(w => w!.District)
+                        .ThenInclude(d => d!.Province)
+            .Include(o => o.Voucher)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.Product)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.ProductVariantAttributes!)
+                        .ThenInclude(pva => pva.AttributeValue!)
+                            .ThenInclude(av => av.ProductAttribute)
+            .Where(o => o.CustomerId == customerId && !o.Delete)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var entity = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);

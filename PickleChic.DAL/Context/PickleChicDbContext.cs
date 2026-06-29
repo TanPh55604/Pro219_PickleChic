@@ -223,6 +223,20 @@ public class PickleChicDbContext : DbContext
                 TotalPoints = 0,
                 Status = 1,
                 RankId = 1
+            },
+            new Customer
+            {
+                Id = -1,
+                Username = "guest",
+                FullName = "guest",
+                Email = "guest@example.com",
+                PasswordHash = "4E7282BE3B013E7C38590F6483C366EF",
+                PhoneNumber = "0000000000",
+                Gender = true,
+                DateOfBirth = new DateTime(2000, 1, 1),
+                TotalPoints = 0,
+                Status = 1,
+                RankId = 1
             }
         );
 
@@ -331,6 +345,25 @@ public class PickleChicDbContext : DbContext
             new ProductVariantAttribute { Id = 2, ProductVariantId = 1, AttributeValueId = 2 },
             new ProductVariantAttribute { Id = 3, ProductVariantId = 2, AttributeValueId = 1 },
             new ProductVariantAttribute { Id = 4, ProductVariantId = 2, AttributeValueId = 3 }
+        );
+
+        modelBuilder.Entity<PaymentMethod>().HasData(
+            new PaymentMethod
+            {
+                Id = 1,
+                Name = "Thanh toán tiền mặt khi nhận hàng",
+                Description = "Thanh toán bằng tiền mặt khi nhận hàng",
+                InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0),
+                Delete = false
+            },
+            new PaymentMethod
+            {
+                Id = 2,
+                Name = "Chuyển khoản",
+                Description = "Thanh toán chuyển khoản qua tài khoản ngân hàng",
+                InsertedAt = new DateTime(2026, 6, 25, 12, 0, 0),
+                Delete = false
+            }
         );
     }
 

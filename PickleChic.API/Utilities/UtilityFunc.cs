@@ -31,8 +31,8 @@ namespace PickleChic.API.Utilities
             {
                 Resource = Send.Resource,
             }
-               .Property(Send.FromEmail, "hoangpkph38105@fpt.edu.vn")
-               .Property(Send.FromName, "ITeam")
+               .Property(Send.FromEmail, "")
+               .Property(Send.FromName, "PickleChic")
                .Property(Send.Subject, subject)
                .Property(Send.TextPart, body)
                .Property(Send.HtmlPart, bodyHTML)

@@ -68,7 +68,7 @@ public class VoucherController : ControllerBase
                 DiscountValue = dto.DiscountValue,
                 MinOrderValue = dto.MinOrderValue,
                 MaxDiscountAmount = dto.MaxDiscountAmount,
-                MinimumRank = dto.MinimumRank,
+                MinimumPointRank = dto.MinimumPointRank,
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 UsageLimit = dto.UsageLimit,
@@ -76,6 +76,12 @@ public class VoucherController : ControllerBase
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
             };
+            if(dto.IsForever)
+            {
+                entity.StartDate = DateTime.MinValue;
+                entity.EndDate = DateTime.MaxValue;
+                entity.UsageLimit = int.MaxValue;
+            }
 
             var created = await _repository.AddAsync(entity);
             return Ok(created);
@@ -99,7 +105,7 @@ public class VoucherController : ControllerBase
                 DiscountValue = dto.DiscountValue,
                 MinOrderValue = dto.MinOrderValue,
                 MaxDiscountAmount = dto.MaxDiscountAmount,
-                MinimumRank = dto.MinimumRank,
+                MinimumPointRank = dto.MinimumPointRank,
                 StartDate = dto.StartDate,
                 EndDate = dto.EndDate,
                 UsageLimit = dto.UsageLimit,
@@ -107,6 +113,13 @@ public class VoucherController : ControllerBase
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
             };
+            if (dto.IsForever)
+            {
+                entity.StartDate = DateTime.MinValue;
+                entity.EndDate = DateTime.MaxValue;
+                entity.UsageLimit = int.MaxValue;
+            }
+
 
             var updated = await _repository.UpdateAsync(entity);
             if (updated is null)

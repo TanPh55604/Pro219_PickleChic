@@ -30,8 +30,15 @@ public class VoucherController : ControllerBase
             
             if(user!=null)
             {
-                var result = await _repository.GetAvailableByRankId(user.RankId);
+                RankRepository _rankRepository = new RankRepository();
+                Rank rank = await _rankRepository.GetByIdAsync(user.RankId);
+                if(rank!=null)
+                {
+
+                var result = await _repository.GetAvailableByMinPoints(rank.MinPoints);
                 return Ok(result);
+                }   
+                
 
             } 
             return NotFound();
