@@ -2,6 +2,8 @@
 using PickleChic.WEB.DTO.Admin;
 using PickleChic.WEB.Model;
 using PickleChic.WEB.Services.Api;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace PickleChic.WEB.Services.Admin
 {
@@ -43,7 +45,7 @@ namespace PickleChic.WEB.Services.Admin
                 UserName = model.UserName,
                 Email = model.Email,
                 PhoneNumber = model.PhoneNumber,
-                PasswordHash = "Admin12345@",
+                PasswordHash = HashPassword("Admin12345@"),
                 RoleId = model.RoleId,
                 Status = model.Status
             };
@@ -73,6 +75,21 @@ namespace PickleChic.WEB.Services.Admin
                 EndPointConfig.Staff.Update,
                 request,
                 requireAuth: true);
+        }
+
+        public string HashPassword(string password)
+        {
+            MD5 md5 = MD5.Create();
+            byte[] inputBytes = Encoding.ASCII.GetBytes(password);
+            byte[] hash = md5.ComputeHash(inputBytes);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < hash.Length; i++)
+            {
+                sb.Append(hash[i].ToString("X2"));
+            }
+            md5.Clear();
+            return sb.ToString();
+
         }
     }
 }
