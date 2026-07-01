@@ -93,7 +93,9 @@ public class OrderRepository
                                  && o.VoucherId == voucherId 
                                  && !o.Delete 
                                  && o.OrderStatus != "Cancelled"
-                                 && o.OrderStatus != "Expired");
+                                 && o.OrderStatus != "Đã hủy"
+                                 && o.OrderStatus != "Expired"
+                                 && o.OrderStatus != "Đã hết hạn");
         }
         else if (!string.IsNullOrEmpty(phoneNumber))
         {
@@ -104,7 +106,9 @@ public class OrderRepository
                                  && o.Address.PhoneNumber == phoneNumber 
                                  && !o.Delete 
                                  && o.OrderStatus != "Cancelled"
-                                 && o.OrderStatus != "Expired");
+                                 && o.OrderStatus != "Đã hủy"
+                                 && o.OrderStatus != "Expired"
+                                 && o.OrderStatus != "Đã hết hạn");
         }
         return 0;
     }

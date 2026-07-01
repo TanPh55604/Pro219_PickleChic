@@ -26,10 +26,10 @@ public class OrderManagerService
     public async Task CancelExpiredOrderAsync(int orderId)
     {
         var order = await _orderRepository.GetByIdAsync(orderId);
-        if (order != null && order.PaymentStatus == Constant.OrderStatus.PaymentPending && order.PaymentExpiration < DateTime.Now)
+        if (order != null && order.PaymentStatus == Constant.PaymentStatus.Pending && order.PaymentExpiration < DateTime.Now)
         {
-            order.OrderStatus = Constant.OrderStatus.OrderStatusPaymentExpired;
-            order.PaymentStatus = Constant.OrderStatus.PaymentCancelled;
+            order.OrderStatus = Constant.OrderStatus.Expired;
+            order.PaymentStatus = Constant.PaymentStatus.Cancelled;
             order.LastUpdate = DateTime.Now;
             order.UpdateBy = "System";
 

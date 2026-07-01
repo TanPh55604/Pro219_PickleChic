@@ -246,9 +246,9 @@ public class OrderController : ControllerBase
                 statusHistory.Add(new StatusHistoryEntry
                 {
                     Index = statusHistory.Count + 1,
-                    Status = Constant.OrderStatus.StatusConfirm,
-                    OrderStatus = Constant.OrderStatus.OrderStatusConfirm,
-                    PaymentStatus = Constant.OrderStatus.PaymentCompleted,
+                    Status = Constant.OrderStatus.Confirmed,
+                    OrderStatus = Constant.OrderStatus.Confirmed,
+                    PaymentStatus = Constant.PaymentStatus.Completed,
                     DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
                 });
             }
@@ -257,9 +257,9 @@ public class OrderController : ControllerBase
                 statusHistory.Add(new StatusHistoryEntry
                 {
                     Index = statusHistory.Count + 1,
-                    Status = Constant.OrderStatus.StatusPending,
-                    OrderStatus = Constant.OrderStatus.OrderStatusPending,
-                    PaymentStatus = Constant.OrderStatus.PaymentPending,
+                    Status = Constant.OrderStatus.Processing,
+                    OrderStatus = Constant.OrderStatus.Pending,
+                    PaymentStatus = Constant.PaymentStatus.Pending,
                     DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
                 });
             }
@@ -268,9 +268,9 @@ public class OrderController : ControllerBase
                 statusHistory.Add(new StatusHistoryEntry
                 {
                     Index = statusHistory.Count + 1,
-                    Status = Constant.OrderStatus.StatusWaitingForPayment,
-                    OrderStatus = Constant.OrderStatus.OrderStatusWaitingForPayment,
-                    PaymentStatus = Constant.OrderStatus.PaymentPending,
+                    Status = Constant.OrderStatus.WaitingForPayment,
+                    OrderStatus = Constant.OrderStatus.WaitingForPayment,
+                    PaymentStatus = Constant.PaymentStatus.Pending,
                     DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
                 });
             }
@@ -283,13 +283,13 @@ public class OrderController : ControllerBase
             order.OrderDate = DateTime.Now;
             if (isZeroOrder)
             {
-                order.PaymentStatus = Constant.OrderStatus.PaymentCompleted;
-                order.OrderStatus = Constant.OrderStatus.OrderStatusConfirm;
+                order.PaymentStatus = Constant.PaymentStatus.Completed;
+                order.OrderStatus = Constant.OrderStatus.Confirmed;
             }
             else
             {
-                order.PaymentStatus = Constant.OrderStatus.PaymentPending;
-                order.OrderStatus = PaymentMethodTypeId == 2 ? Constant.OrderStatus.OrderStatusWaitingForPayment : Constant.OrderStatus.OrderStatusPending;
+                order.PaymentStatus = Constant.PaymentStatus.Pending;
+                order.OrderStatus = PaymentMethodTypeId == 2 ? Constant.OrderStatus.WaitingForPayment : Constant.OrderStatus.Pending;
             }
             order.VoucherId = voucherId;
             order.InsertedAt = DateTime.Now;
@@ -457,28 +457,28 @@ public class OrderController : ControllerBase
                 statusHistory.Add(new StatusHistoryEntry
                 {
                     Index = statusHistory.Count + 1,
-                    Status = Constant.OrderStatus.StatusDone,
-                    OrderStatus = Constant.OrderStatus.OrderStatusDone,
-                    PaymentStatus = Constant.OrderStatus.PaymentCompleted,
+                    Status = Constant.OrderStatus.Done,
+                    OrderStatus = Constant.OrderStatus.Done,
+                    PaymentStatus = Constant.PaymentStatus.Completed,
                     DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
                 });
 
-                order.PaymentStatus = Constant.OrderStatus.PaymentCompleted;
-                order.OrderStatus = Constant.OrderStatus.OrderStatusDone;
+                order.PaymentStatus = Constant.PaymentStatus.Completed;
+                order.OrderStatus = Constant.OrderStatus.Done;
             }
             else
             {
                 statusHistory.Add(new StatusHistoryEntry
                 {
                     Index = statusHistory.Count + 1,
-                    Status = Constant.OrderStatus.StatusConfirm,
-                    OrderStatus = Constant.OrderStatus.OrderStatusConfirm,
-                    PaymentStatus = Constant.OrderStatus.PaymentCompleted,
+                    Status = Constant.OrderStatus.Confirmed,
+                    OrderStatus = Constant.OrderStatus.Confirmed,
+                    PaymentStatus = Constant.PaymentStatus.Completed,
                     DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
                 });
 
-                order.PaymentStatus = Constant.OrderStatus.PaymentCompleted;
-                order.OrderStatus = Constant.OrderStatus.OrderStatusConfirm;
+                order.PaymentStatus = Constant.PaymentStatus.Completed;
+                order.OrderStatus = Constant.OrderStatus.Confirmed;
             }
 
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
@@ -509,7 +509,7 @@ public class OrderController : ControllerBase
                 return NotFound("Đơn hàng không tồn tại");
             }
 
-            if (order.OrderStatus == Constant.OrderStatus.StatusCanceledByUser)
+            if (order.OrderStatus == Constant.OrderStatus.Cancelled)
             {
                 return Ok(order);
             }
@@ -518,15 +518,15 @@ public class OrderController : ControllerBase
             statusHistory.Add(new StatusHistoryEntry
             {
                 Index = statusHistory.Count + 1,
-                Status = Constant.OrderStatus.StatusCanceledByUser,
-                OrderStatus = Constant.OrderStatus.OrderStatusCanceledByUser,
-                PaymentStatus = Constant.OrderStatus.PaymentCancelled,
+                Status = Constant.OrderStatus.Cancelled,
+                OrderStatus = Constant.OrderStatus.Cancelled,
+                PaymentStatus = Constant.PaymentStatus.Cancelled,
                 DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
             });
 
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
-            order.PaymentStatus = Constant.OrderStatus.PaymentCancelled;
-            order.OrderStatus = Constant.OrderStatus.OrderStatusCanceledByUser;
+            order.PaymentStatus = Constant.PaymentStatus.Cancelled;
+            order.OrderStatus = Constant.OrderStatus.Cancelled;
             order.LastUpdate = DateTime.Now;
             order.UpdateBy = "System";
 
@@ -743,19 +743,19 @@ public class OrderController : ControllerBase
             PurchaseChannel = order.IsOrderPOS ? "Mua tại cửa hàng (POS)" : "Mua trực tuyến",
             PaymentStatus = order.PaymentStatus switch
             {
-                "Pending" => "Chờ thanh toán",
-                "Completed" => "Đã thanh toán",
-                "Cancelled" => "Đã hủy",
+                "Pending" or Constant.PaymentStatus.Pending => "Chờ thanh toán",
+                "Completed" or Constant.PaymentStatus.Completed => "Đã thanh toán",
+                "Cancelled" or Constant.PaymentStatus.Cancelled => "Đã hủy",
                 _ => order.PaymentStatus
             },
             OrderStatus = order.OrderStatus switch
             {
-                "Pending" => "Chờ xác nhận",
-                "WaitingForPayment" => "Chờ thanh toán",
-                "Confirmed" => "Đã xác nhận",
-                "Done" => "Hoàn thành",
-                "Cancelled" => "Đã hủy",
-                "Expired" => "Hết hạn thanh toán",
+                "Pending" or Constant.OrderStatus.Pending => "Chờ xác nhận",
+                "WaitingForPayment" or Constant.OrderStatus.WaitingForPayment => "Chờ thanh toán",
+                "Confirmed" or Constant.OrderStatus.Confirmed => "Đã xác nhận",
+                "Done" or Constant.OrderStatus.Done => "Hoàn thành",
+                "Cancelled" or Constant.OrderStatus.Cancelled => "Đã hủy",
+                "Expired" or Constant.OrderStatus.Expired => "Hết hạn thanh toán",
                 _ => order.OrderStatus
             },
             PaymentLink = order.PaymentLink,

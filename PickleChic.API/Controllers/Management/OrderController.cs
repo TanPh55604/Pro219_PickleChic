@@ -147,4 +147,66 @@ public class OrderController : ControllerBase
             return StatusCode(500, "Db Error");
         }
     }
+
+    [HttpPatch("update-status/{id}")]
+    public async Task<ActionResult> UpdateStatus(int id, [FromBody] OrderStatusUpdateDto dto)
+    {
+        try
+        {
+            var existingOrder = await _repository.GetByIdAsync(id);
+            if (existingOrder is null)
+                return NotFound("Đơn hàng không tồn tại");
+
+            existingOrder.PaymentStatus = dto.PaymentStatus;
+            existingOrder.OrderStatus = dto.OrderStatus;
+            existingOrder.LastUpdate = DateTime.Now;
+            existingOrder.UpdateBy = dto.UpdateBy ?? "Admin";
+
+            var statusHistory = ParseStatusHistory(existingOrder.StatusHistory);
+            statusHistory.Add(new StatusHistoryEntry
+            {
+                Index = statusHistory.Count + 1,
+                Status = dto.OrderStatus,
+                OrderStatus = dto.OrderStatus,
+                PaymentStatus = dto.PaymentStatus,
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+            });
+            
+            existingOrder.StatusHistory = System.Text.Json.JsonSerializer.Serialize(statusHistory, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            });
+
+            var updated = await _repository.UpdateAsync(existingOrder);
+            if (updated is null)
+                return BadRequest("Không thể cập nhật trạng thái đơn hàng");
+
+            return Ok(updated);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
+
+    private List<StatusHistoryEntry> ParseStatusHistory(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<StatusHistoryEntry>();
+        }
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<List<StatusHistoryEntry>>(json, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                WriteIndented = false
+            }) ?? new List<StatusHistoryEntry>();
+        }
+        catch
+        {
+            return new List<StatusHistoryEntry>();
+        }
+    }
 }

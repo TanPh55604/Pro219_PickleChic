@@ -55,3 +55,10 @@ public class StatusHistoryEntry
     public string PaymentStatus { get; set; } = null!;
     public string DateTime { get; set; } = null!;
 }
+
+public class OrderStatusUpdateDto
+{
+    public string PaymentStatus { get; set; } = null!;
+    public string OrderStatus { get; set; } = null!;
+    public string? UpdateBy { get; set; }
+}

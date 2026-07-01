@@ -4,24 +4,20 @@ public static class Constant
 {
     public static class OrderStatus
     {
-        public const string StatusPending = "Pending";
-        public const string OrderStatusPending = "Pending";
-        public const string PaymentPending = "Pending";
-        
-        public const string StatusWaitingForPayment = "WaitingForPayment";
-        public const string OrderStatusWaitingForPayment = "WaitingForPayment";
-        
-        public const string PaymentCompleted = "Completed";
-        public const string OrderStatusConfirm = "Confirmed";
-        public const string StatusConfirm = "Confirmed";
-        
-        public const string StatusCanceledByUser = "Cancelled";
-        public const string PaymentCancelled = "Cancelled";
-        public const string OrderStatusCanceledByUser = "Cancelled";
-        public const string OrderStatusPaymentExpired = "Expired";
-        
-        public const string StatusDone = "Done";
-        public const string OrderStatusDone = "Done";
+        public const string Pending = "Chờ xác nhận";
+        public const string Processing = "Chờ xử lý";
+        public const string WaitingForPayment = "Chờ thanh toán";
+        public const string Confirmed = "Đã xác nhận";
+        public const string Cancelled = "Đã hủy(KH)";
+        public const string Expired = "Đã hết hạn";
+        public const string Done = "Hoàn thành";
+    }
+
+    public static class PaymentStatus
+    {
+        public const string Pending = "Chờ thanh toán";
+        public const string Completed = "Đã thanh toán";
+        public const string Cancelled = "Đã hủy";
     }
 
     public static class CustomerType
