@@ -266,7 +266,7 @@ public class AddressController : ControllerBase
 
     [HttpPost("CalculateFee")]
     public async Task<IActionResult> CalculateFee(
-           int to_district_id,
+           string to_district_code,
            string to_ward_code,
            [FromBody] List<FeeItemDTO> items)
     {
@@ -302,7 +302,7 @@ public class AddressController : ControllerBase
             service_type_id = 2,
             from_district_id,
             from_ward_code,
-            to_district_id,
+            to_district_code,
             to_ward_code,
             length = 30,
             width = 40,
