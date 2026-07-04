@@ -87,7 +87,7 @@ builder.Services.AddScoped<ProductAttributeRepository>();
 builder.Services.AddScoped<AttributeValueRepository>();
 builder.Services.AddScoped<ProductVariantAttributeRepository>();
 builder.Services.AddScoped<CartItemRepository>();
-//builder.Services.AddScoped<WishlistRepository>();
+builder.Services.AddScoped<WishlistRepository>();
 //builder.Services.AddScoped<PointHistoryRepository>();
 //builder.Services.AddScoped<PromotionRepository>();
 //builder.Services.AddScoped<PromotionDetailRepository>();

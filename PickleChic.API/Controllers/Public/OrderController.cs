@@ -299,7 +299,7 @@ public class OrderController : ControllerBase
             order.Delete = false;
 
             order.CustomerId = customerId;
-            order.CustomerType = checkoutParam.AddressDTO.CustomerId != -1 ? Constant.CustomerType.RegisteredOrder : Constant.CustomerType.GuestOrder;
+            order.CustomerType = customerId != -1 ? Constant.CustomerType.RegisteredOrder : Constant.CustomerType.GuestOrder;
             order.PaymentMethodId = PaymentMethodTypeId ?? 2;
 
             var result = await _orderRepository.AddAsync(order);
@@ -378,8 +378,8 @@ public class OrderController : ControllerBase
             long expiredAt = expirationTime.ToUnixTimeSeconds();
             int payOsAmount = (int)(totalPrice - discountAmount + shippingFee);
 
-            string cancelUrl = "http://localhost:5001/order/PaymentCanceled?orderId=" + order.Id;
-            string returnUrl = "http://localhost:5001/order/PaymentSuccess?orderId=" + order.Id + "&pos=false";
+            string cancelUrl = "https://localhost:7001/order/PaymentCanceled?orderId=" + order.Id;
+            string returnUrl = "https://localhost:7001/order/PaymentSuccess?orderId=" + order.Id + "&pos=false";
 
             PaymentData paymentData = new PaymentData(
                 ordCode, 
