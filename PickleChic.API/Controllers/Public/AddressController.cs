@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using PickleChic.API.DTOs;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
+using System.Text;
+using System.Text.Json;
 
 namespace PickleChic.API.Controllers.Public;
 
@@ -13,17 +16,20 @@ public class AddressController : ControllerBase
     private readonly ProvinceRepository _provinceRepository;
     private readonly DistrictRepository _districtRepository;
     private readonly WardRepository _wardRepository;
+    private readonly IConfiguration _configuration;
 
     public AddressController(
         AddressRepository repository,
         ProvinceRepository provinceRepository,
         DistrictRepository districtRepository,
-        WardRepository wardRepository)
+        WardRepository wardRepository,
+        IConfiguration configuration)
     {
         _repository = repository;
         _provinceRepository = provinceRepository;
         _districtRepository = districtRepository;
         _wardRepository = wardRepository;
+        _configuration = configuration;
     }   
 
     [HttpGet("get-by-id/{id}")]
@@ -255,6 +261,86 @@ public class AddressController : ControllerBase
         catch (Exception)
         {
             return StatusCode(500, "Lỗi hệ thống");
+        }
+    }
+
+    [HttpPost("CalculateFee")]
+    public async Task<IActionResult> CalculateFee(
+           int to_district_id,
+           string to_ward_code,
+           [FromBody] List<FeeItemDTO> items)
+    {
+        int from_district_id = 3440;
+        string from_ward_code = "13007";
+        var token = _configuration["GHN:Token"];
+        var shopId = _configuration["GHN:ShopId"];
+        FeeItemDTO defaultItem = new FeeItemDTO
+        {
+            Name = "Hàng hóa",
+            Quantity = 2,
+            Length = 30,
+            Width = 40,
+            Height = 5,
+            Weight = 400
+        };
+        if (items == null || items.Count == 0)
+        {
+            items = new List<FeeItemDTO> { defaultItem };
+        }
+
+        int totalWeight = 0;
+
+        foreach (var item in items)
+        {
+            totalWeight += item.Weight * item.Quantity;
+        }
+
+        var url = "https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee";
+
+        var body = new
+        {
+            service_type_id = 2,
+            from_district_id,
+            from_ward_code,
+            to_district_id,
+            to_ward_code,
+            length = 30,
+            width = 40,
+            height = 5,
+            weight = totalWeight,
+            insurance_value = 0,
+            coupon = (string)null,
+            items = items
+        };
+
+        using var client = new HttpClient();
+        if (!string.IsNullOrEmpty(token))
+        {
+            client.DefaultRequestHeaders.Add("Token", token);
+        }
+        if (!string.IsNullOrEmpty(shopId))
+        {
+            client.DefaultRequestHeaders.Add("ShopId", shopId);
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        var jsonBody = JsonSerializer.Serialize(body, options);
+        using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+        try
+        {
+            var response = await client.PostAsync(url, content);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadAsStringAsync();
+            return Ok(JsonDocument.Parse(result));
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Lỗi khi tính phí vận chuyển =)");
         }
     }
 }
