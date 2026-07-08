@@ -1,31 +1,587 @@
 ﻿@attribute [Route(RouterConfig.Admin.OrderDetail)]
 @layout AdminLayout
+@using System.Text.Json
 
-<PageTitle>@Constant.metaDataAdmin Order Detail</PageTitle>
+<PageTitle>@Constant.metaDataAdmin Chi tiết hóa đơn</PageTitle>
 
-<div class="mx-auto w-full max-w-7xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Chi tiết đơn hàng</h1>
+@if (_isLoading)
+{
+    <DetailPageSkeleton ShowSubtitle="true"
+                        ShowDeleteButton="false"
+                        InfoFieldCount="6"
+                        TableRowCount="3" />
+}
+else
+{
+    <div class="mx-auto w-full max-w-7xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Chi tiết hóa đơn</h1>
+                <p class="!mt-1 text-sm text-slate-500">Mã đơn: @_model.OrderCode</p>
+            </div>
+
+            <div class="flex flex-wrap !gap-3">
+                <a href="@RouterConfig.Admin.Orders"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                    Quay lại
+                </a>
+
+                @if (ShouldShowPosPaymentButtons())
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Disabled="@_isUpdateStatus"
+                               Color="Color.Primary"
+                               OnClick="ChangePaymentToCashAsync"
+                               Class="!rounded-xl !normal-case">
+                        Chuyển đổi thanh toán thành tiền mặt
+                    </MudButton>
+
+                    @if (!string.IsNullOrWhiteSpace(_model.PaymentLink))
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Disabled="@_isUpdateStatus"
+                                   Color="Color.Success"
+                                   OnClick="OpenPaymentLink"
+                                   Class="!rounded-xl !normal-case">
+                            Thanh toán
+                        </MudButton>
+                    }
+                }
+
+                @if (ShouldShowOnlineCashPaymentButton())
+                {
+                    <MudButton Variant="Variant.Filled"
+                               Disabled="@_isUpdateStatus"
+                               Color="Color.Primary"
+                               OnClick="MarkPaidByCashAsync"
+                               Class="!rounded-xl !normal-case">
+                        Trả tiền mặt
+                    </MudButton>
+                }
+
+                @if (ShouldShowButtons())
+                {
+                    @if (IsPendingStatus(_model.OrderStatus))
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Disabled="@_isUpdateStatus"
+                                   Color="Color.Error"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusPending, "failed"))"
+                                   Class="!rounded-xl !normal-case">
+                            Hủy
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Disabled="@_isUpdateStatus"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusPending, "success"))"
+                                   Class="!rounded-xl !normal-case">
+                            Xác nhận
+                        </MudButton>
+                    }
+                    else if (_model.OrderStatus == Constant.OrderStatus.StatusConfirm)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Disabled="@_isUpdateStatus"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusConfirm))"
+                                   Class="!rounded-xl !normal-case">
+                            Giao cho đơn vị vận chuyển
+                        </MudButton>
+                    }
+                    else if (_model.OrderStatus == Constant.OrderStatus.StatusShipping)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Disabled="@_isUpdateStatus"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusShipping, "success"))"
+                                   Class="!rounded-xl !normal-case">
+                            Giao thành công
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Error"
+                                   Disabled="@_isUpdateStatus"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusShipping, "failed"))"
+                                   Class="!rounded-xl !normal-case">
+                            Giao thất bại
+                        </MudButton>
+                    }
+                    else if (_model.OrderStatus == Constant.OrderStatus.StatusShippingDone)
+                    {
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Success"
+                                   Disabled="@_isUpdateStatus"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusShippingDone))"
+                                   Class="!rounded-xl !normal-case">
+                            Hoàn thành
+                        </MudButton>
+                    }
+                }
+            </div>
         </div>
 
-        <div class="flex flex-wrap !gap-3">
-            <a href="@RouterConfig.Admin.Orders"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-                Quay lại
-            </a>
+        <div class="grid !gap-6 xl:grid-cols-3">
+            <div class="!space-y-6 xl:col-span-2">
+                <div class="!rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
+                    <div class="!border-b !border-slate-200 !p-6">
+                        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-900">@_model.OrderCode</h2>
+                                <p class="!mt-1 text-sm text-slate-500">
+                                    Đặt lúc @_model.OrderDate.ToString("dd/MM/yyyy HH:mm")
+                                </p>
+                            </div>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Error"
-                       StartIcon="@Icons.Material.Filled.Delete"
-                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
-                Xóa
-            </MudButton>
+                            <div class="flex flex-wrap !gap-2">
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="@GetOrderStatusColor(_model.OrderStatus)"
+                                         Variant="Variant.Filled">
+                                    @_model.OrderStatus
+                                </MudChip>
+                                <MudChip T="string"
+                                         Size="Size.Small"
+                                         Color="@GetPaymentStatusColor(_model.PaymentStatus)"
+                                         Variant="Variant.Filled">
+                                    @_model.PaymentStatus
+                                </MudChip>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="!p-6">
+                        <h3 class="text-lg font-bold text-slate-900">Sản phẩm</h3>
+
+                        <div class="!mt-4 overflow-x-auto">
+                            <table class="w-full min-w-[640px] text-left text-sm">
+                                <thead>
+                                    <tr class="!border-b !border-slate-200 text-slate-500">
+                                        <th class="!pb-3 font-semibold">Sản phẩm</th>
+                                        <th class="!pb-3 font-semibold">SKU</th>
+                                        <th class="!pb-3 text-right font-semibold">Đơn giá</th>
+                                        <th class="!pb-3 text-center font-semibold">SL</th>
+                                        <th class="!pb-3 text-right font-semibold">Giảm</th>
+                                        <th class="!pb-3 text-right font-semibold">Thành tiền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in _model.OrderItems)
+                                    {
+                                        <tr class="!border-b !border-slate-100">
+                                            <td class="!py-3">
+                                                <p class="font-medium text-slate-900">
+                                                    @(item.ProductVariant?.Product?.Name ?? $"Biến thể #{item.ProductVariantId}")
+                                                </p>
+                                                @if (!string.IsNullOrWhiteSpace(item.ProductVariant?.VariantName))
+                                                {
+                                                    <p class="text-slate-500">@item.ProductVariant.VariantName</p>
+                                                }
+                                            </td>
+                                            <td class="!py-3 text-slate-600">
+                                                @(item.ProductVariant?.SKU ?? "—")
+                                            </td>
+                                            <td class="!py-3 text-right text-slate-700">
+                                                @item.UnitPrice.ToString("N0")đ
+                                            </td>
+                                            <td class="!py-3 text-center text-slate-700">
+                                                @item.Quantity
+                                            </td>
+                                            <td class="!py-3 text-right text-slate-500">
+                                                @(item.DiscountAmount > 0 ? $"{item.DiscountAmount:N0}đ" : "—")
+                                            </td>
+                                            <td class="!py-3 text-right font-semibold text-slate-900">
+                                                @item.Subtotal.ToString("N0")đ
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="!mt-6 flex flex-col items-end !gap-2 text-sm">
+                            <div class="flex w-full max-w-xs justify-between text-slate-600">
+                                <span>Tạm tính</span>
+                                <span>@_model.ItemsTotal.ToString("N0")đ</span>
+                            </div>
+                            <div class="flex w-full max-w-xs justify-between text-slate-600">
+                                <span>Phí vận chuyển</span>
+                                <span>@_model.ShippingFee.ToString("N0")đ</span>
+                            </div>
+                            <div class="flex w-full max-w-xs justify-between !border-t !border-slate-200 !pt-2 text-base font-bold text-slate-900">
+                                <span>Tổng cộng</span>
+                                <span>@_model.GrandTotal.ToString("N0")đ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (_statusHistory.Count > 0)
+                {
+                    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                        <h3 class="text-lg font-bold text-slate-900">Lịch sử trạng thái</h3>
+
+                        <div class="!mt-4 !space-y-3">
+                            @foreach (var entry in _statusHistory.OrderByDescending(e => e.Index))
+                            {
+                                <div class="flex flex-col !gap-1 !rounded-xl !bg-slate-50 !p-4 md:flex-row md:items-center md:justify-between">
+                                    <div>
+                                        <p class="font-semibold text-slate-900">@entry.OrderStatus</p>
+                                        <p class="text-sm text-slate-500">Thanh toán: @entry.PaymentStatus</p>
+                                    </div>
+                                    <span class="text-sm text-slate-400">@entry.DateTime</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="!space-y-6">
+                <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-900">Khách hàng</h3>
+
+                    <div class="!mt-4 !space-y-3 text-sm">
+                        <div>
+                            <p class="text-slate-500">Họ tên</p>
+                            <p class="font-semibold text-slate-900">@(_model.Customer?.FullName ?? "—")</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500">Email</p>
+                            <p class="font-semibold text-slate-900">@(_model.Customer?.Email ?? "—")</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500">Số điện thoại</p>
+                            <p class="font-semibold text-slate-900">@(_model.Customer?.PhoneNumber ?? _model.Address?.PhoneNumber ?? "—")</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-900">Giao hàng</h3>
+
+                    <div class="!mt-4 !space-y-3 text-sm">
+                        <div>
+                            <p class="text-slate-500">Người nhận</p>
+                            <p class="font-semibold text-slate-900">@(_model.Address?.FullName ?? "—")</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500">Số điện thoại</p>
+                            <p class="font-semibold text-slate-900">@(_model.Address?.PhoneNumber ?? "—")</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500">Địa chỉ</p>
+                            <p class="font-semibold text-slate-900">@FormatAddress(_model.Address)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-900">Thanh toán</h3>
+
+                    <div class="!mt-4 !space-y-3 text-sm">
+                        <div>
+                            <p class="text-slate-500">Phương thức</p>
+                            <p class="font-semibold text-slate-900">@(_model.PaymentMethod?.Name ?? "—")</p>
+                        </div>
+                        @if (_model.Voucher is not null)
+                        {
+                            <div>
+                                <p class="text-slate-500">Voucher</p>
+                                <p class="font-semibold text-slate-900">@_model.Voucher.VoucherCode</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_model.Notes))
+                        {
+                            <div>
+                                <p class="text-slate-500">Ghi chú</p>
+                                <p class="font-semibold text-slate-900">@_model.Notes</p>
+                            </div>
+                        }
+                        @if (_model.LastUpdate.HasValue)
+                        {
+                            <div>
+                                <p class="text-slate-500">Cập nhật lần cuối</p>
+                                <p class="font-semibold text-slate-900">
+                                    @_model.LastUpdate.Value.ToString("dd/MM/yyyy HH:mm")
+                                    @if (!string.IsNullOrWhiteSpace(_model.UpdateBy))
+                                    {
+                                        <span class="text-slate-500"> · @_model.UpdateBy</span>
+                                    }
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    private OrderResponse _model = new();
+
+    private List<StatusHistoryEntryResponse> _statusHistory = new();
+
+    private bool _isLoading = true;
+
+    private bool _isUpdateStatus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrderAsync();
+    }
+
+    private async Task LoadOrderAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminOrderService.GetByIdAsync(Id);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertOrderErrorMessage(result.Message), Severity.Error);
+                _navigation.NavigateTo(RouterConfig.Admin.Orders, replace: true);
+                return;
+            }
+
+            _model = result.Data;
+            _statusHistory = ParseStatusHistory(_model.StatusHistory);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private bool ShouldShowButtons()
+    {
+        return !Constant.OrderStatus.TerminalStatuses.Contains(_model.OrderStatus);
+    }
+
+    private bool ShouldShowPosPaymentButtons()
+    {
+        return _model.IsOrderPOS
+               && _model.PaymentStatus == Constant.PaymentStatus.Pending
+               && IsPendingStatus(_model.OrderStatus);
+    }
+
+    private bool ShouldShowOnlineCashPaymentButton()
+    {
+        return !_model.IsOrderPOS
+               && IsBankTransferOrder(_model)
+               && _model.PaymentStatus == Constant.PaymentStatus.Pending
+               && ShouldShowButtons();
+    }
+
+    private static bool IsBankTransferOrder(OrderResponse order)
+    {
+        if (order.PaymentMethodId == Constant.PaymentMethodType.BankTransfer)
+        {
+            return true;
+        }
+
+        var methodName = order.PaymentMethod?.Name;
+
+        return !string.IsNullOrWhiteSpace(methodName)
+               && methodName.Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsPendingStatus(string status)
+    {
+        return status is Constant.OrderStatus.Pending
+            or Constant.OrderStatus.Processing
+            or Constant.OrderStatus.WaitingForPayment;
+    }
+
+    private void OpenPaymentLink()
+    {
+        if (!string.IsNullOrWhiteSpace(_model.PaymentLink))
+        {
+            _navigation.NavigateTo(_model.PaymentLink, forceLoad: true);
+        }
+    }
+
+    private async Task ChangePaymentToCashAsync()
+    {
+        await MarkPaidByCashAsync();
+    }
+
+    private async Task MarkPaidByCashAsync()
+    {
+        var nextOrderStatus = _model.OrderStatus == Constant.OrderStatus.WaitingForPayment
+            || IsPendingStatus(_model.OrderStatus)
+            ? Constant.OrderStatus.Confirmed
+            : _model.OrderStatus;
+
+        await SubmitStatusUpdateAsync(nextOrderStatus, Constant.PaymentStatus.Completed);
+    }
+
+    private async Task HandleStatusUpdateAsync(string currentStatus, string? outcome = null)
+    {
+        if (_model.OrderStatus != currentStatus)
+        {
+            _snackbar.Add("Trạng thái đơn đã thay đổi, vui lòng tải lại trang", Severity.Warning);
+            return;
+        }
+
+        var (nextOrderStatus, nextPaymentStatus) = ResolveNextStatus(currentStatus, outcome);
+        await SubmitStatusUpdateAsync(nextOrderStatus, nextPaymentStatus);
+    }
+
+    private (string OrderStatus, string PaymentStatus) ResolveNextStatus(string currentStatus, string? outcome)
+    {
+        if (IsPendingStatus(currentStatus))
+        {
+            return outcome == "failed"
+                ? (Constant.OrderStatus.Cancelled, Constant.PaymentStatus.Cancelled)
+                : (Constant.OrderStatus.Confirmed, Constant.PaymentStatus.Completed);
+        }
+
+        return currentStatus switch
+        {
+            var status when status == Constant.OrderStatus.StatusConfirm
+                => (Constant.OrderStatus.Shipping, _model.PaymentStatus),
+
+            var status when status == Constant.OrderStatus.StatusShipping
+                => outcome == "failed"
+                    ? (Constant.OrderStatus.DeliveryFailed, _model.PaymentStatus)
+                    : (Constant.OrderStatus.ShippingDone, _model.PaymentStatus),
+
+            var status when status == Constant.OrderStatus.StatusShippingDone
+                => (Constant.OrderStatus.Done, Constant.PaymentStatus.Completed),
+
+            _ => (_model.OrderStatus, _model.PaymentStatus)
+        };
+    }
+
+    private async Task SubmitStatusUpdateAsync(string orderStatus, string paymentStatus)
+    {
+        if (orderStatus == _model.OrderStatus && paymentStatus == _model.PaymentStatus)
+        {
+            _snackbar.Add("Trạng thái không thay đổi", Severity.Info);
+            return;
+        }
+
+        _isUpdateStatus = true;
+
+        try
+        {
+            var userResult = await _currentUserService.CheckCurrentUserAsync();
+            var updateBy = userResult.Success && userResult.Data is not null
+                ? userResult.Data.FullName
+                : "Admin";
+
+            var request = new OrderStatusUpdateRequest
+            {
+                OrderStatus = orderStatus,
+                PaymentStatus = paymentStatus,
+                UpdateBy = updateBy
+            };
+
+            var result = await _adminOrderService.UpdateStatusAsync(Id, request);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertOrderErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _model = result.Data;
+            _statusHistory = ParseStatusHistory(_model.StatusHistory);
+
+            _snackbar.Add("Cập nhật trạng thái thành công", Severity.Success);
+        }
+        finally
+        {
+            _isUpdateStatus = false;
+        }
+    }
+
+    private static List<StatusHistoryEntryResponse> ParseStatusHistory(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<StatusHistoryEntryResponse>();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<StatusHistoryEntryResponse>>(json, _jsonOptions)
+                ?? new List<StatusHistoryEntryResponse>();
+        }
+        catch
+        {
+            return new List<StatusHistoryEntryResponse>();
+        }
+    }
+
+    private static string FormatAddress(OrderAddressResponse? address)
+    {
+        if (address is null)
+        {
+            return "—";
+        }
+
+        var ward = address.Ward?.Name;
+        var district = address.Ward?.District?.Name;
+        var province = address.Ward?.District?.Province?.Name;
+
+        var parts = new[] { address.DetailInfo, ward, district, province }
+            .Where(p => !string.IsNullOrWhiteSpace(p));
+
+        return string.Join(", ", parts);
+    }
+
+    private static Color GetOrderStatusColor(string status)
+    {
+        return status switch
+        {
+            Constant.OrderStatus.Done => Color.Success,
+            Constant.OrderStatus.ShippingDone => Color.Success,
+            Constant.OrderStatus.Confirmed => Color.Info,
+            Constant.OrderStatus.Shipping => Color.Info,
+            Constant.OrderStatus.WaitingForPayment => Color.Warning,
+            Constant.OrderStatus.Pending => Color.Warning,
+            Constant.OrderStatus.Processing => Color.Warning,
+            Constant.OrderStatus.Cancelled => Color.Error,
+            Constant.OrderStatus.DeliveryFailed => Color.Error,
+            Constant.OrderStatus.Expired => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private static Color GetPaymentStatusColor(string status)
+    {
+        return status switch
+        {
+            Constant.PaymentStatus.Completed => Color.Success,
+            Constant.PaymentStatus.Pending => Color.Warning,
+            Constant.PaymentStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private static string ConvertOrderErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Đơn hàng không tồn tại" => "Không tìm thấy hóa đơn",
+            "Không thể cập nhật trạng thái đơn hàng" => "Không thể cập nhật trạng thái",
+            "Db Error" => "Không thể xử lý dữ liệu hóa đơn",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
 }
