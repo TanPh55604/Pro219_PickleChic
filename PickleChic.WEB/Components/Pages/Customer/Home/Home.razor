@@ -270,7 +270,7 @@
         public string Eyebrow { get; set; }
         public string Name { get; set; }
         public int CategoryId { get; set; }
-        public string Url => RouterConfig.BuildSearchUrl(categoryId: CategoryId);
+        public string Url => RouterConfig.BuildRoute(RouterConfig.Customer.CategoryDetail, CategoryId);
 
         public CategoryItem(string eyebrow, string name, int categoryId)
         {

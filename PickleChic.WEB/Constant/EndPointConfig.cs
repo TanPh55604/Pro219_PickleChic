@@ -30,6 +30,20 @@
             public static string Delete(int id) => $"management/staff/delete/{id}";
         }
 
+        public static class PublicCategory
+        {
+            public const string GetAll = "category/get-all";
+
+            public static string GetById(int id) => $"category/get-by-id/{id}";
+        }
+
+        public static class PublicBrand
+        {
+            public const string GetAll = "brand/get-all";
+
+            public static string GetById(int id) => $"brand/get-by-id/{id}";
+        }
+
         public static class Category
         {
             public const string GetAll = "management/category/get-all";
@@ -97,6 +111,8 @@
         public static class ProductVariant
         {
             public static string GetByCategory(int categoryId) => $"product-variant/get-by-category/{categoryId}";
+
+            public static string GetByBrand(int brandId) => $"product-variant/get-by-brand/{brandId}";
 
             public const string CreateWithAttributes = "management/product-variant/create-with-attributes";
             public const string UpdateWithAttributes = "management/product-variant/update-with-attributes";
@@ -166,6 +182,15 @@
 
                 public static string Delete(int id) => $"management/voucher/delete/{id}";
             }
+        }
+
+        public static class Order
+        {
+            public const string GetAll = "management/order/get-all";
+
+            public static string GetById(int id) => $"management/order/get-by-id/{id}";
+
+            public static string UpdateStatus(int id) => $"management/order/update-status/{id}";
         }
     }
 }
