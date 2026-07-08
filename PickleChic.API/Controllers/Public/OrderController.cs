@@ -9,6 +9,8 @@ using Net.payOS;
 using Net.payOS.Types;
 using Hangfire;
 using PickleChic.API.Services;
+using Microsoft.Extensions.Configuration;
+using System.Text;
 
 namespace PickleChic.API.Controllers.Public;
 
@@ -25,6 +27,7 @@ public class OrderController : ControllerBase
     private readonly PayOS _payOS;
     private readonly CustomerRepository _customerRepository;
     private readonly RankRepository _rankRepository;
+    private readonly IConfiguration _configuration;
 
     private static readonly JsonSerializerOptions _camelCaseJsonOptions = new()
     {
@@ -41,7 +44,8 @@ public class OrderController : ControllerBase
         IBackgroundJobClient backgroundJobClient,
         PayOS payOS,
         CustomerRepository customerRepository,
-        RankRepository rankRepository)
+        RankRepository rankRepository,
+        IConfiguration configuration)
     {
         _orderRepository = orderRepository;
         _orderItemRepository = orderItemRepository;
@@ -52,6 +56,7 @@ public class OrderController : ControllerBase
         _payOS = payOS;
         _customerRepository = customerRepository;
         _rankRepository = rankRepository;
+        _configuration = configuration;
     }   
 
     [HttpGet("get-by-id/{id}")]
@@ -69,6 +74,182 @@ public class OrderController : ControllerBase
         {
             return StatusCode(500, "Db Error");
         }
+    }
+
+    [HttpPost("CalculateTotal")]
+    public async Task<ActionResult<OrderCalculationResultDto>> CalculateTotal([FromBody] OrderCalculationRequestDto request)
+    {
+        if (request == null || request.Items == null || !request.Items.Any())
+        {
+            return BadRequest("Dữ liệu tính tiền không hợp lệ");
+        }
+
+        var variantDict = new Dictionary<int, ProductVariant>();
+        foreach (var item in request.Items)
+        {
+            if (item.ProductVariantId <= 0 || item.Quantity <= 0)
+            {
+                return BadRequest("Sản phẩm bạn đã chọn đã hết hoặc số lượng không hợp lệ");
+            }
+
+            var variant = await _productVariantRepository.GetVariantWithDetailsByIdAsync(item.ProductVariantId);
+            if (variant == null || variant.Status == -1)
+            {
+                return BadRequest("Sản phẩm không còn hoạt động hoặc đã bị xóa");
+            }
+
+            if (variant.StockQuantity < item.Quantity)
+            {
+                return BadRequest($"Số lượng kho của biến thể '{variant.VariantName}' không đủ");
+            }
+
+            var product = variant.Product;
+            if (product == null || product.IsDeleted || product.Status == -1)
+            {
+                return BadRequest("Sản phẩm không còn hoạt động hoặc đã bị xóa");
+            }
+
+            var brand = product.Brand;
+            if (brand == null || brand.Delete || brand.Status == -1)
+            {
+                return BadRequest("Thương hiệu đã ngừng kinh doanh");
+            }
+
+            variantDict[item.ProductVariantId] = variant;
+        }
+
+        decimal totalAmount = 0;
+        var itemResults = new List<OrderCalculationItemResultDto>();
+
+        foreach (var item in request.Items)
+        {
+            var variant = variantDict[item.ProductVariantId];
+            
+            var activePromoDetail = variant.PromotionDetails?
+                .FirstOrDefault(pd => pd.Promotion != null 
+                                      && pd.Promotion.IsActive 
+                                      && DateTime.Now >= pd.Promotion.StartDate 
+                                      && DateTime.Now <= pd.Promotion.EndDate);
+
+            decimal itemDiscountAmount = 0;
+
+            if (activePromoDetail != null)
+            {
+                if (activePromoDetail.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+                {
+                    itemDiscountAmount = variant.Price * (activePromoDetail.DiscountValue / 100);
+                }
+                else if (activePromoDetail.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+                {
+                    itemDiscountAmount = activePromoDetail.DiscountValue;
+                }
+                itemDiscountAmount = Math.Min(itemDiscountAmount, variant.Price);
+            }
+
+            decimal priceToPay = variant.Price - itemDiscountAmount;
+            totalAmount += priceToPay * item.Quantity;
+
+            var attributeNames = string.Empty;
+            var attributeValues = string.Empty;
+
+            if (variant.ProductVariantAttributes != null && variant.ProductVariantAttributes.Any())
+            {
+                attributeNames = string.Join(", ", variant.ProductVariantAttributes
+                    .Select(pva => pva.AttributeValue?.ProductAttribute?.AttributeName)
+                    .Where(name => !string.IsNullOrEmpty(name)));
+
+                attributeValues = string.Join(", ", variant.ProductVariantAttributes
+                    .Select(pva => pva.AttributeValue?.Value)
+                    .Where(val => !string.IsNullOrEmpty(val)));
+            }
+
+            itemResults.Add(new OrderCalculationItemResultDto
+            {
+                ProductName = variant.Product?.ProductName ?? "Sản phẩm",
+                VariantName = variant.VariantName ?? variant.Product?.ProductName ?? "Biến thể",
+                AttributeName = attributeNames,
+                AttributeValue = attributeValues,
+                Quantity = item.Quantity,
+                ListedPrice = variant.Price,
+                DiscountAmount = itemDiscountAmount,
+                PriceToPay = priceToPay
+            });
+        }
+        var claimVal = User.FindFirst(ClaimTypes.SerialNumber)?.Value;
+        int customerId = -1;
+        if (!string.IsNullOrEmpty(claimVal) && int.TryParse(claimVal, out var parsedId))
+        {
+            customerId = parsedId;
+        }
+
+        decimal shippingFee = 0;
+        string? phoneNumber = null;
+
+        if (request.AddressId.HasValue)
+        {
+            var address = await _addressRepository.GetByIdAsync(request.AddressId.Value);
+            if (address != null)
+            {
+                phoneNumber = address.PhoneNumber;
+
+                var toDistrictCode = address.Ward?.District?.Code;
+                var toWardCode = address.Ward?.Code;
+
+                if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
+                {
+                    var feeItems = itemResults.Select(i => new FeeItemDTO
+                    {
+                        Name = i.ProductName,
+                        Quantity = i.Quantity,
+                        Length = 30,
+                        Width = 40,
+                        Height = 5,
+                        Weight = 400
+                    }).ToList();
+
+                    shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
+                }
+            }
+            else
+            {
+                return BadRequest("Địa chỉ nhận hàng không hợp lệ");
+            }
+        }
+        else
+        {
+            return BadRequest("Địa chỉ nhận hàng không hợp lệ");
+        }
+            
+
+        decimal discountPrice = 0;
+        if (!string.IsNullOrEmpty(request.DiscountCode))
+        {
+            var voucher = await _voucherRepository.GetByCodeAsync(request.DiscountCode);
+            if (voucher == null)
+            {
+                return BadRequest("Mã giảm giá không tồn tại hoặc đã bị xóa");
+            }
+
+            var (calculatedDiscount, errorMessage) = await ApplyDiscount(totalAmount, voucher.Id, customerId, phoneNumber);
+            if (errorMessage != null)
+            {
+                return BadRequest(errorMessage);
+            }
+            discountPrice = calculatedDiscount;
+        }
+
+        decimal finalAmount = Math.Max(0, totalAmount - discountPrice + shippingFee);
+
+        var resultDto = new OrderCalculationResultDto
+        {
+            TotalAmount = totalAmount,
+            DiscountPrice = discountPrice,
+            ShippingFee = shippingFee,
+            FinalAmount = finalAmount,
+            Items = itemResults
+        };
+
+        return Ok(resultDto);
     }
 
     [HttpPost("Checkout")]
@@ -127,7 +308,6 @@ public class OrderController : ControllerBase
         {
             var variant = variantDict[product.ProductVariantId];
             
-            // Find active promotion
             var activePromoDetail = variant.PromotionDetails?
                 .FirstOrDefault(pd => pd.Promotion != null 
                                       && pd.Promotion.IsActive 
@@ -779,6 +959,88 @@ public class OrderController : ControllerBase
                     .ToList() ?? new List<string>()
             }).ToList() ?? new List<UserOrderItemDetailDto>()
         };
+    }
+
+    private async Task<decimal> CalculateShippingFeeAsync(string toDistrictCode, string toWardCode, List<FeeItemDTO> items)
+    {
+        int from_district_id = 3440;
+        string from_ward_code = "13007";
+        var token = _configuration["GHN:Token"];
+        var shopId = _configuration["GHN:ShopId"];
+
+        if (items == null || items.Count == 0)
+        {
+            items = new List<FeeItemDTO>
+            {
+                new FeeItemDTO
+                {
+                    Name = "Hàng hóa",
+                    Quantity = 2,
+                    Length = 30,
+                    Width = 40,
+                    Height = 5,
+                    Weight = 400
+                }
+            };
+        }
+
+        int totalWeight = 0;
+        foreach (var item in items)
+        {
+            totalWeight += item.Weight * item.Quantity;
+        }
+
+        var url = "https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee";
+        var body = new
+        {
+            service_type_id = 2,
+            from_district_id,
+            from_ward_code,
+            to_district_code = toDistrictCode,
+            to_ward_code = toWardCode,
+            length = 30,
+            width = 40,
+            height = 5,
+            weight = totalWeight,
+            insurance_value = 0,
+            coupon = (string?)null,
+            items = items
+        };
+
+        using var client = new HttpClient();
+        if (!string.IsNullOrEmpty(token))
+        {
+            client.DefaultRequestHeaders.Add("Token", token);
+        }
+        if (!string.IsNullOrEmpty(shopId))
+        {
+            client.DefaultRequestHeaders.Add("ShopId", shopId);
+        }
+
+        var options = new JsonSerializerOptions
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+        var jsonBody = JsonSerializer.Serialize(body, options);
+        using var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+        try
+        {
+            var response = await client.PostAsync(url, content);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(result);
+            if (doc.RootElement.TryGetProperty("data", out var dataProp) &&
+                dataProp.TryGetProperty("total", out var totalProp))
+            {
+                return totalProp.GetDecimal();
+            }
+        }
+        catch (Exception)
+        {
+        }
+        return 0;
     }
 
     private List<StatusHistoryEntry> ParseStatusHistory(string? json)

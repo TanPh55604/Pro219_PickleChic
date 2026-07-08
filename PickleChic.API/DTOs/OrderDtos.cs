@@ -62,3 +62,37 @@ public class OrderStatusUpdateDto
     public string OrderStatus { get; set; } = null!;
     public string? UpdateBy { get; set; }
 }
+
+public class OrderCalculationRequestDto
+{
+    public List<OrderItemCalculationDto> Items { get; set; } = null!;
+    public string? DiscountCode { get; set; }
+    public int? AddressId { get; set; }
+}
+
+public class OrderItemCalculationDto
+{
+    public int ProductVariantId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class OrderCalculationResultDto
+{
+    public decimal TotalAmount { get; set; }
+    public decimal DiscountPrice { get; set; }
+    public decimal ShippingFee { get; set; }
+    public decimal FinalAmount { get; set; }
+    public List<OrderCalculationItemResultDto> Items { get; set; } = null!;
+}
+
+public class OrderCalculationItemResultDto
+{
+    public string ProductName { get; set; } = null!;
+    public string VariantName { get; set; } = null!;
+    public string AttributeName { get; set; } = null!;
+    public string AttributeValue { get; set; } = null!;
+    public int Quantity { get; set; }
+    public decimal ListedPrice { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public decimal PriceToPay { get; set; }
+}
