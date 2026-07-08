@@ -18,6 +18,10 @@
             public const string Search = "/product/search";
             public const string ProductDetail = "/product/detail/{id:int}";
 
+            // Catalog
+            public const string CategoryDetail = "/category/{id:int}";
+            public const string BrandDetail = "/brand/{id:int}";
+
             // Auth
             public const string SignUp = "/register";
             public const string Login = "/login";
@@ -258,6 +262,66 @@
             }
 
             return $"{Customer.Search}?{string.Join("&", parameters)}";
+        }
+
+        public static string BuildCategoryUrl(
+            int categoryId,
+            string? sortBy = null,
+            int? pageNumber = null,
+            int? pageSize = null)
+        {
+            return BuildCatalogUrl(
+                BuildRoute(Customer.CategoryDetail, categoryId),
+                sortBy,
+                pageNumber,
+                pageSize);
+        }
+
+        public static string BuildBrandUrl(
+            int brandId,
+            string? sortBy = null,
+            int? pageNumber = null,
+            int? pageSize = null)
+        {
+            return BuildCatalogUrl(
+                BuildRoute(Customer.BrandDetail, brandId),
+                sortBy,
+                pageNumber,
+                pageSize);
+        }
+
+        private static string BuildCatalogUrl(
+            string route,
+            string? sortBy,
+            int? pageNumber,
+            int? pageSize)
+        {
+            var parameters = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(sortBy))
+            {
+                parameters.Add($"sort={Uri.EscapeDataString(sortBy)}");
+            }
+
+            var resolvedPageNumber = pageNumber ?? ProductSearchDefaults.DefaultPageNumber;
+            var resolvedPageSize = pageSize ?? ProductSearchDefaults.DefaultPageSize;
+
+            if (resolvedPageNumber > ProductSearchDefaults.DefaultPageNumber)
+            {
+                parameters.Add($"page={resolvedPageNumber}");
+            }
+
+            if (resolvedPageSize != ProductSearchDefaults.DefaultPageSize)
+            {
+                parameters.Add($"pageSize={resolvedPageSize}");
+            }
+
+            if (parameters.Count == 0)
+            {
+                return route;
+            }
+
+            return $"{route}?{string.Join("&", parameters)}";
         }
     }
 }
