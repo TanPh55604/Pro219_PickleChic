@@ -2,7 +2,7 @@
 
 <div class="bg-black text-white">
     <div class="mx-auto flex max-w-7xl items-center justify-between !px-4 !py-2 font-bold tracking-[0.22em] text-[11px] text-white/80 uppercase">
-        <p>PickleChic Store</p>
+        <p class="truncate">PickleChic Store</p>
 
         <div class="hidden items-center !gap-5 sm:flex">
             <span>Hotline: 0900 000 000</span>
@@ -12,125 +12,274 @@
 </div>
 
 <header class="sticky top-0 z-50 !border-b !border-neutral-200 bg-white/95 backdrop-blur">
-    <div class="mx-auto flex max-w-7xl items-center justify-between !px-4 !py-4">
-        <a href="@RouterConfig.Customer.Home" class="flex items-center !gap-3">
-            <div class="flex !h-11 !w-11 items-center justify-center !rounded-full !bg-[#d71920] text-lg font-black !text-white">
-                P
-            </div>
+    <div class="mx-auto max-w-7xl !px-4 !py-4">
+        <div class="flex items-center justify-between !gap-3">
+            <a href="@RouterConfig.Customer.Home" class="flex min-w-0 shrink items-center !gap-2 sm:!gap-3">
+                <div class="flex !h-10 !w-10 shrink-0 items-center justify-center !rounded-full !bg-[#d71920] text-base font-black !text-white sm:!h-11 sm:!w-11 sm:text-lg">
+                    P
+                </div>
 
-            <div>
-                <p class="text-2xl leading-none font-black tracking-[-0.06em] text-neutral-900 uppercase">
-                    PickleChic
-                </p>
-                <p class="!mt-1 font-bold tracking-[0.24em] text-[10px] text-neutral-500 uppercase">
-                    Pickleball Việt Nam
-                </p>
-            </div>
-        </a>
-
-        <nav class="hidden items-center !gap-8 text-sm font-black tracking-wide uppercase lg:flex">
-            @foreach (var item in GetMenuItems())
-            {
-                <a href="@item.Url" class="group relative !py-2 text-neutral-900 transition hover:!text-[#d71920]">
-                    @item.Name
-                    <span class="absolute inset-x-0 -bottom-1 !h-0.5 origin-left scale-x-0 !bg-[#d71920] transition group-hover:scale-x-100"></span>
-                </a>
-            }
-        </nav>
-
-        <div class="flex items-center !gap-2">
-            <a href="@RouterConfig.Customer.Search"
-               class="hidden !rounded-full !border !border-neutral-300 !px-5 !py-2.5 text-sm font-black transition hover:!border-[#d71920] hover:!text-[#d71920] sm:!inline-flex">
-                Tìm kiếm
+                <div class="min-w-0">
+                    <p class="truncate text-xl leading-none font-black tracking-[-0.06em] text-neutral-900 uppercase sm:text-2xl">
+                        PickleChic
+                    </p>
+                    <p class="!mt-1 hidden font-bold tracking-[0.24em] text-[10px] text-neutral-500 uppercase sm:block">
+                        Pickleball Việt Nam
+                    </p>
+                </div>
             </a>
 
-            <button type="button"
-                    @onclick="HandleCartClick"
-                    class="relative !rounded-full !bg-neutral-950 !px-5 !py-2.5 text-sm font-black !text-white transition hover:!bg-[#d71920]">
-                Giỏ hàng
-                @if (CartItemCount > 0)
-                {
-                    <span class="absolute -top-1.5 -right-1.5 flex !h-5 min-w-5 items-center justify-center !rounded-full bg-[#d71920] !px-1 text-[10px] font-black !text-white ring-2 ring-white">
-                        @GetCartBadgeText()
-                    </span>
-                }
-            </button>
-
-            @if (!IsAuthenticated)
-            {
-                <a href="@RouterConfig.Customer.Login"
-                   class="inline-flex !h-11 !w-11 items-center justify-center !rounded-full !border !border-neutral-300 text-neutral-900 transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white"
-                   title="Đăng nhập">
-                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+            <nav class="hidden items-center !gap-5 text-sm font-black tracking-wide !uppercase lg:flex xl:!gap-6">
+                <a href="@RouterConfig.Customer.Products"
+                   class="group relative !py-2 text-neutral-900 transition hover:!text-[#d71920]">
+                    Sản phẩm
+                    <span class="absolute inset-x-0 -bottom-1 !h-0.5 origin-left scale-x-0 !bg-[#d71920] transition group-hover:scale-x-100"></span>
                 </a>
-            }
-            else
-            {
+
                 <div class="group relative">
                     <button type="button"
-                            class="inline-flex !h-11 !w-11 items-center justify-center !rounded-full !border !border-neutral-300 text-neutral-900 transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white">
-                        <span class="text-sm font-black">
-                            @GetAvatarText(CurrentUser?.FullName)
-                        </span>
+                            class="inline-flex items-center !gap-1 !py-2 text-neutral-900 !uppercase transition group-hover:!text-[#d71920]">
+                        Danh mục
+                        <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
                     </button>
 
-                    <div class="absolute top-full right-0 !z-[999] hidden w-64 translate-y-2 pt-3 opacity-0 transition-all duration-150 group-hover:block group-hover:translate-y-0 group-hover:opacity-100">
-                        <div class="!rounded-2xl !border !border-neutral-200 !bg-white !p-2 shadow-xl">
-                            <div class="!px-4 !py-3">
-                                <p class="truncate text-sm font-bold text-neutral-900">
-                                    @(CurrentUser?.FullName ?? "Khách hàng")
-                                </p>
-
-                                <p class="!mt-1 truncate text-xs text-neutral-500">
-                                    @(CurrentUser?.Email ?? string.Empty)
-                                </p>
-
-                                @if (!string.IsNullOrWhiteSpace(CurrentUser?.RankName))
+                    <div class="absolute top-full left-0 !z-[999] hidden w-72 translate-y-2 pt-3 opacity-0 transition-all duration-150 group-hover:block group-hover:translate-y-0 group-hover:opacity-100">
+                        <div class="max-h-80 overflow-y-auto !rounded-2xl !border !border-neutral-200 !bg-white !p-2 shadow-xl">
+                            @if (_isLoadingCatalog)
+                            {
+                                <div class="!px-3 !py-4 text-xs font-semibold text-neutral-500">Đang tải...</div>
+                            }
+                            else if (!_categories.Any())
+                            {
+                                <div class="!px-3 !py-4 text-xs font-semibold text-neutral-500">Chưa có danh mục</div>
+                            }
+                            else
+                            {
+                                @foreach (var category in _categories)
                                 {
-                                    <p class="!mt-1 text-xs font-semibold text-[#d71920]">
-                                        Hạng: @CurrentUser.RankName
-                                    </p>
+                                    <a href="@RouterConfig.BuildRoute(RouterConfig.Customer.CategoryDetail, category.Id)"
+                                       class="block !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                        @category.Name
+                                    </a>
                                 }
-                            </div>
-
-                            <div class="!my-1 !h-px !bg-neutral-100"></div>
-
-                            <a href="@RouterConfig.Customer.Profile"
-                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
-                                <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Size="Size.Small" />
-                                Thông tin tài khoản
-                            </a>
-
-                            <a href="@RouterConfig.Customer.Orders"
-                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
-                                <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" />
-                                Đơn hàng của tôi
-                            </a>
-
-                            <a href="@RouterConfig.Customer.Vouchers"
-                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
-                                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" />
-                                Mã giảm giá
-                            </a>
-
-                            <a href="@RouterConfig.Customer.ChangePassword"
-                               class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
-                                <MudIcon Icon="@Icons.Material.Filled.Password" Size="Size.Small" />
-                                Đổi mật khẩu
-                            </a>
-
-                            <div class="!my-1 !h-px !bg-neutral-100"></div>
-
-                            <button type="button"
-                                    @onclick="LogoutAsync"
-                                    class="flex w-full items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-left text-sm font-semibold text-neutral-700 transition hover:!bg-red-50 hover:!text-red-600">
-                                <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
-                                Đăng xuất
-                            </button>
+                            }
                         </div>
                     </div>
                 </div>
-            }
+
+                <div class="group relative">
+                    <button type="button"
+                            class="inline-flex items-center !gap-1 !py-2 text-neutral-900 !uppercase transition group-hover:!text-[#d71920]">
+                        Thương hiệu
+                        <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" />
+                    </button>
+
+                    <div class="absolute top-full left-0 !z-[999] hidden w-72 translate-y-2 pt-3 opacity-0 transition-all duration-150 group-hover:block group-hover:translate-y-0 group-hover:opacity-100">
+                        <div class="max-h-80 overflow-y-auto !rounded-2xl !border !border-neutral-200 !bg-white !p-2 shadow-xl">
+                            @if (_isLoadingCatalog)
+                            {
+                                <div class="!px-3 !py-4 text-xs font-semibold text-neutral-500">Đang tải...</div>
+                            }
+                            else if (!_brands.Any())
+                            {
+                                <div class="!px-3 !py-4 text-xs font-semibold text-neutral-500">Chưa có thương hiệu</div>
+                            }
+                            else
+                            {
+                                @foreach (var brand in _brands)
+                                {
+                                    <a href="@RouterConfig.BuildRoute(RouterConfig.Customer.BrandDetail, brand.Id)"
+                                       class="block !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                        @brand.Name
+                                    </a>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <a href="@RouterConfig.Customer.About"
+                   class="group relative !py-2 text-neutral-900 transition hover:!text-[#d71920]">
+                    Giới thiệu
+                    <span class="absolute inset-x-0 -bottom-1 !h-0.5 origin-left scale-x-0 !bg-[#d71920] transition group-hover:scale-x-100"></span>
+                </a>
+
+                <a href="@RouterConfig.Customer.Contact"
+                   class="group relative !py-2 text-neutral-900 transition hover:!text-[#d71920]">
+                    Liên hệ
+                    <span class="absolute inset-x-0 -bottom-1 !h-0.5 origin-left scale-x-0 !bg-[#d71920] transition group-hover:scale-x-100"></span>
+                </a>
+            </nav>
+
+            <div class="flex shrink-0 items-center !gap-1.5 sm:!gap-2">
+                <div class="lg:hidden">
+                    <MudMenu Icon="@Icons.Material.Filled.Menu"
+                             Color="Color.Default"
+                             Dense="true"
+                             MaxHeight="420"
+                             AnchorOrigin="Origin.BottomRight"
+                             TransformOrigin="Origin.TopRight"
+                             ButtonClass="!inline-flex !h-10 !w-10 !min-w-0 items-center justify-center !rounded-full !border !border-neutral-300 !p-0 text-neutral-900">
+                        <MudMenuItem Href="@RouterConfig.Customer.Products" Class="!font-bold !uppercase">
+                            Sản phẩm
+                        </MudMenuItem>
+
+                        <MudDivider Class="!my-1" />
+
+                        <div class="!px-4 !py-2 font-black tracking-[0.2em] text-[10px] text-neutral-400 uppercase">
+                            Danh mục
+                        </div>
+
+                        @if (_isLoadingCatalog)
+                        {
+                            <MudMenuItem Disabled="true">Đang tải...</MudMenuItem>
+                        }
+                        else if (!_categories.Any())
+                        {
+                            <MudMenuItem Disabled="true">Chưa có danh mục</MudMenuItem>
+                        }
+                        else
+                        {
+                            @foreach (var category in _categories)
+                            {
+                                <MudMenuItem Href="@RouterConfig.BuildRoute(RouterConfig.Customer.CategoryDetail, category.Id)">
+                                    @category.Name
+                                </MudMenuItem>
+                            }
+                        }
+
+                        <MudDivider Class="!my-1" />
+
+                        <div class="!px-4 !py-2 font-black tracking-[0.2em] text-[10px] text-neutral-400 uppercase">
+                            Thương hiệu
+                        </div>
+
+                        @if (_isLoadingCatalog)
+                        {
+                            <MudMenuItem Disabled="true">Đang tải...</MudMenuItem>
+                        }
+                        else if (!_brands.Any())
+                        {
+                            <MudMenuItem Disabled="true">Chưa có thương hiệu</MudMenuItem>
+                        }
+                        else
+                        {
+                            @foreach (var brand in _brands)
+                            {
+                                <MudMenuItem Href="@RouterConfig.BuildRoute(RouterConfig.Customer.BrandDetail, brand.Id)">
+                                    @brand.Name
+                                </MudMenuItem>
+                            }
+                        }
+
+                        <MudDivider Class="!my-1" />
+
+                        <MudMenuItem Href="@RouterConfig.Customer.About" Class="!font-bold !uppercase">
+                            Giới thiệu
+                        </MudMenuItem>
+
+                        <MudMenuItem Href="@RouterConfig.Customer.Contact" Class="!font-bold !uppercase">
+                            Liên hệ
+                        </MudMenuItem>
+                    </MudMenu>
+                </div>
+
+                <a href="@RouterConfig.Customer.Search"
+                   class="hidden !rounded-full !border !border-neutral-300 !px-4 !py-2.5 text-sm font-black transition hover:!border-[#d71920] hover:!text-[#d71920] sm:!inline-flex md:!px-5"
+                   title="Tìm kiếm">
+                    <span class="hidden md:inline">Tìm kiếm</span>
+                    <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="md:!hidden" />
+                </a>
+
+                <button type="button"
+                        @onclick="HandleCartClick"
+                        class="relative !rounded-full !bg-neutral-950 !px-3 !py-2.5 text-sm font-black !text-white transition hover:!bg-[#d71920] sm:!px-5">
+                    <span class="hidden sm:inline">Giỏ hàng</span>
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="sm:!hidden" />
+                    @if (CartItemCount > 0)
+                    {
+                        <span class="absolute -top-1.5 -right-1.5 flex !h-5 min-w-5 items-center justify-center !rounded-full bg-[#d71920] !px-1 font-black text-[10px] !text-white ring-2 ring-white">
+                            @GetCartBadgeText()
+                        </span>
+                    }
+                </button>
+
+                @if (!IsAuthenticated)
+                {
+                    <a href="@RouterConfig.Customer.Login"
+                       class="inline-flex !h-10 !w-10 items-center justify-center !rounded-full !border !border-neutral-300 text-neutral-900 transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white"
+                       title="Đăng nhập">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                    </a>
+                }
+                else
+                {
+                    <div class="group relative">
+                        <button type="button"
+                                class="inline-flex !h-10 !w-10 items-center justify-center !rounded-full !border !border-neutral-300 text-neutral-900 transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white">
+                            <span class="text-sm font-black">
+                                @GetAvatarText(CurrentUser?.FullName)
+                            </span>
+                        </button>
+
+                        <div class="absolute top-full right-0 !z-[999] hidden w-64 translate-y-2 pt-3 opacity-0 transition-all duration-150 group-hover:block group-hover:translate-y-0 group-hover:opacity-100">
+                            <div class="!rounded-2xl !border !border-neutral-200 !bg-white !p-2 shadow-xl">
+                                <div class="!px-4 !py-3">
+                                    <p class="truncate text-sm font-bold text-neutral-900">
+                                        @(CurrentUser?.FullName ?? "Khách hàng")
+                                    </p>
+
+                                    <p class="!mt-1 truncate text-xs text-neutral-500">
+                                        @(CurrentUser?.Email ?? string.Empty)
+                                    </p>
+
+                                    @if (!string.IsNullOrWhiteSpace(CurrentUser?.RankName))
+                                    {
+                                        <p class="!mt-1 text-xs font-semibold text-[#d71920]">
+                                            Hạng: @CurrentUser.RankName
+                                        </p>
+                                    }
+                                </div>
+
+                                <div class="!my-1 !h-px !bg-neutral-100"></div>
+
+                                <a href="@RouterConfig.Customer.Profile"
+                                   class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                    <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Size="Size.Small" />
+                                    Thông tin tài khoản
+                                </a>
+
+                                <a href="@RouterConfig.Customer.Orders"
+                                   class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                    <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" />
+                                    Đơn hàng của tôi
+                                </a>
+
+                                <a href="@RouterConfig.Customer.Vouchers"
+                                   class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                    <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" />
+                                    Mã giảm giá
+                                </a>
+
+                                <a href="@RouterConfig.Customer.ChangePassword"
+                                   class="flex items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-sm font-semibold text-neutral-700 transition hover:!bg-neutral-50 hover:!text-[#d71920]">
+                                    <MudIcon Icon="@Icons.Material.Filled.Password" Size="Size.Small" />
+                                    Đổi mật khẩu
+                                </a>
+
+                                <div class="!my-1 !h-px !bg-neutral-100"></div>
+
+                                <button type="button"
+                                        @onclick="LogoutAsync"
+                                        class="flex w-full items-center !gap-3 !rounded-xl !px-3 !py-2.5 text-left text-sm font-semibold text-neutral-700 transition hover:!bg-red-50 hover:!text-red-600">
+                                    <MudIcon Icon="@Icons.Material.Filled.Logout" Size="Size.Small" />
+                                    Đăng xuất
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
         </div>
     </div>
 </header>
@@ -146,35 +295,38 @@
 
     [Parameter] public EventCallback OnLogout { get; set; }
 
-    private class NavItem
-    {
-        public string Name { get; set; }
-        public string Url { get; set; }
+    private bool _isLoadingCatalog = true;
 
-        public NavItem(string name, string url)
-        {
-            Name = name;
-            Url = url;
-        }
+    private List<CustomerCategoryResponse> _categories = new();
+
+    private List<CustomerBrandResponse> _brands = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCatalogAsync();
     }
 
-    private NavItem[] GetMenuItems()
+    private async Task LoadCatalogAsync()
     {
-        var items = new List<NavItem>
-        {
-            new("Trang chủ", RouterConfig.Customer.Home),
-            new("Sản phẩm", RouterConfig.Customer.Products)
-        };
+        _isLoadingCatalog = true;
 
-        if (IsAuthenticated)
-        {
-            items.Add(new("Mã giảm giá", RouterConfig.Customer.Vouchers));
-        }
+        var categoryTask = _customerCategoryService.GetAllAsync();
+        var brandTask = _customerBrandService.GetAllAsync();
 
-        items.Add(new("Giới thiệu", RouterConfig.Customer.About));
-        items.Add(new("Liên hệ", RouterConfig.Customer.Contact));
+        await Task.WhenAll(categoryTask, brandTask);
 
-        return items.ToArray();
+        var categoryResult = await categoryTask;
+        var brandResult = await brandTask;
+
+        _categories = categoryResult.Success
+            ? categoryResult.Data ?? new List<CustomerCategoryResponse>()
+            : new List<CustomerCategoryResponse>();
+
+        _brands = brandResult.Success
+            ? brandResult.Data ?? new List<CustomerBrandResponse>()
+            : new List<CustomerBrandResponse>();
+
+        _isLoadingCatalog = false;
     }
 
     private async Task HandleCartClick()

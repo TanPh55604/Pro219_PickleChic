@@ -253,7 +253,7 @@
 
                         @if (!string.IsNullOrWhiteSpace(_product.CategoryName))
                         {
-                            <a href="@RouterConfig.BuildSearchUrl(categoryId: _product.CategoryId)"
+                            <a href="@RouterConfig.BuildRoute(RouterConfig.Customer.CategoryDetail, _product.CategoryId)"
                                class="text-sm font-black text-neutral-700 transition hover:text-[#d71920]">
                                 Xem thêm @_product.CategoryName
                             </a>
