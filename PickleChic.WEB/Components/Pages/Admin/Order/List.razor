@@ -1,14 +1,234 @@
 ﻿@attribute [Route(RouterConfig.Admin.Orders)]
 @layout AdminLayout
 
-<PageTitle>@Constant.metaDataAdmin Orders</PageTitle>
+<PageTitle>@Constant.metaDataAdmin Hóa đơn</PageTitle>
 
 <div class="!space-y-5">
     <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Đơn hàng</h1>
+            <h1 class="text-2xl font-bold text-slate-900">Hóa đơn</h1>
+            <p class="!mt-1 text-sm text-slate-500">Quản lý danh sách đơn hàng và trạng thái thanh toán</p>
         </div>
+    </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
+                <MudTextField @bind-Value="_searchText"
+                              Placeholder="Tìm kiếm theo mã đơn hàng..."
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              OnKeyDown="HandleSearchKeyDown"
+                              Class="flex-1" />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="SearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Tìm kiếm
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ResetSearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Làm mới
+                </MudButton>
+            </div>
+        </div>
+
+        <MudTable Items="_orders"
+                  Loading="@_isLoading"
+                  Hover="true"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(100vh - 360px)"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Mã đơn</MudTh>
+                <MudTh>Khách hàng</MudTh>
+                <MudTh>Ngày đặt</MudTh>
+                <MudTh>Thanh toán</MudTh>
+                <MudTh>Trạng thái đơn</MudTh>
+                <MudTh>Phí ship</MudTh>
+                <MudTh Class="text-right">Chi tiết</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="STT">
+                    <span class="font-medium text-slate-700">
+                        @(_orders.IndexOf(context) + 1)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Mã đơn">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.OrderDetail, context.Id)"
+                       class="font-semibold text-slate-900 transition hover:text-slate-600">
+                        @context.OrderCode
+                    </a>
+                </MudTd>
+
+                <MudTd DataLabel="Khách hàng">
+                    <div class="text-sm text-slate-700">
+                        <p class="font-medium">@(context.Customer?.FullName ?? "—")</p>
+                        @if (!string.IsNullOrWhiteSpace(context.Customer?.PhoneNumber))
+                        {
+                            <p class="text-slate-400">@context.Customer.PhoneNumber</p>
+                        }
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="Ngày đặt">
+                    <span class="text-sm text-slate-600">
+                        @context.OrderDate.ToString("dd/MM/yyyy HH:mm")
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Thanh toán">
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Color="@GetPaymentStatusColor(context.PaymentStatus)"
+                             Variant="Variant.Text">
+                        @context.PaymentStatus
+                    </MudChip>
+                </MudTd>
+
+                <MudTd DataLabel="Trạng thái đơn">
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Color="@GetOrderStatusColor(context.OrderStatus)"
+                             Variant="Variant.Text">
+                        @context.OrderStatus
+                    </MudChip>
+                </MudTd>
+
+                <MudTd DataLabel="Phí ship">
+                    <span class="text-sm font-medium text-slate-700">
+                        @context.ShippingFee.ToString("N0")đ
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Chi tiết" Class="text-right">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.OrderDetail, context.Id)"
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                    </a>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="!py-10 text-center text-slate-500">
+                    Không có hóa đơn nào
+                </div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+            </PagerContent>
+        </MudTable>
     </div>
 </div>
 
-@code {}
+@code {
+    private string _searchText = string.Empty;
+
+    private bool _isLoading = true;
+
+    private List<OrderResponse> _orders = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrdersAsync();
+    }
+
+    private async Task LoadOrdersAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminOrderService.GetAllAsync(_searchText);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertOrderErrorMessage(result.Message), Severity.Error);
+                return;
+            }
+
+            _orders = (result.Data ?? new())
+                .OrderByDescending(o => o.OrderDate)
+                .ToList();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        await LoadOrdersAsync();
+    }
+
+    private async Task ResetSearchAsync()
+    {
+        _searchText = string.Empty;
+        await LoadOrdersAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private static Color GetOrderStatusColor(string status)
+    {
+        return status switch
+        {
+            Constant.OrderStatus.Done => Color.Success,
+            Constant.OrderStatus.ShippingDone => Color.Success,
+            Constant.OrderStatus.Confirmed => Color.Info,
+            Constant.OrderStatus.Shipping => Color.Info,
+            Constant.OrderStatus.WaitingForPayment => Color.Warning,
+            Constant.OrderStatus.Pending => Color.Warning,
+            Constant.OrderStatus.Processing => Color.Warning,
+            Constant.OrderStatus.Cancelled => Color.Error,
+            Constant.OrderStatus.DeliveryFailed => Color.Error,
+            Constant.OrderStatus.Expired => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private static Color GetPaymentStatusColor(string status)
+    {
+        return status switch
+        {
+            Constant.PaymentStatus.Completed => Color.Success,
+            Constant.PaymentStatus.Pending => Color.Warning,
+            Constant.PaymentStatus.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private static string ConvertOrderErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách hóa đơn",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
+}

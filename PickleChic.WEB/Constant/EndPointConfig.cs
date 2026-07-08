@@ -183,5 +183,14 @@
                 public static string Delete(int id) => $"management/voucher/delete/{id}";
             }
         }
+
+        public static class Order
+        {
+            public const string GetAll = "management/order/get-all";
+
+            public static string GetById(int id) => $"management/order/get-by-id/{id}";
+
+            public static string UpdateStatus(int id) => $"management/order/update-status/{id}";
+        }
     }
 }
