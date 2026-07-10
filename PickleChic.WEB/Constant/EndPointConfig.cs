@@ -188,9 +188,45 @@
         {
             public const string GetAll = "management/order/get-all";
 
+            public const string CalculateTotal = "order/CalculateTotal";
+
+            public static string PaymentSuccess(int orderId, bool pos = false) =>
+                $"order/PaymentSuccess?orderId={orderId}&pos={pos.ToString().ToLowerInvariant()}";
+
+            public static string PaymentCanceled(int orderId) =>
+                $"order/PaymentCanceled?orderId={orderId}";
+
+            public static string UserDetail(int orderId) => $"order/user/detail/{orderId}";
+
+            public const string UserList = "order/user/list";
+
             public static string GetById(int id) => $"management/order/get-by-id/{id}";
 
             public static string UpdateStatus(int id) => $"management/order/update-status/{id}";
+
+            public static string Checkout(
+                decimal discountAmount,
+                decimal shippingFee,
+                int paymentMethodTypeId,
+                int addressId,
+                int? voucherId = null,
+                string? note = null)
+            {
+                var url =
+                    $"order/Checkout?discountAmount={discountAmount}&shippingFee={shippingFee}&PaymentMethodTypeId={paymentMethodTypeId}&addressId={addressId}";
+
+                if (voucherId.HasValue)
+                {
+                    url += $"&voucherId={voucherId.Value}";
+                }
+
+                if (!string.IsNullOrWhiteSpace(note))
+                {
+                    url += $"&note={Uri.EscapeDataString(note)}";
+                }
+
+                return url;
+            }
         }
     }
 }

@@ -165,6 +165,7 @@ public class OrderController : ControllerBase
 
             itemResults.Add(new OrderCalculationItemResultDto
             {
+                ProductVariantId = item.ProductVariantId,
                 ProductName = variant.Product?.ProductName ?? "Sản phẩm",
                 VariantName = variant.VariantName ?? variant.Product?.ProductName ?? "Biến thể",
                 AttributeName = attributeNames,
@@ -222,6 +223,7 @@ public class OrderController : ControllerBase
             
 
         decimal discountPrice = 0;
+        int? appliedVoucherId = null;
         if (!string.IsNullOrEmpty(request.DiscountCode))
         {
             var voucher = await _voucherRepository.GetByCodeAsync(request.DiscountCode);
@@ -236,6 +238,7 @@ public class OrderController : ControllerBase
                 return BadRequest(errorMessage);
             }
             discountPrice = calculatedDiscount;
+            appliedVoucherId = voucher.Id;
         }
 
         decimal finalAmount = Math.Max(0, totalAmount - discountPrice + shippingFee);
@@ -246,6 +249,7 @@ public class OrderController : ControllerBase
             DiscountPrice = discountPrice,
             ShippingFee = shippingFee,
             FinalAmount = finalAmount,
+            VoucherId = appliedVoucherId,
             Items = itemResults
         };
 
@@ -558,8 +562,8 @@ public class OrderController : ControllerBase
             long expiredAt = expirationTime.ToUnixTimeSeconds();
             int payOsAmount = (int)(totalPrice - discountAmount + shippingFee);
 
-            string cancelUrl = "https://localhost:7001/order/PaymentCanceled?orderId=" + order.Id;
-            string returnUrl = "https://localhost:7001/order/PaymentSuccess?orderId=" + order.Id + "&pos=false";
+            string cancelUrl = "http://localhost:5001/orders/payment-cancelled?orderId=" + order.Id;
+            string returnUrl = "http://localhost:5001/orders/payment-success?orderId=" + order.Id + "&pos=false";
 
             PaymentData paymentData = new PaymentData(
                 ordCode, 

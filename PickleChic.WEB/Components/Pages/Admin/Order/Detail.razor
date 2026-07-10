@@ -395,6 +395,21 @@ else
                && methodName.Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsCashOrder(OrderResponse order)
+    {
+        if (order.PaymentMethodId == Constant.PaymentMethodType.Cash)
+        {
+            return true;
+        }
+
+        var methodName = order.PaymentMethod?.Name;
+
+        return !string.IsNullOrWhiteSpace(methodName)
+               && (methodName.Contains("tiền mặt", StringComparison.OrdinalIgnoreCase)
+                   || methodName.Contains("cod", StringComparison.OrdinalIgnoreCase)
+                   || methodName.Contains("khi nhận hàng", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static bool IsPendingStatus(string status)
     {
         return status is Constant.OrderStatus.Pending
@@ -441,9 +456,16 @@ else
     {
         if (IsPendingStatus(currentStatus))
         {
-            return outcome == "failed"
-                ? (Constant.OrderStatus.Cancelled, Constant.PaymentStatus.Cancelled)
-                : (Constant.OrderStatus.Confirmed, Constant.PaymentStatus.Completed);
+            if (outcome == "failed")
+            {
+                return (Constant.OrderStatus.Cancelled, Constant.PaymentStatus.Cancelled);
+            }
+
+            var paymentStatus = IsCashOrder(_model)
+                ? Constant.PaymentStatus.Pending
+                : Constant.PaymentStatus.Completed;
+
+            return (Constant.OrderStatus.Confirmed, paymentStatus);
         }
 
         return currentStatus switch
@@ -454,7 +476,8 @@ else
             var status when status == Constant.OrderStatus.StatusShipping
                 => outcome == "failed"
                     ? (Constant.OrderStatus.DeliveryFailed, _model.PaymentStatus)
-                    : (Constant.OrderStatus.ShippingDone, _model.PaymentStatus),
+                    : (Constant.OrderStatus.ShippingDone,
+                        IsCashOrder(_model) ? Constant.PaymentStatus.Completed : _model.PaymentStatus),
 
             var status when status == Constant.OrderStatus.StatusShippingDone
                 => (Constant.OrderStatus.Done, Constant.PaymentStatus.Completed),
