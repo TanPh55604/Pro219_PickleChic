@@ -23,6 +23,19 @@ public class VoucherRepository
         return await _context.Vouchers.FindAsync(id);
     }
 
+    public async Task<Voucher?> GetByCodeAsync(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return null;
+        }
+
+        var normalized = code.Trim();
+
+        return await _context.Vouchers
+            .FirstOrDefaultAsync(x => x.VoucherCode.ToLower() == normalized.ToLower());
+    }
+
     public async Task<List<Voucher>> GetAvailableByMinPoints(int minPoint)
     {
         return await _context.Vouchers.Where(x=>x.MinimumPointRank<= minPoint && x.IsActive).ToListAsync();
