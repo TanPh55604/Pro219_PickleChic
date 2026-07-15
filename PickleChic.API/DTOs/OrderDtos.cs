@@ -82,11 +82,13 @@ public class OrderCalculationResultDto
     public decimal DiscountPrice { get; set; }
     public decimal ShippingFee { get; set; }
     public decimal FinalAmount { get; set; }
+    public int? VoucherId { get; set; }
     public List<OrderCalculationItemResultDto> Items { get; set; } = null!;
 }
 
 public class OrderCalculationItemResultDto
 {
+    public int ProductVariantId { get; set; }
     public string ProductName { get; set; } = null!;
     public string VariantName { get; set; } = null!;
     public string AttributeName { get; set; } = null!;

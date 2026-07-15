@@ -37,7 +37,9 @@ public class OrderRepository
                         .ThenInclude(d => d!.Province)
             .Include(o => o.PaymentMethod)
             .Include(o => o.Voucher)
-            .Include(o => o.OrderItems)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.Product)
             .FirstOrDefaultAsync(o => o.Id == id && !o.Delete);
     }
 

@@ -46,6 +46,7 @@ builder.Services.AddScoped<ICustomerBrandService, CustomerBrandService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductService, PickleChic.WEB.Services.Customer.ProductService>();
 builder.Services.AddScoped<ICustomerCartService, CustomerCartService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
+builder.Services.AddScoped<ICustomerOrderService, CustomerOrderService>();
 
 builder.Services.AddScoped(sp =>
 {

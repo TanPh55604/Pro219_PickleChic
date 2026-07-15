@@ -1,5 +1,6 @@
-@attribute [Route(RouterConfig.Customer.Checkout)]
+﻿@attribute [Route(RouterConfig.Customer.Checkout)]
 @layout MainLayout
+@using PickleChic.WEB.Components.Pages.Customer.Profile
 
 <PageTitle>PickleChic WEB - Checkout</PageTitle>
 
@@ -23,7 +24,34 @@
             </a>
         </div>
 
-        @if (!_cartItems.Any())
+        @if (!_hasLoaded)
+        {
+            <div class="!mt-8 flex justify-center !py-16">
+                <MudProgressCircular Color="Color.Error" Indeterminate="true" />
+            </div>
+        }
+        else if (!_isAuthenticated)
+        {
+            <div class="!mt-8 !rounded-3xl !border !border-slate-200 !bg-white !p-10 text-center shadow-sm">
+                <div class="mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
+                    <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Large" />
+                </div>
+
+                <h2 class="!mt-5 text-2xl font-black text-slate-950">
+                    Đăng nhập để thanh toán
+                </h2>
+
+                <p class="!mt-2 text-sm text-slate-500">
+                    Vui lòng đăng nhập để tiếp tục đặt hàng.
+                </p>
+
+                <a href="@RouterConfig.Customer.Login"
+                   class="!mt-6 inline-flex items-center justify-center !rounded-full !bg-black !px-7 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
+                    Đăng nhập
+                </a>
+            </div>
+        }
+        else if (!_cartItems.Any())
         {
             <div class="!mt-8 !rounded-3xl !border !border-slate-200 !bg-white !p-10 text-center shadow-sm">
                 <div class="mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
@@ -44,9 +72,32 @@
                 </a>
             </div>
         }
+        else if (!string.IsNullOrWhiteSpace(_successOrderCode))
+        {
+            <div class="!mt-8 !rounded-3xl !border !border-slate-200 !bg-white !p-10 text-center shadow-sm">
+                <div class="mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full !bg-green-50 text-green-600">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Large" />
+                </div>
+
+                <h2 class="!mt-5 text-2xl font-black text-slate-950">
+                    Đặt hàng thành công
+                </h2>
+
+                <p class="!mt-2 text-sm text-slate-500">
+                    Mã đơn hàng của bạn: <span class="font-black text-slate-950">@_successOrderCode</span>
+                </p>
+
+                <div class="!mt-6 flex flex-wrap items-center justify-center !gap-3">
+                    <a href="@RouterConfig.Customer.Products"
+                       class="inline-flex items-center justify-center !rounded-full !bg-black !px-7 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
+                        Tiếp tục mua sắm
+                    </a>
+                </div>
+            </div>
+        }
         else
         {
-            <div class="!mt-8 grid items-start !gap-6 lg:grid-cols-12">
+            <div class="!mt-8 grid items-start !gap-6 lg:grid-cols-12 @(IsBusy ? "pointer-events-none opacity-60" : string.Empty)">
                 <section class="lg:col-span-8">
                     <div class="!space-y-6">
                         <div class="overflow-hidden !rounded-3xl !border !border-slate-200 !bg-white shadow-sm">
@@ -70,6 +121,9 @@
                             <div class="divide-y divide-slate-200">
                                 @foreach (var item in _cartItems)
                                 {
+                                    var unitPrice = GetDisplayUnitPrice(item);
+                                    var lineTotal = unitPrice * item.Quantity;
+
                                     <div class="!p-5 md:!gap-4 md:!px-6 md:grid md:grid-cols-12 md:items-center">
                                         <div class="flex min-w-0 !gap-4 md:col-span-6">
                                             <a href="@item.ProductUrl"
@@ -88,9 +142,17 @@
                                                     @item.Variant
                                                 </p>
 
+                                                @if (item.Quantity >= item.StockQuantity)
+                                                {
+                                                    <p class="!mt-1 text-xs font-semibold text-[#d71920]">
+                                                        Tối đa @item.StockQuantity sản phẩm
+                                                    </p>
+                                                }
+
                                                 <button type="button"
-                                                        @onclick="() => RemoveItem(item.Id)"
-                                                        class="!mt-3 inline-flex items-center !gap-1 text-sm font-bold text-slate-500 transition hover:!text-[#d71920]">
+                                                        disabled="@IsBusy"
+                                                        @onclick="() => RemoveItemAsync(item)"
+                                                        class="!mt-3 inline-flex items-center !gap-1 text-sm font-bold text-slate-500 transition hover:!text-[#d71920] disabled:opacity-50">
                                                     <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" />
                                                     Xóa sản phẩm
                                                 </button>
@@ -103,7 +165,7 @@
                                             </span>
 
                                             <span class="text-base font-black text-slate-950">
-                                                @FormatMoney(item.Price)
+                                                @FormatMoney(unitPrice)
                                             </span>
                                         </div>
 
@@ -114,8 +176,9 @@
 
                                             <div class="flex items-center !gap-2">
                                                 <button type="button"
-                                                        @onclick="() => DecreaseQuantity(item.Id)"
-                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920]">
+                                                        disabled="@(IsBusy || item.Quantity <= 1)"
+                                                        @onclick="() => DecreaseQuantityAsync(item)"
+                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
                                                     <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
                                                 </button>
 
@@ -124,8 +187,9 @@
                                                 </div>
 
                                                 <button type="button"
-                                                        @onclick="() => IncreaseQuantity(item.Id)"
-                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920]">
+                                                        disabled="@(IsBusy || !item.CanIncrease)"
+                                                        @onclick="() => IncreaseQuantityAsync(item)"
+                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
                                                     <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
                                                 </button>
                                             </div>
@@ -137,7 +201,7 @@
                                             </span>
 
                                             <span class="text-lg font-black text-[#d71920]">
-                                                @FormatMoney(item.LineTotal)
+                                                @FormatMoney(lineTotal)
                                             </span>
                                         </div>
                                     </div>
@@ -146,47 +210,123 @@
                         </div>
 
                         <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                            <div class="flex flex-col !gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <h2 class="text-lg font-black text-slate-950">
+                                    Địa chỉ giao hàng
+                                </h2>
+
+                                <button type="button"
+                                        disabled="@IsBusy"
+                                        @onclick="OpenCreateAddressDialogAsync"
+                                        class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-4 !py-2 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
+                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                    Thêm địa chỉ
+                                </button>
+                            </div>
+
+                            @if (!_addresses.Any())
+                            {
+                                <div class="!mt-5 !rounded-2xl !border !border-dashed !border-slate-300 !bg-slate-50 !p-6 text-center">
+                                    <p class="text-sm font-semibold text-slate-500">
+                                        Bạn chưa có địa chỉ giao hàng. Hãy thêm địa chỉ để tính phí vận chuyển.
+                                    </p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="!mt-5 max-h-[360px] overflow-y-auto !pr-1">
+                                    <MudRadioGroup T="int"
+                                                   Value="_selectedAddressId"
+                                                   ValueChanged="OnAddressChangedAsync">
+                                        <div class="w-full !space-y-3">
+                                            @foreach (var address in _addresses)
+                                            {
+                                                <label class="@GetAddressCardClass(address.Id) flex! w-full items-center!">
+                                                    <MudRadio T="int"
+                                                              Value="address.Id"
+                                                              Color="Color.Primary"
+                                                              Class="!mt-1" />
+
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="flex flex-wrap items-center !gap-2">
+                                                            <p class="font-black text-slate-950">
+                                                                @address.FullName
+                                                            </p>
+
+                                                            <span class="text-sm font-semibold text-slate-500">
+                                                                @address.PhoneNumber
+                                                            </span>
+
+                                                            @if (address.IsDefault)
+                                                            {
+                                                                <span class="!rounded-full !bg-red-50 !px-2.5 !py-0.5 text-xs font-black text-[#d71920]">
+                                                                    Mặc định
+                                                                </span>
+                                                            }
+                                                        </div>
+
+                                                        <p class="!mt-1 text-sm leading-6 text-slate-500">
+                                                            @address.DisplayLocation
+                                                        </p>
+                                                    </div>
+                                                </label>
+                                            }
+                                        </div>
+                                    </MudRadioGroup>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
                             <h2 class="text-lg font-black text-slate-950">
                                 Phương thức thanh toán
                             </h2>
 
-                            <MudRadioGroup T="PaymentMethod"
-                                           @bind-Value="_paymentMethod"
+                            <MudRadioGroup T="int"
+                                           @bind-Value="_paymentMethodTypeId"
                                            Class="!mt-5">
                                 <div class="grid !gap-4 md:grid-cols-2">
-                                    <label class="@GetPaymentMethodClass(PaymentMethod.Cash)">
-                                        <MudRadio T="PaymentMethod"
-                                                  Value="PaymentMethod.Cash"
+                                    <label class="@GetPaymentMethodClass(Constant.PaymentMethodType.Cash)">
+                                        <MudRadio T="int"
+                                                  Value="Constant.PaymentMethodType.Cash"
                                                   Color="Color.Primary" />
 
                                         <div>
                                             <p class="font-black text-slate-950">
-                                                Thanh toán tiền mặt
+                                                Thanh toán khi nhận hàng
                                             </p>
 
                                             <p class="!mt-1 text-sm leading-6 text-slate-500">
-                                                Thanh toán khi nhận hàng.
+                                                Thanh toán tiền mặt khi nhận hàng.
                                             </p>
                                         </div>
                                     </label>
 
-                                    <label class="@GetPaymentMethodClass(PaymentMethod.BankTransfer)">
-                                        <MudRadio T="PaymentMethod"
-                                                  Value="PaymentMethod.BankTransfer"
+                                    <label class="@GetPaymentMethodClass(Constant.PaymentMethodType.BankTransfer)">
+                                        <MudRadio T="int"
+                                                  Value="Constant.PaymentMethodType.BankTransfer"
                                                   Color="Color.Primary" />
 
                                         <div>
                                             <p class="font-black text-slate-950">
-                                                Chuyển khoản ngân hàng
+                                                Chuyển khoản online
                                             </p>
 
                                             <p class="!mt-1 text-sm leading-6 text-slate-500">
-                                                Sau khi đặt hàng, hệ thống sẽ chuyển sang trang thanh toán chuyển khoản.
+                                                Thanh toán qua PayOS sau khi đặt hàng.
                                             </p>
                                         </div>
                                     </label>
                                 </div>
                             </MudRadioGroup>
+
+                            <div class="!mt-5">
+                                <MudTextField @bind-Value="_note"
+                                              Label="Ghi chú đơn hàng (tuỳ chọn)"
+                                              Variant="Variant.Outlined"
+                                              Lines="2"
+                                              Margin="Margin.Dense" />
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -209,11 +349,13 @@
                                                   Placeholder="Nhập mã giảm giá"
                                                   Variant="Variant.Outlined"
                                                   Margin="Margin.Dense"
-                                                  Class="flex-1" />
+                                                  Class="flex-1"
+                                                  Disabled="@IsBusy" />
 
                                     <button type="button"
-                                            @onclick="ApplyCoupon"
-                                            class="inline-flex items-center justify-center !rounded-full !border !border-black !bg-black !px-5 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920]">
+                                            disabled="@IsBusy"
+                                            @onclick="ApplyCouponAsync"
+                                            class="inline-flex items-center justify-center !rounded-full !border !border-black !bg-black !px-5 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920] disabled:opacity-50">
                                         Áp dụng
                                     </button>
                                 </div>
@@ -223,6 +365,32 @@
                                     <p class="!mt-2 text-sm font-semibold text-[#d71920]">
                                         @_couponError
                                     </p>
+                                }
+
+                                @if (_availableVouchers.Any())
+                                {
+                                    <div class="!mt-3 !space-y-2">
+                                        <p class="text-xs font-bold tracking-wide text-slate-400 uppercase">
+                                            Mã khả dụng
+                                        </p>
+
+                                        @foreach (var voucher in _availableVouchers.Take(3))
+                                        {
+                                            <button type="button"
+                                                    disabled="@IsBusy"
+                                                    @onclick="() => QuickApplyVoucherAsync(voucher)"
+                                                    class="flex w-full items-center justify-between !rounded-2xl !border !border-slate-200 !bg-slate-50 !px-3 !py-2 text-left transition hover:!border-[#d71920] disabled:opacity-50">
+                                                <span class="text-sm font-black text-slate-950">
+                                                    @voucher.VoucherCode
+                                                </span>
+                                                <span class="text-xs font-semibold text-slate-500">
+                                                    @(voucher.IsPercentDiscount
+                                                        ? $"-{voucher.DiscountValue:0}%"
+                                                        : $"-{voucher.DiscountValue:N0} đ")
+                                                </span>
+                                            </button>
+                                        }
+                                    </div>
                                 }
                             }
                             else
@@ -239,8 +407,9 @@
                                     </div>
 
                                     <button type="button"
-                                            @onclick="RemoveCoupon"
-                                            class="flex !h-9 !w-9 items-center justify-center !rounded-full !bg-white text-slate-500 transition hover:!text-[#d71920]">
+                                            disabled="@IsBusy"
+                                            @onclick="RemoveCouponAsync"
+                                            class="flex !h-9 !w-9 items-center justify-center !rounded-full !bg-white text-slate-500 transition hover:!text-[#d71920] disabled:opacity-50">
                                         <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
                                     </button>
                                 </div>
@@ -260,7 +429,20 @@
 
                             <div class="flex items-center justify-between text-sm">
                                 <span class="font-semibold text-slate-500">Phí vận chuyển</span>
-                                <span class="font-black text-slate-950">@FormatMoney(ShippingFee)</span>
+                                <span class="font-black text-slate-950">
+                                    @if (_selectedAddressId <= 0)
+                                    {
+                                        <span class="text-slate-400">Chọn địa chỉ</span>
+                                    }
+                                    else if (_isCalculating)
+                                    {
+                                        <span class="text-slate-400">Đang tính...</span>
+                                    }
+                                    else
+                                    {
+                                        @FormatMoney(ShippingFee)
+                                    }
+                                </span>
                             </div>
 
                             <div class="flex items-center justify-between text-sm">
@@ -284,18 +466,20 @@
                         </div>
 
                         <button type="button"
-                                @onclick="PlaceOrder"
-                                class="!mt-6 inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white shadow-sm transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white">
-                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
-                            Đặt hàng
+                                disabled="@(IsBusy || !CanPlaceOrder)"
+                                @onclick="PlaceOrderAsync"
+                                class="!mt-6 inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white shadow-sm transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white disabled:!cursor-not-allowed disabled:opacity-50">
+                            @if (_isPlacingOrder)
+                            {
+                                <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="!text-white" />
+                                <span>Đang đặt hàng...</span>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" />
+                                <span>Đặt hàng</span>
+                            }
                         </button>
-
-                        @if (!string.IsNullOrWhiteSpace(_orderMessage))
-                        {
-                            <p class="!mt-3 text-center text-sm font-semibold text-green-600">
-                                @_orderMessage
-                            </p>
-                        }
                     </div>
                 </aside>
             </div>
@@ -304,185 +488,299 @@
 </div>
 
 @code {
+    private List<CartLineModel> _cartItems = new();
+    private List<AddressResponse> _addresses = new();
+    private List<VoucherResponse> _availableVouchers = new();
+    private Dictionary<int, decimal> _unitPriceByVariant = new();
+
+    private int _customerId;
+    private int _selectedAddressId;
+    private int _paymentMethodTypeId = Constant.PaymentMethodType.Cash;
+    private int? _appliedVoucherId;
+
     private string _couponCode = string.Empty;
     private string _appliedCoupon = string.Empty;
     private string _couponError = string.Empty;
-    private string _orderMessage = string.Empty;
+    private string _note = string.Empty;
+    private string _successOrderCode = string.Empty;
 
-    private PaymentMethod _paymentMethod = PaymentMethod.Cash;
+    private decimal _subTotal;
+    private decimal _shippingFee;
+    private decimal _discount;
+    private decimal _finalAmount;
 
-    private List<CheckoutItem> _cartItems = new()
-    {
-        new()
-        {
-            Id = 1,
-            Name = "Perseus Pro V Ben Johns Blaze Red 16mm",
-            Variant = "Màu: Blaze Red / Độ dày: 16mm",
-            Price = 7890000,
-            Quantity = 1,
-            ProductUrl = "/products/perseus-pro-v-ben-johns-blaze-red-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 3,
-            Name = "Hyperion Pro V Ben Johns Bolt Blue 16mm",
-            Variant = "Màu: Bolt Blue / Độ dày: 16mm",
-            Price = 7890000,
-            Quantity = 1,
-            ProductUrl = "/products/hyperion-pro-v-ben-johns-bolt-blue-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        },
-        new()
-        {
-            Id = 2,
-            Name = "Kosmos Pro V Rally Rocket 16mm",
-            Variant = "Màu: Rally Rocket / Độ dày: 16mm",
-            Price = 8990000,
-            Quantity = 2,
-            ProductUrl = "/products/kosmos-pro-v-rally-rocket-16mm"
-        }
-    };
+    private bool _hasLoaded;
+    private bool _isAuthenticated;
+    private bool _isLoading;
+    private bool _isUpdating;
+    private bool _isCalculating;
+    private bool _isPlacingOrder;
+
+    private bool IsBusy => _isLoading || _isUpdating || _isCalculating || _isPlacingOrder;
+
+    private bool CanPlaceOrder =>
+        _cartItems.Any()
+        && _selectedAddressId > 0
+        && !_isCalculating
+        && !_isPlacingOrder;
 
     private int TotalQuantity => _cartItems.Sum(x => x.Quantity);
 
-    private decimal SubTotal => _cartItems.Sum(x => x.LineTotal);
+    private decimal SubTotal => _selectedAddressId > 0 ? _subTotal : _cartItems.Sum(x => x.LineTotal);
 
-    private decimal ShippingFee => 0;
+    private decimal ShippingFee => _shippingFee;
 
-    private decimal Discount => string.IsNullOrWhiteSpace(_appliedCoupon) ? 0 : 500000;
+    private decimal Discount => _discount;
 
-    private decimal Total => Math.Max(0, SubTotal + ShippingFee - Discount);
+    private decimal Total => _selectedAddressId > 0
+        ? _finalAmount
+        : Math.Max(0, SubTotal - Discount);
 
-    private string PaymentMethodText => _paymentMethod switch
+    private string PaymentMethodText => _paymentMethodTypeId == Constant.PaymentMethodType.BankTransfer
+        ? "Chuyển khoản"
+        : "Tiền mặt";
+
+    protected override async Task OnInitializedAsync()
     {
-        PaymentMethod.Cash => "Tiền mặt",
-        PaymentMethod.BankTransfer => "Chuyển khoản",
-        _ => "Tiền mặt"
-    };
-
-    private void IncreaseQuantity(int id)
-    {
-        var item = _cartItems.FirstOrDefault(x => x.Id == id);
-
-        if (item is null)
-        {
-            return;
-        }
-
-        item.Quantity++;
+        await LoadPageAsync();
     }
 
-    private void DecreaseQuantity(int id)
+    private async Task LoadPageAsync()
     {
-        var item = _cartItems.FirstOrDefault(x => x.Id == id);
+        _isLoading = true;
+        StateHasChanged();
 
-        if (item is null)
+        _isAuthenticated = await _authStorageService.IsAuthenticatedAsync();
+
+        if (!_isAuthenticated)
         {
+            _hasLoaded = true;
+            _isLoading = false;
+            StateHasChanged();
             return;
         }
 
-        if (item.Quantity > 1)
+        var customerId = await _cartService.GetCustomerIdAsync();
+
+        if (customerId is null)
         {
-            item.Quantity--;
+            _isAuthenticated = false;
+            _hasLoaded = true;
+            _isLoading = false;
+            StateHasChanged();
             return;
         }
 
-        RemoveItem(id);
+        _customerId = customerId.Value;
+
+        await Task.WhenAll(
+            LoadCartInternalAsync(),
+            LoadAddressesInternalAsync(),
+            LoadVouchersInternalAsync());
+
+        if (_selectedAddressId > 0 && _cartItems.Any())
+        {
+            await RecalculateTotalsAsync();
+        }
+
+        _hasLoaded = true;
+        _isLoading = false;
+        StateHasChanged();
     }
 
-    private void RemoveItem(int id)
+    private async Task LoadCartInternalAsync()
     {
-        var item = _cartItems.FirstOrDefault(x => x.Id == id);
+        var result = await _cartService.GetItemsAsync();
 
-        if (item is null)
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            _cartItems = new List<CartLineModel>();
+            return;
+        }
+
+        _cartItems = result.Data?.ToList() ?? new List<CartLineModel>();
+    }
+
+    private async Task LoadAddressesInternalAsync(int? preferAddressId = null)
+    {
+        var result = await _addressService.GetByCustomerIdAsync(_customerId);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+            _addresses = new List<AddressResponse>();
+            _selectedAddressId = 0;
+            return;
+        }
+
+        _addresses = (result.Data ?? new List<AddressResponse>())
+            .OrderByDescending(x => x.IsDefault)
+            .ThenByDescending(x => x.UpdatedAt ?? x.InsertedAt)
+            .ToList();
+
+        if (preferAddressId.HasValue && _addresses.Any(x => x.Id == preferAddressId.Value))
+        {
+            _selectedAddressId = preferAddressId.Value;
+        }
+        else if (_selectedAddressId > 0 && _addresses.Any(x => x.Id == _selectedAddressId))
+        {
+            // keep current selection
+        }
+        else
+        {
+            _selectedAddressId = _addresses.FirstOrDefault(x => x.IsDefault)?.Id
+                ?? _addresses.FirstOrDefault()?.Id
+                ?? 0;
+        }
+    }
+
+    private async Task LoadVouchersInternalAsync()
+    {
+        var result = await _voucherService.GetOngoingAsync();
+
+        if (!result.Success || result.Data is null)
+        {
+            _availableVouchers = new List<VoucherResponse>();
+            return;
+        }
+
+        _availableVouchers = result.Data;
+    }
+
+    private async Task OnAddressChangedAsync(int addressId)
+    {
+        _selectedAddressId = addressId;
+        await RecalculateTotalsAsync();
+    }
+
+    private async Task OpenCreateAddressDialogAsync()
+    {
+        if (_customerId <= 0)
         {
             return;
         }
 
-        _cartItems.Remove(item);
+        var previousIds = _addresses.Select(x => x.Id).ToHashSet();
+
+        var parameters = new DialogParameters<AddressFormDialog>
+        {
+            { x => x.CustomerId, _customerId },
+            { x => x.EditItem, null }
+        };
+
+        var options = new DialogOptions
+        {
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true,
+            CloseButton = true,
+            CloseOnEscapeKey = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<AddressFormDialog>(null, parameters, options);
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        await LoadAddressesInternalAsync();
+
+        var newlyCreated = _addresses.FirstOrDefault(x => !previousIds.Contains(x.Id));
+        if (newlyCreated is not null)
+        {
+            _selectedAddressId = newlyCreated.Id;
+        }
+
+        await RecalculateTotalsAsync();
+        StateHasChanged();
     }
 
-    private void ApplyCoupon()
+    private async Task IncreaseQuantityAsync(CartLineModel item)
+    {
+        if (!item.CanIncrease || IsBusy)
+        {
+            _snackbar.Add("Không đủ số lượng trong kho", Severity.Warning);
+            return;
+        }
+
+        await UpdateQuantityAsync(item, item.Quantity + 1);
+    }
+
+    private async Task DecreaseQuantityAsync(CartLineModel item)
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        if (item.Quantity <= 1)
+        {
+            await RemoveItemAsync(item);
+            return;
+        }
+
+        await UpdateQuantityAsync(item, item.Quantity - 1);
+    }
+
+    private async Task UpdateQuantityAsync(CartLineModel item, int newQuantity)
+    {
+        _isUpdating = true;
+        StateHasChanged();
+
+        var result = await _cartService.UpdateQuantityAsync(item, newQuantity);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+        }
+        else
+        {
+            await LoadCartInternalAsync();
+            await RecalculateTotalsAsync();
+        }
+
+        _isUpdating = false;
+        StateHasChanged();
+    }
+
+    private async Task RemoveItemAsync(CartLineModel item)
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        _isUpdating = true;
+        StateHasChanged();
+
+        var result = await _cartService.RemoveItemAsync(item.Id);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(result.Message, Severity.Error);
+        }
+        else
+        {
+            _snackbar.Add("Đã xóa sản phẩm khỏi giỏ hàng", Severity.Info);
+            await LoadCartInternalAsync();
+
+            if (_cartItems.Any())
+            {
+                await RecalculateTotalsAsync();
+            }
+            else
+            {
+                ResetTotals();
+            }
+        }
+
+        _isUpdating = false;
+        StateHasChanged();
+    }
+
+    private async Task ApplyCouponAsync()
     {
         _couponError = string.Empty;
 
@@ -492,42 +790,234 @@
             return;
         }
 
-        if (!_couponCode.Equals("PICKLE500", StringComparison.OrdinalIgnoreCase))
+        if (_selectedAddressId <= 0)
         {
-            _couponError = "Mã giảm giá không hợp lệ";
+            _couponError = "Vui lòng chọn địa chỉ giao hàng trước khi áp mã";
             return;
         }
 
-        _appliedCoupon = _couponCode.Trim().ToUpperInvariant();
-        _couponCode = string.Empty;
+        var code = _couponCode.Trim();
+        await RecalculateTotalsAsync(code, treatAsApply: true);
     }
 
-    private void RemoveCoupon()
+    private async Task QuickApplyVoucherAsync(VoucherResponse voucher)
+    {
+        _couponCode = voucher.VoucherCode;
+        await ApplyCouponAsync();
+    }
+
+    private async Task RemoveCouponAsync()
     {
         _appliedCoupon = string.Empty;
+        _appliedVoucherId = null;
         _couponCode = string.Empty;
         _couponError = string.Empty;
+        await RecalculateTotalsAsync();
     }
 
-    private void PlaceOrder()
+    private async Task<bool> RecalculateTotalsAsync(string? discountCodeOverride = null, bool treatAsApply = false)
     {
-        if (!_cartItems.Any())
+        if (!_cartItems.Any() || _selectedAddressId <= 0)
+        {
+            ResetTotals();
+            return false;
+        }
+
+        var discountCode = discountCodeOverride
+            ?? (string.IsNullOrWhiteSpace(_appliedCoupon) ? null : _appliedCoupon);
+
+        _isCalculating = true;
+        StateHasChanged();
+
+        var request = new OrderCalculationRequest
+        {
+            AddressId = _selectedAddressId,
+            DiscountCode = discountCode,
+            Items = _cartItems.Select(x => new OrderItemCalculationRequest
+            {
+                ProductVariantId = x.ProductVariantId,
+                Quantity = x.Quantity
+            }).ToList()
+        };
+
+        var result = await _customerOrderService.CalculateTotalAsync(request);
+
+        if (!result.Success || result.Data is null)
+        {
+            if (treatAsApply)
+            {
+                _couponError = string.IsNullOrWhiteSpace(result.Message)
+                    ? "Không thể áp dụng mã giảm giá"
+                    : result.Message;
+            }
+            else if (!string.IsNullOrWhiteSpace(discountCode))
+            {
+                // Cart/address changed and voucher no longer valid — drop it and retry.
+                _appliedCoupon = string.Empty;
+                _appliedVoucherId = null;
+                _couponError = string.Empty;
+                _snackbar.Add(
+                    string.IsNullOrWhiteSpace(result.Message)
+                        ? "Mã giảm giá không còn hợp lệ và đã được gỡ"
+                        : result.Message,
+                    Severity.Warning);
+
+                _isCalculating = false;
+                return await RecalculateTotalsAsync();
+            }
+            else
+            {
+                _snackbar.Add(
+                    string.IsNullOrWhiteSpace(result.Message)
+                        ? "Không thể tính tổng đơn hàng"
+                        : result.Message,
+                    Severity.Error);
+                ResetTotals();
+            }
+
+            _isCalculating = false;
+            StateHasChanged();
+            return false;
+        }
+
+        ApplyCalculationResult(result.Data);
+
+        if (!string.IsNullOrWhiteSpace(discountCode))
+        {
+            _appliedCoupon = discountCode.Trim().ToUpperInvariant();
+            _appliedVoucherId = result.Data.VoucherId;
+            _couponCode = string.Empty;
+            _couponError = string.Empty;
+        }
+        else
+        {
+            _appliedVoucherId = null;
+        }
+
+        _isCalculating = false;
+        StateHasChanged();
+        return true;
+    }
+
+    private void ApplyCalculationResult(OrderCalculationResult data)
+    {
+        _subTotal = data.TotalAmount;
+        _discount = data.DiscountPrice;
+        _shippingFee = data.ShippingFee;
+        _finalAmount = data.FinalAmount;
+
+        _unitPriceByVariant = data.Items
+            .GroupBy(x => x.ProductVariantId)
+            .ToDictionary(g => g.Key, g => g.First().PriceToPay);
+    }
+
+    private decimal GetDisplayUnitPrice(CartLineModel item)
+    {
+        return _unitPriceByVariant.TryGetValue(item.ProductVariantId, out var price)
+            ? price
+            : item.Price;
+    }
+
+    private void ResetTotals()
+    {
+        _subTotal = _cartItems.Sum(x => x.LineTotal);
+        _shippingFee = 0;
+        _discount = 0;
+        _finalAmount = _subTotal;
+        _unitPriceByVariant = new Dictionary<int, decimal>();
+    }
+
+    private async Task PlaceOrderAsync()
+    {
+        if (!CanPlaceOrder || IsBusy)
         {
             return;
         }
 
-        if (_paymentMethod == PaymentMethod.BankTransfer)
+        if (_selectedAddressId <= 0)
         {
-            _orderMessage = "UI demo: Sau bước này sẽ chuyển sang trang thanh toán chuyển khoản";
+            _snackbar.Add("Vui lòng chọn địa chỉ giao hàng", Severity.Warning);
             return;
         }
 
-        _orderMessage = "UI demo: Đặt hàng tiền mặt thành công";
+        // Ensure latest totals before checkout
+        var calculated = await RecalculateTotalsAsync();
+
+        if (!calculated || _selectedAddressId <= 0 || !_cartItems.Any())
+        {
+            return;
+        }
+
+        _isPlacingOrder = true;
+        StateHasChanged();
+
+        var checkoutRequest = new CheckoutRequest
+        {
+            ListItemCheckout = _cartItems.Select(x => new CartItemCheckoutRequest
+            {
+                ProductVariantId = x.ProductVariantId,
+                Quantity = x.Quantity,
+                ProductName = x.Name
+            }).ToList(),
+            AddressDTO = null
+        };
+
+        var result = await _customerOrderService.CheckoutAsync(
+            checkoutRequest,
+            discountAmount: Discount,
+            shippingFee: ShippingFee,
+            paymentMethodTypeId: _paymentMethodTypeId,
+            addressId: _selectedAddressId,
+            voucherId: _appliedVoucherId,
+            note: string.IsNullOrWhiteSpace(_note) ? null : _note.Trim());
+
+        _isPlacingOrder = false;
+
+        if (!result.Success || result.Data is null)
+        {
+            _snackbar.Add(
+                string.IsNullOrWhiteSpace(result.Message) ? "Đặt hàng thất bại" : result.Message,
+                Severity.Error);
+            StateHasChanged();
+            return;
+        }
+
+        // Clear purchased items from cart (API checkout does not clear cart)
+        var purchasedCartItemIds = _cartItems.Select(x => x.Id).ToList();
+        foreach (var cartItemId in purchasedCartItemIds)
+        {
+            await _cartService.RemoveItemAsync(cartItemId);
+        }
+
+        _cartService.NotifyCartChanged();
+
+        if (_paymentMethodTypeId == Constant.PaymentMethodType.BankTransfer
+            && !string.IsNullOrWhiteSpace(result.Data.URLPayment))
+        {
+            _snackbar.Add($"Đơn {result.Data.OrderCode} đã tạo. Đang chuyển sang thanh toán...", Severity.Success);
+            _navigation.NavigateTo(result.Data.URLPayment, forceLoad: true);
+            return;
+        }
+
+        _successOrderCode = result.Data.OrderCode;
+        _cartItems = new List<CartLineModel>();
+        ResetTotals();
+        _snackbar.Add($"Đặt hàng thành công: {result.Data.OrderCode}", Severity.Success);
+        StateHasChanged();
     }
 
-    private string GetPaymentMethodClass(PaymentMethod method)
+    private string GetAddressCardClass(int addressId)
     {
-        var activeClass = _paymentMethod == method
+        var active = _selectedAddressId == addressId
+            ? "!border-[#d71920] !bg-red-50"
+            : "!border-slate-200 !bg-white hover:!border-[#d71920]";
+
+        return $"flex cursor-pointer items-start !gap-3 !rounded-2xl !border !p-4 transition {active}";
+    }
+
+    private string GetPaymentMethodClass(int method)
+    {
+        var activeClass = _paymentMethodTypeId == method
             ? "!border-[#d71920] !bg-red-50"
             : "!border-slate-200 !bg-white hover:!border-[#d71920]";
 
@@ -537,28 +1027,5 @@
     private static string FormatMoney(decimal value)
     {
         return $"{value:N0} đ";
-    }
-
-    private enum PaymentMethod
-    {
-        Cash = 1,
-        BankTransfer = 2
-    }
-
-    private class CheckoutItem
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-
-        public string Variant { get; set; } = string.Empty;
-
-        public decimal Price { get; set; }
-
-        public int Quantity { get; set; }
-
-        public string ProductUrl { get; set; } = string.Empty;
-
-        public decimal LineTotal => Price * Quantity;
     }
 }
