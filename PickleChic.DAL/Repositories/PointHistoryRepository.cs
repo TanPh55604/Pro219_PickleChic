@@ -133,4 +133,12 @@ public class PointHistoryRepository
             return false;
         }
     }
+
+    public async Task<List<PointHistory>> GetByCustomerIdAsync(int customerId)
+    {
+        return await _context.PointHistories
+            .Where(ph => ph.CustomerId == customerId)
+            .OrderByDescending(ph => ph.CreatedAt)
+            .ToListAsync();
+    }
 }
