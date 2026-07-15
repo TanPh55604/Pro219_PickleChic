@@ -28,6 +28,7 @@ public class OrderController : ControllerBase
     private readonly CustomerRepository _customerRepository;
     private readonly RankRepository _rankRepository;
     private readonly IConfiguration _configuration;
+    private readonly PointHistoryRepository _pointHistoryRepository;
 
     private static readonly JsonSerializerOptions _camelCaseJsonOptions = new()
     {
@@ -45,7 +46,8 @@ public class OrderController : ControllerBase
         PayOS payOS,
         CustomerRepository customerRepository,
         RankRepository rankRepository,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        PointHistoryRepository pointHistoryRepository)
     {
         _orderRepository = orderRepository;
         _orderItemRepository = orderItemRepository;
@@ -57,6 +59,7 @@ public class OrderController : ControllerBase
         _customerRepository = customerRepository;
         _rankRepository = rankRepository;
         _configuration = configuration;
+        _pointHistoryRepository = pointHistoryRepository;
     }   
 
     [HttpGet("get-by-id/{id}")]
@@ -241,7 +244,21 @@ public class OrderController : ControllerBase
             appliedVoucherId = voucher.Id;
         }
 
-        decimal finalAmount = Math.Max(0, totalAmount - discountPrice + shippingFee);
+        decimal tempFinalAmount = totalAmount - discountPrice + shippingFee;
+        int pointsDeducted = 0;
+        decimal pointsDiscountPrice = 0;
+
+        if (request.UsePoints == true && customerId != -1)
+        {
+            var customer = await _customerRepository.GetByIdAsync(customerId);
+            if (customer != null && customer.TotalPoints > 0)
+            {
+                pointsDeducted = (int)Math.Min((decimal)customer.TotalPoints, Math.Max(0, tempFinalAmount));
+                pointsDiscountPrice = pointsDeducted;
+            }
+        }
+
+        decimal finalAmount = Math.Max(0, tempFinalAmount - pointsDiscountPrice);
 
         var resultDto = new OrderCalculationResultDto
         {
@@ -250,7 +267,9 @@ public class OrderController : ControllerBase
             ShippingFee = shippingFee,
             FinalAmount = finalAmount,
             VoucherId = appliedVoucherId,
-            Items = itemResults
+            Items = itemResults,
+            PointsDiscountPrice = pointsDiscountPrice,
+            PointsDeducted = pointsDeducted
         };
 
         return Ok(resultDto);
@@ -264,7 +283,8 @@ public class OrderController : ControllerBase
         [FromQuery] int? PaymentMethodTypeId = 2, 
         [FromQuery] int? voucherId = null, 
         [FromQuery] string note = "", 
-        [FromQuery] int addressId = -99)
+        [FromQuery] int addressId = -99,
+        [FromQuery] bool? usePoints = false)
     {
         if (checkoutParam == null || checkoutParam.ListItemCheckout == null || !checkoutParam.ListItemCheckout.Any())
         {
@@ -382,6 +402,18 @@ public class OrderController : ControllerBase
             discountAmount = 0;
         }
 
+        int pointsUsed = 0;
+        Customer? customerForPoints = null;
+        if (customerId != -1 && usePoints == true)
+        {
+            customerForPoints = await _customerRepository.GetByIdAsync(customerId);
+            if (customerForPoints != null && customerForPoints.TotalPoints > 0)
+            {
+                decimal tempFinal = totalPrice - discountAmount + shippingFee;
+                pointsUsed = (int)Math.Min((decimal)customerForPoints.TotalPoints, Math.Max(0, tempFinal));
+            }
+        }
+
         if (checkoutParam.AddressDTO != null && addressId == -99)
         {
             address = new Address
@@ -419,7 +451,7 @@ public class OrderController : ControllerBase
             return BadRequest("Địa chỉ giao hàng không tồn tại");
         }
 
-        bool isZeroOrder = (totalPrice - discountAmount + shippingFee) <= 0;
+        bool isZeroOrder = (totalPrice - discountAmount + shippingFee - pointsUsed) <= 0;
         int ordCode = new Random().Next(1, int.MaxValue);
         Order order = new Order();
         try
@@ -492,6 +524,23 @@ public class OrderController : ControllerBase
                 return BadRequest("Không thể tạo đơn hàng");
             }
 
+            if (pointsUsed > 0 && customerForPoints != null)
+            {
+                customerForPoints.TotalPoints -= pointsUsed;
+                await _customerRepository.UpdateAsync(customerForPoints);
+
+                var pointHistory = new PointHistory
+                {
+                    CustomerId = customerForPoints.Id,
+                    OrderId = result.Id,
+                    Points = -pointsUsed,
+                    TransactionType = "Dùng điểm",
+                    Description = $"Dùng điểm cho đơn hàng {result.OrderCode}",
+                    CreatedAt = DateTime.Now
+                };
+                await _pointHistoryRepository.AddAsync(pointHistory);
+            }
+
             foreach (var detail in orderItemDetails)
             {
                 OrderItem orderItem = new OrderItem
@@ -560,7 +609,7 @@ public class OrderController : ControllerBase
             DateTimeOffset utcNow = DateTimeOffset.UtcNow;
             DateTimeOffset expirationTime = utcNow.AddMinutes(15);
             long expiredAt = expirationTime.ToUnixTimeSeconds();
-            int payOsAmount = (int)(totalPrice - discountAmount + shippingFee);
+            int payOsAmount = (int)(totalPrice - discountAmount + shippingFee - pointsUsed);
 
             string cancelUrl = "http://localhost:5001/orders/payment-cancelled?orderId=" + order.Id;
             string returnUrl = "http://localhost:5001/orders/payment-success?orderId=" + order.Id + "&pos=false";
@@ -635,6 +684,8 @@ public class OrderController : ControllerBase
                 return NotFound("Đơn hàng không tồn tại");
             }
 
+            bool isNewPaymentSuccess = order.PaymentStatus != Constant.PaymentStatus.Completed;
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             if (pos)
             {
@@ -674,11 +725,89 @@ public class OrderController : ControllerBase
             {
                 return BadRequest("Không thể cập nhật đơn hàng");
             }
+
+            if (isNewPaymentSuccess)
+            {
+                await ProcessRewardPointsAsync(order);
+            }
+
             return Ok(result);
         }
         catch (Exception)
         {
             return StatusCode(500, Constant.ErrorCode.OtherError);
+        }
+    }
+
+    private async Task ProcessRewardPointsAsync(Order order)
+    {
+        if (order.CustomerId == -1)
+        {
+            return;
+        }
+
+        var customer = await _customerRepository.GetByIdAsync(order.CustomerId);
+        if (customer == null)
+        {
+            return;
+        }
+
+        decimal totalProductPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
+        decimal discountAmount = 0;
+
+        if (order.Voucher != null)
+        {
+            var voucher = order.Voucher;
+            if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+            {
+                discountAmount = totalProductPrice * (voucher.DiscountValue / 100);
+                if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                {
+                    discountAmount = voucher.MaxDiscountAmount.Value;
+                }
+            }
+            else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+            {
+                discountAmount = voucher.DiscountValue;
+            }
+            discountAmount = Math.Min(discountAmount, totalProductPrice);
+        }
+
+        decimal finalPaidAmount = Math.Max(0, totalProductPrice - discountAmount);
+
+        double percentReward = _configuration.GetValue<double?>("PercentReward") ?? _configuration.GetValue<double?>("RewardPercent") ?? 10.0;
+        int pointsToAdd = Math.Max(0, (int)Math.Round((double)finalPaidAmount * percentReward / 100.0));
+
+        if (pointsToAdd > 0)
+        {
+            var pointHistory = new PointHistory
+            {
+                CustomerId = customer.Id,
+                OrderId = order.Id,
+                Points = pointsToAdd,
+                TransactionType = "Cộng điểm",
+                Description = $"Cộng điểm từ đơn hàng {order.OrderCode}",
+                CreatedAt = DateTime.Now
+            };
+
+            await _pointHistoryRepository.AddAsync(pointHistory);
+
+            customer.TotalPoints += pointsToAdd;
+
+            int accumulatedPoints = await _pointHistoryRepository.GetAccumulatedPointsInLast6MonthsAsync(customer.Id);
+
+            var ranks = await _rankRepository.GetAllAsync();
+            var qualifiedRank = ranks
+                .Where(r => accumulatedPoints >= r.MinPoints)
+                .OrderByDescending(r => r.MinPoints)
+                .FirstOrDefault();
+
+            if (qualifiedRank != null && customer.RankId != qualifiedRank.Id)
+            {
+                customer.RankId = qualifiedRank.Id;
+            }
+
+            await _customerRepository.UpdateAsync(customer);
         }
     }
 
@@ -737,6 +866,8 @@ public class OrderController : ControllerBase
                     await _voucherRepository.UpdateAsync(voucher);
                 }
             }
+
+            await _pointHistoryRepository.RefundPointsForOrderAsync(order.Id);
 
             return Ok(result);
         }

@@ -68,6 +68,7 @@ public class OrderCalculationRequestDto
     public List<OrderItemCalculationDto> Items { get; set; } = null!;
     public string? DiscountCode { get; set; }
     public int? AddressId { get; set; }
+    public bool? UsePoints { get; set; }
 }
 
 public class OrderItemCalculationDto
@@ -84,6 +85,8 @@ public class OrderCalculationResultDto
     public decimal FinalAmount { get; set; }
     public int? VoucherId { get; set; }
     public List<OrderCalculationItemResultDto> Items { get; set; } = null!;
+    public decimal PointsDiscountPrice { get; set; }
+    public int PointsDeducted { get; set; }
 }
 
 public class OrderCalculationItemResultDto

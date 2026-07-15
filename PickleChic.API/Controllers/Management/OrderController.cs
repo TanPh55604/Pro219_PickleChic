@@ -182,6 +182,12 @@ public class OrderController : ControllerBase
             if (updated is null)
                 return BadRequest("Không thể cập nhật trạng thái đơn hàng");
 
+            if (dto.OrderStatus == "Đã hủy(KH)" || dto.OrderStatus == "Đã hủy" || dto.PaymentStatus == "Đã hủy")
+            {
+                var pointHistoryRepository = new PointHistoryRepository();
+                await pointHistoryRepository.RefundPointsForOrderAsync(existingOrder.Id);
+            }
+
             return Ok(updated);
         }
         catch (Exception)

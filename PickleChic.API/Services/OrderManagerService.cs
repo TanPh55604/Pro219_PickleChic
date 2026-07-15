@@ -12,15 +12,18 @@ public class OrderManagerService
     private readonly OrderRepository _orderRepository;
     private readonly ProductVariantRepository _productVariantRepository;
     private readonly VoucherRepository _voucherRepository;
+    private readonly PointHistoryRepository _pointHistoryRepository;
 
     public OrderManagerService(
         OrderRepository orderRepository, 
         ProductVariantRepository productVariantRepository,
-        VoucherRepository voucherRepository)
+        VoucherRepository voucherRepository,
+        PointHistoryRepository pointHistoryRepository)
     {
         _orderRepository = orderRepository;
         _productVariantRepository = productVariantRepository;
         _voucherRepository = voucherRepository;
+        _pointHistoryRepository = pointHistoryRepository;
     }
 
     public async Task CancelExpiredOrderAsync(int orderId)
@@ -52,6 +55,8 @@ public class OrderManagerService
                     await _voucherRepository.UpdateAsync(voucher);
                 }
             }
+
+            await _pointHistoryRepository.RefundPointsForOrderAsync(orderId);
         }
     }
 }
