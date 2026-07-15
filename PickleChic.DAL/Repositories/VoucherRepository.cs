@@ -67,6 +67,11 @@ public class VoucherRepository
         }
     }
 
+    public async Task<Voucher?> GetByCodeAsync(string code)
+    {
+        return await _context.Vouchers.FirstOrDefaultAsync(v => v.VoucherCode == code);
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var entity = await _context.Vouchers.FindAsync(id);
