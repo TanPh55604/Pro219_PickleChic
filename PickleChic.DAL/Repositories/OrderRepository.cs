@@ -155,6 +155,48 @@ public class OrderRepository
             .ToListAsync();
     }
 
+    public async Task<decimal> GetTotalSpentInLast6MonthsAsync(int customerId)
+    {
+        var sixMonthsAgo = DateTime.Now.AddMonths(-6);
+        var orders = await _context.Orders
+            .Include(o => o.OrderItems)
+            .Include(o => o.Voucher)
+            .Where(o => o.CustomerId == customerId 
+                        && o.OrderDate >= sixMonthsAgo 
+                        && !o.Delete 
+                        && (o.PaymentStatus == "Đã thanh toán" || o.PaymentStatus == "Completed"))
+            .ToListAsync();
+
+        decimal totalSpent = 0;
+        foreach (var order in orders)
+        {
+            decimal totalProductPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
+            decimal discountAmount = 0;
+
+            if (order.Voucher != null)
+            {
+                var voucher = order.Voucher;
+                if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+                {
+                    discountAmount = totalProductPrice * (voucher.DiscountValue / 100);
+                    if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                    {
+                        discountAmount = voucher.MaxDiscountAmount.Value;
+                    }
+                }
+                else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+                {
+                    discountAmount = voucher.DiscountValue;
+                }
+                discountAmount = Math.Min(discountAmount, totalProductPrice);
+            }
+
+            totalSpent += Math.Max(0, totalProductPrice - discountAmount);
+        }
+
+        return totalSpent;
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var entity = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);

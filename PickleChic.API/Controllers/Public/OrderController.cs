@@ -794,12 +794,12 @@ public class OrderController : ControllerBase
 
             customer.TotalPoints += pointsToAdd;
 
-            int accumulatedPoints = await _pointHistoryRepository.GetAccumulatedPointsInLast6MonthsAsync(customer.Id);
+            decimal totalSpent = await _orderRepository.GetTotalSpentInLast6MonthsAsync(customer.Id);
 
             var ranks = await _rankRepository.GetAllAsync();
             var qualifiedRank = ranks
-                .Where(r => accumulatedPoints >= r.MinPoints)
-                .OrderByDescending(r => r.MinPoints)
+                .Where(r => totalSpent >= r.SpendAmount)
+                .OrderByDescending(r => r.SpendAmount)
                 .FirstOrDefault();
 
             if (qualifiedRank != null && customer.RankId != qualifiedRank.Id)
@@ -919,17 +919,12 @@ public class OrderController : ControllerBase
             }
         }
 
-        if (voucher.MinimumPointRank != null)
+        if (voucher.MinimumSpend != null)
         {
-            var customer = await _customerRepository.GetByIdAsync(customerId);
-            if (customer == null)
+            decimal totalSpent = await _orderRepository.GetTotalSpentInLast6MonthsAsync(customerId);
+            if (totalSpent < voucher.MinimumSpend.Value)
             {
-                return (0, "Không thể xác minh thông tin khách hàng");
-            }
-            var rank = await _rankRepository.GetByIdAsync(customer.RankId);
-            if (rank == null || rank.MinPoints < voucher.MinimumPointRank.Value)
-            {
-                return (0, "Hạng thành viên của bạn chưa đủ điều kiện để sử dụng voucher này");
+                return (0, "Chi tiêu tích lũy trong 6 tháng gần nhất của bạn chưa đủ điều kiện để sử dụng voucher này");
             }
         }
 

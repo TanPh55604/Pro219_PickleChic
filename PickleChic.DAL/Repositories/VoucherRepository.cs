@@ -36,9 +36,9 @@ public class VoucherRepository
             .FirstOrDefaultAsync(x => x.VoucherCode.ToLower() == normalized.ToLower());
     }
 
-    public async Task<List<Voucher>> GetAvailableByMinPoints(int minPoint)
+    public async Task<List<Voucher>> GetAvailableByMinSpend(decimal minSpend)
     {
-        return await _context.Vouchers.Where(x=>x.MinimumPointRank<= minPoint && x.IsActive).ToListAsync();
+        return await _context.Vouchers.Where(x => (x.MinimumSpend == null || x.MinimumSpend <= minSpend) && x.IsActive).ToListAsync();
     }
 
 
@@ -64,7 +64,7 @@ public class VoucherRepository
             existing.DiscountValue = entity.DiscountValue;
             existing.MinOrderValue = entity.MinOrderValue;
             existing.MaxDiscountAmount = entity.MaxDiscountAmount;
-            existing.MinimumPointRank = entity.MinimumPointRank;
+            existing.MinimumSpend = entity.MinimumSpend;
             existing.StartDate = entity.StartDate;
             existing.EndDate = entity.EndDate;
             existing.UsageLimit = entity.UsageLimit;

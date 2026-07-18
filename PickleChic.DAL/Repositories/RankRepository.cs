@@ -39,7 +39,7 @@ public class RankRepository
                 return null;
 
             existing.RankName = entity.RankName;
-            existing.MinPoints = entity.MinPoints;
+            existing.SpendAmount = entity.SpendAmount;
             await _context.SaveChangesAsync();
             return existing;
         }

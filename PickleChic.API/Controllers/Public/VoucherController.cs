@@ -12,10 +12,12 @@ namespace PickleChic.API.Controllers.Public;
 public class VoucherController : ControllerBase
 {
     private readonly VoucherRepository _repository;
+    private readonly OrderRepository _orderRepository;
 
-    public VoucherController(VoucherRepository repository)
+    public VoucherController(VoucherRepository repository, OrderRepository orderRepository)
     {
         _repository = repository;
+        _orderRepository = orderRepository;
     }
 
     [HttpGet("get-available-voucher")]
@@ -30,16 +32,9 @@ public class VoucherController : ControllerBase
             
             if(user!=null)
             {
-                RankRepository _rankRepository = new RankRepository();
-                Rank rank = await _rankRepository.GetByIdAsync(user.RankId);
-                if(rank!=null)
-                {
-
-                var result = await _repository.GetAvailableByMinPoints(rank.MinPoints);
+                decimal spent6Months = await _orderRepository.GetTotalSpentInLast6MonthsAsync(user.Id);
+                var result = await _repository.GetAvailableByMinSpend(spent6Months);
                 return Ok(result);
-                }   
-                
-
             } 
             return NotFound();
 

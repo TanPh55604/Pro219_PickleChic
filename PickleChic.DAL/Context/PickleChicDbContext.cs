@@ -42,6 +42,7 @@ public class PickleChicDbContext : DbContext
     public DbSet<Province> Provinces { get; set; }
     public DbSet<District> Districts { get; set; }
     public DbSet<Ward> Wards { get; set; }
+    public DbSet<Review> Reviews { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -184,10 +185,22 @@ public class PickleChicDbContext : DbContext
             .HasForeignKey(oi => oi.ProductVariantId)
             .OnDelete(DeleteBehavior.NoAction);
 
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.OrderItem)
+            .WithOne(oi => oi.Review)
+            .HasForeignKey<Review>(r => r.OrderItemId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<Review>()
+            .HasOne(r => r.ProductVariant)
+            .WithMany(pv => pv.Reviews)
+            .HasForeignKey(r => r.ProductVariantId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         modelBuilder.Entity<Rank>().HasData(
-            new Rank { Id = 1, RankName = "Đồng", MinPoints = 0 },
-            new Rank { Id = 2, RankName = "Bạc", MinPoints = 100 },
-            new Rank { Id = 3, RankName = "Vàng", MinPoints = 500 }
+            new Rank { Id = 1, RankName = "Đồng", SpendAmount = 0 },
+            new Rank { Id = 2, RankName = "Bạc", SpendAmount = 1000000 },
+            new Rank { Id = 3, RankName = "Vàng", SpendAmount = 5000000 }
         );
 
         modelBuilder.Entity<Role>().HasData(

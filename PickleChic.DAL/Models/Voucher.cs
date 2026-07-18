@@ -21,7 +21,8 @@ public class Voucher
     [Column(TypeName = "decimal(18,2)")]
     public decimal? MaxDiscountAmount { get; set; }
 
-    public int? MinimumPointRank { get; set; }
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? MinimumSpend { get; set; }
 
     public DateTime StartDate { get; set; }
 

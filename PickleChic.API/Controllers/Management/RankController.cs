@@ -73,7 +73,7 @@ public class RankController : ControllerBase
             var entity = new Rank
             {
                 RankName = dto.RankName,
-                MinPoints = dto.MinPoints,
+                SpendAmount = dto.SpendAmount,
             };
 
             var created = await _repository.AddAsync(entity);
@@ -94,7 +94,7 @@ public class RankController : ControllerBase
             {
                 Id = dto.Id,
                 RankName = dto.RankName,
-                MinPoints = dto.MinPoints,
+                SpendAmount = dto.SpendAmount,
             };
 
             var updated = await _repository.UpdateAsync(entity);
