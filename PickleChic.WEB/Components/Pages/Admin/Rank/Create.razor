@@ -15,7 +15,87 @@
             Quay lại
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+        <MudForm @ref="_form">
+            <div class="!space-y-6">
+                <h2 class="text-lg font-bold text-slate-900">Thông tin xếp hạng</h2>
+
+                <div class="grid !gap-5 md:grid-cols-2">
+                    <MudTextField @bind-Value="_model.RankName"
+                                  Label="Tên xếp hạng"
+                                  Placeholder="Ví dụ: Vàng"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Vui lòng nhập tên xếp hạng"
+                                  Immediate="true" />
+
+                    <MudNumericField T="decimal"
+                                     @bind-Value="_model.SpendAmount"
+                                     Label="Chi tiêu tối thiểu (đ)"
+                                     Placeholder="Nhập mức chi tiêu tối thiểu"
+                                     Variant="Variant.Outlined"
+                                     Min="0"
+                                     Required="true"
+                                     Immediate="true" />
+                </div>
+
+                <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Dark"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="SubmitAsync"
+                               Disabled="@_isSubmitting"
+                               Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                        @(_isSubmitting ? "Đang lưu..." : "Lưu")
+                    </MudButton>
+                </div>
+            </div>
+        </MudForm>
+    </div>
 </div>
 
 @code {
+    private MudForm? _form;
+    private readonly RankCreateRequest _model = new();
+    private bool _isSubmitting;
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null || _isSubmitting)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid || string.IsNullOrWhiteSpace(_model.RankName) || _model.SpendAmount < 0)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _adminRankService.CreateAsync(_model);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertError(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Tạo xếp hạng thành công", Severity.Success);
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.RankDetail, result.Data.Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertError(string message) =>
+        message == "Db Error" ? "Không thể tạo xếp hạng" :
+        string.IsNullOrWhiteSpace(message) ? "Có lỗi xảy ra. Vui lòng thử lại" : message;
 }

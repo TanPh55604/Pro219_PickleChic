@@ -15,6 +15,197 @@
             Thêm xếp hạng
         </a>
     </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <h2 class="text-base font-bold text-slate-900">Tỷ lệ tích điểm thưởng</h2>
+        <p class="!mt-1 text-sm text-slate-500">
+            Phần trăm giá trị đơn hàng được quy đổi thành điểm thưởng cho khách hàng (0 - 100)
+        </p>
+
+        <div class="!mt-4 flex w-full flex-col items-center !gap-2 md:max-w-md md:flex-row">
+            <MudNumericField T="double"
+                             @bind-Value="_percentReward"
+                             Label="Tỷ lệ thưởng (%)"
+                             Variant="Variant.Outlined"
+                             Min="0.01"
+                             Max="100"
+                             Class="flex-1" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Dark"
+                       StartIcon="@Icons.Material.Filled.Save"
+                       OnClick="UpdatePercentRewardAsync"
+                       Disabled="@_isSavingPercentReward"
+                       Class="!h-14 !rounded-xl !px-5 !normal-case">
+                @(_isSavingPercentReward ? "Đang lưu..." : "Lưu tỷ lệ")
+            </MudButton>
+        </div>
+    </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="!mb-4 flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
+            <MudTextField @bind-Value="_searchText"
+                          Placeholder="Tìm kiếm theo tên xếp hạng..."
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search"
+                          OnKeyDown="HandleSearchKeyDown"
+                          Class="flex-1" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Dark"
+                       StartIcon="@Icons.Material.Filled.Search"
+                       OnClick="LoadRanksAsync"
+                       Disabled="@_isLoading"
+                       Class="!rounded-xl !px-5 !normal-case">
+                Tìm kiếm
+            </MudButton>
+
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Default"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="ResetSearchAsync"
+                       Disabled="@_isLoading"
+                       Class="!rounded-xl !px-5 !normal-case">
+                Làm mới
+            </MudButton>
+        </div>
+
+        <MudTable Items="_ranks"
+                  Loading="@_isLoading"
+                  Hover="true"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(100vh - 340px)"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Tên xếp hạng</MudTh>
+                <MudTh>Chi tiêu tối thiểu</MudTh>
+                <MudTh Class="text-right">Chi tiết</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="STT">@(_ranks.IndexOf(context) + 1)</MudTd>
+                <MudTd DataLabel="Tên xếp hạng">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.RankDetail, context.Id)"
+                       class="font-semibold text-slate-900 transition hover:text-slate-600">
+                        @context.RankName
+                    </a>
+                </MudTd>
+                <MudTd DataLabel="Chi tiêu tối thiểu">
+                    <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Text">
+                        @context.SpendAmount.ToString("N0")đ
+                    </MudChip>
+                </MudTd>
+                <MudTd DataLabel="Chi tiết" Class="text-right">
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.RankDetail, context.Id)"
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                        <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                    </a>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="!py-10 text-center text-slate-500">Không có xếp hạng nào.</div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+            </PagerContent>
+        </MudTable>
+    </div>
 </div>
 
-@code {}
+@code {
+    private string _searchText = string.Empty;
+    private bool _isLoading = true;
+    private List<RankResponse> _ranks = new();
+
+    private double _percentReward = 10;
+    private bool _isSavingPercentReward;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRanksAsync();
+    }
+
+    private async Task LoadRanksAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await _adminRankService.GetAllAsync(_searchText);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertError(result.Message), Severity.Error);
+                _ranks = new();
+                return;
+            }
+
+            _ranks = (result.Data ?? new()).OrderBy(x => x.SpendAmount).ToList();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ResetSearchAsync()
+    {
+        _searchText = string.Empty;
+        await LoadRanksAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await LoadRanksAsync();
+        }
+    }
+
+    private async Task UpdatePercentRewardAsync()
+    {
+        if (_isSavingPercentReward)
+        {
+            return;
+        }
+
+        if (_percentReward <= 0 || _percentReward >= 100)
+        {
+            _snackbar.Add("Tỷ lệ thưởng phải lớn hơn 0 và nhỏ hơn 100", Severity.Warning);
+            return;
+        }
+
+        _isSavingPercentReward = true;
+
+        try
+        {
+            var result = await _adminRankService.UpdatePercentRewardAsync(_percentReward);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertError(result.Message), Severity.Error);
+                return;
+            }
+
+            if (result.Data is not null)
+            {
+                _percentReward = result.Data.PercentReward;
+            }
+
+            _snackbar.Add("Cập nhật tỷ lệ thưởng thành công", Severity.Success);
+        }
+        finally
+        {
+            _isSavingPercentReward = false;
+        }
+    }
+
+    private static string ConvertError(string message) =>
+        message == "Db Error" ? "Không thể tải danh sách xếp hạng" :
+        string.IsNullOrWhiteSpace(message) ? "Có lỗi xảy ra. Vui lòng thử lại" : message;
+}

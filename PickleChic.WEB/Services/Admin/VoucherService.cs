@@ -74,7 +74,7 @@ namespace PickleChic.WEB.Services.Admin
                 MaxDiscountAmount = model.DiscountType == VoucherDiscountType.Fixed
                     ? null
                     : model.MaxDiscountAmount,
-                MinimumRank = model.MinimumRank,
+                MinimumSpend = model.MinimumSpend,
                 StartDate = model.StartDate!.Value,
                 EndDate = model.EndDate!.Value,
                 UsageLimit = model.UsageLimit,
@@ -96,7 +96,7 @@ namespace PickleChic.WEB.Services.Admin
                 DiscountValue = request.DiscountValue,
                 MinOrderValue = request.MinOrderValue,
                 MaxDiscountAmount = request.MaxDiscountAmount,
-                MinimumRank = request.MinimumRank,
+                MinimumSpend = request.MinimumSpend,
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
                 UsageLimit = request.UsageLimit,
