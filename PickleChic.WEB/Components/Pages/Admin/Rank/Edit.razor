@@ -3,20 +3,125 @@
 
 <PageTitle>@Constant.metaDataAdmin Edit Rank</PageTitle>
 
-<div class="mx-auto w-full max-w-5xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
+@if (_isLoading)
+{
+    <EditPageSkeleton FieldCount="2" />
+}
+else
+{
+    <div class="mx-auto w-full max-w-4xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
             <h1 class="text-2xl font-bold text-slate-900">Cập nhật xếp hạng</h1>
+
+            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.RankDetail, Id)"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                Quay lại
+            </a>
         </div>
 
-        <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.RankDetail, Id)"
-           class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-            Quay lại
-        </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm md:!p-8">
+            <MudForm @ref="_form">
+                <div class="!space-y-6">
+                    <h2 class="text-lg font-bold text-slate-900">Thông tin xếp hạng</h2>
+
+                    <div class="grid !gap-5 md:grid-cols-2">
+                        <MudTextField @bind-Value="_model.RankName"
+                                      Label="Tên xếp hạng"
+                                      Variant="Variant.Outlined"
+                                      Required="true"
+                                      RequiredError="Vui lòng nhập tên xếp hạng"
+                                      Immediate="true" />
+
+                        <MudNumericField T="decimal"
+                                         @bind-Value="_model.SpendAmount"
+                                         Label="Chi tiêu tối thiểu (đ)"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Required="true"
+                                         Immediate="true" />
+                    </div>
+
+                    <div class="flex justify-end !border-t !border-slate-200 !pt-6">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Dark"
+                                   StartIcon="@Icons.Material.Filled.Save"
+                                   OnClick="SubmitAsync"
+                                   Disabled="@_isSubmitting"
+                                   Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                            @(_isSubmitting ? "Đang cập nhật..." : "Cập nhật")
+                        </MudButton>
+                    </div>
+                </div>
+            </MudForm>
+        </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private MudForm? _form;
+    private RankUpdateRequest _model = new();
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await _adminRankService.GetByIdAsync(Id);
+
+        if (!result.Success || result.Data is null)
+        {
+            _snackbar.Add(ConvertError(result.Message), Severity.Error);
+            _navigation.NavigateTo(RouterConfig.Admin.Ranks, replace: true);
+            return;
+        }
+
+        _model = new RankUpdateRequest
+        {
+            Id = result.Data.Id,
+            RankName = result.Data.RankName,
+            SpendAmount = result.Data.SpendAmount
+        };
+        _isLoading = false;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_form is null || _isSubmitting)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+
+        if (!_form.IsValid || string.IsNullOrWhiteSpace(_model.RankName) || _model.SpendAmount < 0)
+        {
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await _adminRankService.UpdateAsync(_model);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertError(result.Message), Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Cập nhật xếp hạng thành công", Severity.Success);
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.RankDetail, Id));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string ConvertError(string message) =>
+        message == "Db Error" ? "Không thể xử lý dữ liệu xếp hạng" :
+        string.IsNullOrWhiteSpace(message) ? "Có lỗi xảy ra. Vui lòng thử lại" : message;
 }

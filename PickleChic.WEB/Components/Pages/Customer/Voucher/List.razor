@@ -86,7 +86,7 @@
 
                             <div class="!space-y-2 text-sm text-neutral-600">
                                 <p>Đơn tối thiểu: <span class="font-bold text-neutral-900">@voucher.MinOrderValue.ToString("N0")đ</span></p>
-                                <p>Hạng yêu cầu: <span class="font-bold text-neutral-900">@GetRankName(voucher.MinimumRank)</span></p>
+                                <p>Hạng yêu cầu: <span class="font-bold text-neutral-900">@GetRankName(voucher.MinimumSpend)</span></p>
                                 <p>Hết hạn: <span class="font-bold text-neutral-900">@voucher.EndDate.ToString("dd/MM/yyyy HH:mm")</span></p>
                             </div>
 
@@ -172,16 +172,11 @@
         return $"{voucher.DiscountValue:N0}đ";
     }
 
-    private static string GetRankName(int? rankId)
+    private static string GetRankName(decimal? minimumSpend)
     {
-        return rankId switch
-        {
-            1 => "Đồng",
-            2 => "Bạc",
-            3 => "Vàng",
-            4 => "Kim cương",
-            _ => "Tất cả hạng"
-        };
+        return minimumSpend is null
+            ? "Tất cả hạng"
+            : $"Chi tiêu từ {minimumSpend.Value:N0}đ";
     }
 
     private static string ConvertErrorMessage(string message)

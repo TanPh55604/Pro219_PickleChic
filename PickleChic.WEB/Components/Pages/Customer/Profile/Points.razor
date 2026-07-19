@@ -1,0 +1,218 @@
+@attribute [Route(RouterConfig.Customer.Points)]
+@layout MainLayout
+
+<PageTitle>PickleChic WEB - Lịch sử điểm</PageTitle>
+
+<div class="min-h-[calc(100vh-180px)] !bg-slate-50 !px-4 !pt-8 !pb-14">
+    <div class="!mx-auto w-full max-w-6xl">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="text-sm font-bold tracking-[0.25em] text-[#d71920] uppercase">
+                    Thành viên PickleChic
+                </p>
+                <h1 class="!mt-2 text-3xl font-black tracking-tight text-slate-950">
+                    Lịch sử điểm
+                </h1>
+                <p class="!mt-2 text-sm text-slate-500">
+                    Theo dõi các giao dịch cộng, sử dụng và hoàn điểm của bạn.
+                </p>
+            </div>
+
+            <a href="@RouterConfig.Customer.Profile"
+               class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-5 !py-2.5 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920]">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                Quay lại tài khoản
+            </a>
+        </div>
+
+        @if (_isLoading)
+        {
+            <div class="!mt-8 grid !gap-5 md:grid-cols-2">
+                <div class="!h-32 animate-pulse !rounded-3xl !bg-slate-200"></div>
+                <div class="!h-32 animate-pulse !rounded-3xl !bg-slate-200"></div>
+            </div>
+            <div class="!mt-6 !h-80 animate-pulse !rounded-3xl !bg-slate-200"></div>
+        }
+        else
+        {
+            <div class="!mt-8 grid !gap-5 md:grid-cols-2">
+                <div class="!rounded-3xl !bg-gradient-to-br !from-[#d71920] !to-[#ff5258] !p-6 !text-white shadow-sm">
+                    <div class="flex items-center justify-between !gap-4">
+                        <div>
+                            <p class="text-sm font-bold text-white/80">Điểm hiện có</p>
+                            <p class="!mt-2 text-4xl font-black">@((_currentUser?.TotalPoints ?? 0).ToString("N0"))</p>
+                            <p class="!mt-1 text-sm font-semibold text-white/80">điểm tích lũy</p>
+                        </div>
+                        <div class="flex !h-14 !w-14 items-center justify-center !rounded-2xl !bg-white/15">
+                            <MudIcon Icon="@Icons.Material.Filled.Stars" Size="Size.Large" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                    <div class="flex items-center justify-between !gap-4">
+                        <div>
+                            <p class="text-sm font-bold text-slate-500">Hạng thành viên</p>
+                            <p class="!mt-2 text-3xl font-black text-slate-950">
+                                @(_currentUser?.RankName ?? "—")
+                            </p>
+                            <p class="!mt-1 text-sm text-slate-500">
+                                Hạng được xét theo chi tiêu 6 tháng gần nhất
+                            </p>
+                        </div>
+                        <div class="flex !h-14 !w-14 items-center justify-center !rounded-2xl !bg-amber-50 text-amber-600">
+                            <MudIcon Icon="@Icons.Material.Filled.WorkspacePremium" Size="Size.Large" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="!mt-6 overflow-hidden !rounded-3xl !border !border-slate-200 !bg-white shadow-sm">
+                <div class="!border-b !border-slate-200 !px-6 !py-5">
+                    <h2 class="text-xl font-black text-slate-950">Giao dịch điểm</h2>
+                    <p class="!mt-1 text-sm text-slate-500">
+                        @_histories.Count giao dịch được ghi nhận
+                    </p>
+                </div>
+
+                @if (_histories.Count == 0)
+                {
+                    <div class="!p-12 text-center">
+                        <div class="!mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
+                            <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Large" />
+                        </div>
+                        <h3 class="!mt-5 text-xl font-black text-slate-950">Chưa có lịch sử điểm</h3>
+                        <p class="!mt-2 text-sm text-slate-500">
+                            Điểm thưởng sẽ được ghi nhận sau khi đơn hàng đủ điều kiện.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <MudTable Items="_histories"
+                              Hover="true"
+                              Elevation="0"
+                              Breakpoint="Breakpoint.Sm"
+                              RowsPerPage="10">
+                        <HeaderContent>
+                            <MudTh>Thời gian</MudTh>
+                            <MudTh>Loại giao dịch</MudTh>
+                            <MudTh>Mô tả</MudTh>
+                            <MudTh>Đơn hàng</MudTh>
+                            <MudTh Class="text-right">Điểm</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="Thời gian">
+                                @context.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </MudTd>
+                            <MudTd DataLabel="Loại giao dịch">
+                                <span class="@GetTypeClass(context.Points)">
+                                    @context.TransactionType
+                                </span>
+                            </MudTd>
+                            <MudTd DataLabel="Mô tả">
+                                @(string.IsNullOrWhiteSpace(context.Description) ? "—" : context.Description)
+                            </MudTd>
+                            <MudTd DataLabel="Đơn hàng">
+                                <a href="@RouterConfig.BuildRoute(RouterConfig.Customer.OrderDetail, context.OrderId)"
+                                   class="font-bold text-slate-900 hover:text-[#d71920]">
+                                    #@context.OrderId
+                                </a>
+                            </MudTd>
+                            <MudTd DataLabel="Điểm" Class="text-right">
+                                <span class="text-base font-black @(context.Points >= 0 ? "text-emerald-600" : "text-red-600")">
+                                    @FormatPoints(context.Points)
+                                </span>
+                            </MudTd>
+                        </RowTemplate>
+                        <PagerContent>
+                            <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+                        </PagerContent>
+                    </MudTable>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private AuthModel? _currentUser;
+    private List<PointHistoryResponse> _histories = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!await _authStorageService.IsAuthenticatedAsync())
+        {
+            _navigation.NavigateTo(RouterConfig.Customer.Login, replace: true);
+            return;
+        }
+
+        var userResult = await _currentUserService.CheckCurrentUserAsync();
+
+        if (!userResult.Success || userResult.Data is null)
+        {
+            _snackbar.Add(ConvertError(userResult.Message), Severity.Error);
+            _navigation.NavigateTo(RouterConfig.Customer.Login, replace: true);
+            return;
+        }
+
+        _currentUser = userResult.Data;
+        await LoadPointHistoryAsync();
+    }
+
+    private async Task LoadPointHistoryAsync()
+    {
+        if (_currentUser is null)
+        {
+            return;
+        }
+
+        _isLoading = true;
+
+        try
+        {
+            var result = await _pointHistoryService.GetByCustomerAsync(_currentUser.Id);
+
+            if (!result.Success)
+            {
+                if (result.StatusCode == 404)
+                {
+                    _histories = new();
+                    return;
+                }
+
+                _snackbar.Add(ConvertError(result.Message), Severity.Error);
+                _histories = new();
+                return;
+            }
+
+            _histories = (result.Data ?? new())
+                .OrderByDescending(x => x.CreatedAt)
+                .ToList();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static string FormatPoints(int points) =>
+        points > 0 ? $"+{points:N0}" : points.ToString("N0");
+
+    private static string GetTypeClass(int points) =>
+        points >= 0
+            ? "inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700"
+            : "inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700";
+
+    private static string ConvertError(string message) =>
+        message switch
+        {
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            "Db Error" => "Không thể tải lịch sử điểm",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+}

@@ -70,6 +70,20 @@
             public static string Delete(int id) => $"management/brand/delete/{id}";
         }
 
+        public static class Rank
+        {
+            public const string GetAll = "management/rank/get-all";
+            public const string Create = "management/rank/create";
+            public const string Update = "management/rank/update";
+
+            public static string GetById(int id) => $"management/rank/get-by-id/{id}";
+
+            public static string Delete(int id) => $"management/rank/delete/{id}";
+
+            public static string UpdatePercentReward(double value) =>
+                $"management/rank/percent-reward?value={value.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+        }
+
         public static class Attribute
         {
             public const string GetAll = "management/product-attribute/get-all";
@@ -182,6 +196,12 @@
 
                 public static string Delete(int id) => $"management/voucher/delete/{id}";
             }
+        }
+
+        public static class PointHistory
+        {
+            public static string GetByCustomer(int customerId) =>
+                $"point-history/customer/{customerId}";
         }
 
         public static class Order

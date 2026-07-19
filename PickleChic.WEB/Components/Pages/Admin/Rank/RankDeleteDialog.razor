@@ -1,0 +1,31 @@
+<MudDialog>
+    <DialogContent>
+        <div class="!space-y-3">
+            <div class="flex !h-12 !w-12 items-center justify-center !rounded-full !bg-red-50 text-red-600">
+                <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" />
+            </div>
+            <h2 class="text-lg font-bold text-slate-900">Xóa xếp hạng?</h2>
+            <p class="text-sm leading-6 text-slate-500">
+                Bạn có chắc muốn xóa xếp hạng <strong>@Rank.RankName</strong>? Thao tác này không thể hoàn tác.
+            </p>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" OnClick="Cancel" Class="!rounded-xl !normal-case">
+            Hủy
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="Confirm" Class="!rounded-xl !normal-case">
+            Xóa
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter, EditorRequired] public RankResponse Rank { get; set; } = new();
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
+}

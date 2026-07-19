@@ -79,6 +79,11 @@
                             <div>
                                 <p class="font-semibold text-slate-500">Điểm tích lũy</p>
                                 <p class="font-bold text-slate-900">@(_currentUser?.TotalPoints ?? 0) điểm</p>
+                                <a href="@RouterConfig.Customer.Points"
+                                   class="!mt-2 inline-flex items-center !gap-1 text-xs font-black text-[#d71920] hover:underline">
+                                    Xem lịch sử điểm
+                                    <MudIcon Icon="@Icons.Material.Filled.ArrowForward" Size="Size.Small" />
+                                </a>
                             </div>
                         </div>
 
