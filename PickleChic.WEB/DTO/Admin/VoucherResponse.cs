@@ -14,7 +14,7 @@ namespace PickleChic.WEB.DTO.Admin
 
         public decimal? MaxDiscountAmount { get; set; }
 
-        public int? MinimumRank { get; set; }
+        public decimal? MinimumSpend { get; set; }
 
         public DateTime StartDate { get; set; }
 

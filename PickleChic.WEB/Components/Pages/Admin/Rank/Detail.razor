@@ -3,35 +3,130 @@
 
 <PageTitle>@Constant.metaDataAdmin Rank Detail</PageTitle>
 
-<div class="mx-auto w-full max-w-7xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Chi tiết xếp hạng</h1>
+@if (_isLoading)
+{
+    <DetailPageSkeleton ShowSubtitle="true" InfoFieldCount="2" />
+}
+else
+{
+    <div class="mx-auto w-full max-w-5xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Chi tiết xếp hạng</h1>
+            </div>
+
+            <div class="flex flex-wrap !gap-3">
+                <a href="@RouterConfig.Admin.Ranks"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                    Quay lại
+                </a>
+
+                <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditRank, Id)"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                    Cập nhật
+                </a>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           StartIcon="@Icons.Material.Filled.Delete"
+                           OnClick="OpenDeleteDialogAsync"
+                           Class="!rounded-xl !px-5 !py-2.5 !normal-case">
+                    Xóa
+                </MudButton>
+            </div>
         </div>
 
-        <div class="flex flex-wrap !gap-3">
-            <a href="@RouterConfig.Admin.Ranks"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-                Quay lại
-            </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
+            <div class="!border-b !border-slate-200 !p-6 md:!p-8">
+                <div class="flex items-center !gap-4">
+                    <div class="flex !h-14 !w-14 items-center justify-center !rounded-2xl !bg-amber-50 text-amber-600">
+                        <MudIcon Icon="@Icons.Material.Filled.WorkspacePremium" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">@_model.RankName</h2>
+                        <p class="!mt-1 text-sm text-slate-500">
+                            Yêu cầu chi tiêu tối thiểu @_model.SpendAmount.ToString("N0")đ
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditRank, Id)"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
-                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
-                Cập nhật
-            </a>
+            <div class="!p-6 md:!p-8">
+                <h3 class="text-lg font-bold text-slate-900">Thông tin xếp hạng</h3>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Error"
-                       StartIcon="@Icons.Material.Filled.Delete"
-                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
-                Xóa
-            </MudButton>
+                <div class="!mt-5 grid !gap-4 md:grid-cols-2">
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Tên xếp hạng</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">@_model.RankName</p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Chi tiêu tối thiểu</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @_model.SpendAmount.ToString("N0")đ
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private RankResponse _model = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await _adminRankService.GetByIdAsync(Id);
+
+        if (!result.Success || result.Data is null)
+        {
+            _snackbar.Add(ConvertError(result.Message), Severity.Error);
+            _navigation.NavigateTo(RouterConfig.Admin.Ranks, replace: true);
+            return;
+        }
+
+        _model = result.Data;
+        _isLoading = false;
+    }
+
+    private async Task OpenDeleteDialogAsync()
+    {
+        var parameters = new DialogParameters<RankDeleteDialog>
+        {
+            { x => x.Rank, _model }
+        };
+
+        var dialog = await _dialogService.ShowAsync<RankDeleteDialog>(
+            "Xóa xếp hạng",
+            parameters,
+            new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall, FullWidth = true });
+
+        var dialogResult = await dialog.Result;
+
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        var result = await _adminRankService.DeleteAsync(Id);
+
+        if (!result.Success)
+        {
+            _snackbar.Add(ConvertError(result.Message), Severity.Error);
+            return;
+        }
+
+        _snackbar.Add("Xóa xếp hạng thành công", Severity.Success);
+        _navigation.NavigateTo(RouterConfig.Admin.Ranks, replace: true);
+    }
+
+    private static string ConvertError(string message) =>
+        message == "Db Error" ? "Không thể xử lý dữ liệu xếp hạng" :
+        string.IsNullOrWhiteSpace(message) ? "Có lỗi xảy ra. Vui lòng thử lại" : message;
 }

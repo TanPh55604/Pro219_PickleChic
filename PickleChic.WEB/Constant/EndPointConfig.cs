@@ -70,6 +70,20 @@
             public static string Delete(int id) => $"management/brand/delete/{id}";
         }
 
+        public static class Rank
+        {
+            public const string GetAll = "management/rank/get-all";
+            public const string Create = "management/rank/create";
+            public const string Update = "management/rank/update";
+
+            public static string GetById(int id) => $"management/rank/get-by-id/{id}";
+
+            public static string Delete(int id) => $"management/rank/delete/{id}";
+
+            public static string UpdatePercentReward(double value) =>
+                $"management/rank/percent-reward?value={value.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+        }
+
         public static class Attribute
         {
             public const string GetAll = "management/product-attribute/get-all";
@@ -110,9 +124,29 @@
 
         public static class ProductVariant
         {
-            public static string GetByCategory(int categoryId) => $"product-variant/get-by-category/{categoryId}";
+            public static string GetByCategory(int categoryId, string? sortBy = null)
+            {
+                var url = $"product-variant/get-by-category/{categoryId}";
 
-            public static string GetByBrand(int brandId) => $"product-variant/get-by-brand/{brandId}";
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    url += $"?sortBy={Uri.EscapeDataString(sortBy)}";
+                }
+
+                return url;
+            }
+
+            public static string GetByBrand(int brandId, string? sortBy = null)
+            {
+                var url = $"product-variant/get-by-brand/{brandId}";
+
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    url += $"?sortBy={Uri.EscapeDataString(sortBy)}";
+                }
+
+                return url;
+            }
 
             public const string CreateWithAttributes = "management/product-variant/create-with-attributes";
             public const string UpdateWithAttributes = "management/product-variant/update-with-attributes";
@@ -182,6 +216,12 @@
 
                 public static string Delete(int id) => $"management/voucher/delete/{id}";
             }
+        }
+
+        public static class PointHistory
+        {
+            public static string GetByCustomer(int customerId) =>
+                $"point-history/customer/{customerId}";
         }
 
         public static class Order
