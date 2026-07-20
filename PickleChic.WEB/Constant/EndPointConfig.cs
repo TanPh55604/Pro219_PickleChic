@@ -124,9 +124,29 @@
 
         public static class ProductVariant
         {
-            public static string GetByCategory(int categoryId) => $"product-variant/get-by-category/{categoryId}";
+            public static string GetByCategory(int categoryId, string? sortBy = null)
+            {
+                var url = $"product-variant/get-by-category/{categoryId}";
 
-            public static string GetByBrand(int brandId) => $"product-variant/get-by-brand/{brandId}";
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    url += $"?sortBy={Uri.EscapeDataString(sortBy)}";
+                }
+
+                return url;
+            }
+
+            public static string GetByBrand(int brandId, string? sortBy = null)
+            {
+                var url = $"product-variant/get-by-brand/{brandId}";
+
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    url += $"?sortBy={Uri.EscapeDataString(sortBy)}";
+                }
+
+                return url;
+            }
 
             public const string CreateWithAttributes = "management/product-variant/create-with-attributes";
             public const string UpdateWithAttributes = "management/product-variant/update-with-attributes";
