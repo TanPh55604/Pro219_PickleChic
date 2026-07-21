@@ -10,7 +10,7 @@
         </div>
 
         <a href="@RouterConfig.Admin.CreateProduct"
-           class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-slate-900 !px-4 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-slate-800">
+           class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-[#A05AFF] !px-4 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-[#8B3FE6]">
             <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
             Thêm sản phẩm
         </a>
@@ -28,7 +28,7 @@
                               Class="flex-1" />
 
                 <MudButton Variant="Variant.Filled"
-                           Color="Color.Dark"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Search"
                            OnClick="SearchAsync"
                            Disabled="@_isLoading"
@@ -109,7 +109,7 @@
 
                 <MudTd DataLabel="Chi tiết" Class="text-right">
                     <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.ProductDetail, context.Id)"
-                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-[#4BCBEB] transition hover:!bg-[#4BCBEB]/15 hover:text-[#4BCBEB]">
                         <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
                     </a>
                 </MudTd>

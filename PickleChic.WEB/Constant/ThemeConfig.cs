@@ -122,38 +122,38 @@ namespace PickleChic.WEB.Constant
         {
             PaletteLight = new PaletteLight
             {
-                Primary = new MudColor("#0f172a"),
+                Primary = new MudColor("#A05AFF"),
                 PrimaryContrastText = new MudColor("#ffffff"),
 
-                Secondary = new MudColor("#334155"),
+                Secondary = new MudColor("#9E58FF"),
                 SecondaryContrastText = new MudColor("#ffffff"),
 
-                Tertiary = new MudColor("#f1f5f9"),
+                Tertiary = new MudColor("#f4f5f7"),
 
                 AppbarBackground = new MudColor("#ffffff"),
-                AppbarText = new MudColor("#0f172a"),
+                AppbarText = new MudColor("#1e293b"),
 
                 DrawerBackground = new MudColor("#ffffff"),
-                DrawerText = new MudColor("#334155"),
+                DrawerText = new MudColor("#6c7383"),
 
-                Background = new MudColor("#f8fafc"),
+                Background = new MudColor("#f4f5f7"),
                 Surface = new MudColor("#ffffff"),
 
-                TextPrimary = new MudColor("#0f172a"),
-                TextSecondary = new MudColor("#64748b"),
+                TextPrimary = new MudColor("#2c2e33"),
+                TextSecondary = new MudColor("#6c7383"),
 
-                LinesDefault = new MudColor("#e2e8f0"),
-                TableLines = new MudColor("#e2e8f0"),
-                Divider = new MudColor("#e2e8f0"),
+                LinesDefault = new MudColor("#e8eaed"),
+                TableLines = new MudColor("#e8eaed"),
+                Divider = new MudColor("#e8eaed"),
 
-                ActionDefault = new MudColor("#0f172a"),
-                ActionDisabled = new MudColor("#94a3b8"),
-                ActionDisabledBackground = new MudColor("#f1f5f9"),
+                ActionDefault = new MudColor("#6c7383"),
+                ActionDisabled = new MudColor("#a0a4b0"),
+                ActionDisabledBackground = new MudColor("#f4f5f7"),
 
-                Success = new MudColor("#16a34a"),
+                Success = new MudColor("#1BCFB4"),
                 Warning = new MudColor("#f59e0b"),
-                Error = new MudColor("#dc2626"),
-                Info = new MudColor("#2563eb")
+                Error = new MudColor("#FE9496"),
+                Info = new MudColor("#4BCBEB")
             },
 
             Typography = new Typography

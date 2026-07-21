@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.EditVoucher)]
+@attribute [Route(RouterConfig.Admin.EditVoucher)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Edit Voucher</PageTitle>
@@ -169,7 +169,7 @@ else
 
                     <div class="flex justify-end !border-t !border-slate-200 !pt-6">
                         <MudButton Variant="Variant.Filled"
-                                   Color="Color.Dark"
+                                   Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Save"
                                    OnClick="SubmitAsync"
                                    Disabled="@_isSubmitting"

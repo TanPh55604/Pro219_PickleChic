@@ -15,7 +15,7 @@
 
         <div class="flex items-center gap-3">
             <MudButton Variant="Variant.Outlined"
-                       Color="Color.Primary"
+                       Color="Color.Default"
                        OnClick="ResetAsync"
                        Disabled="@_isLoading"
                        Class="!rounded-xl">
@@ -93,7 +93,7 @@
 
             <div class="md:col-span-2">
                 <MudButton Variant="Variant.Filled"
-                           Color="Color.Dark"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Search"
                            OnClick="ApplyFilterAsync"
                            Disabled="@_isLoading"
@@ -126,54 +126,54 @@
     else
     {
         <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-slate-500">Doanh thu</p>
-                    <MudIcon Icon="@Icons.Material.Filled.Payments" Class="text-slate-500" />
+            <div class="!bg-gradient-to-br relative overflow-hidden !rounded-2xl from-[#A05AFF] to-[#9E58FF] !p-5 text-white shadow-md">
+                <div class="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full bg-white/15"></div>
+                <div class="relative flex items-center justify-between">
+                    <p class="text-sm font-medium text-white/85">Doanh thu</p>
+                    <MudIcon Icon="@Icons.Material.Filled.Payments" Class="text-white/90" />
                 </div>
-
-                <p class="mt-4 text-2xl font-bold text-slate-900">
+                <p class="relative mt-4 text-2xl font-bold">
                     @FormatCurrency(_report.OverallOverview.Revenue)
                 </p>
-                <p class="mt-1 text-sm text-slate-500">
+                <p class="relative mt-1 text-sm text-white/80">
                     @GetGroupByText(_report.GroupBy)
                 </p>
             </div>
 
-            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-slate-500">Tổng đơn</p>
-                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="text-slate-500" />
+            <div class="!bg-gradient-to-br relative overflow-hidden !rounded-2xl from-[#4BCBEB] to-[#38b6d6] !p-5 text-white shadow-md">
+                <div class="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full bg-white/15"></div>
+                <div class="relative flex items-center justify-between">
+                    <p class="text-sm font-medium text-white/85">Tổng đơn</p>
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="text-white/90" />
                 </div>
-
-                <p class="mt-4 text-2xl font-bold text-slate-900">
+                <p class="relative mt-4 text-2xl font-bold">
                     @_report.OverallOverview.TotalOrders
                 </p>
-                <p class="mt-1 text-sm text-emerald-600">Trong khoảng thời gian</p>
+                <p class="relative mt-1 text-sm text-white/80">Trong khoảng thời gian</p>
             </div>
 
-            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-slate-500">Sản phẩm bán</p>
-                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="text-slate-500" />
+            <div class="!bg-gradient-to-br relative overflow-hidden !rounded-2xl from-[#1BCFB4] to-[#14b8a0] !p-5 text-white shadow-md">
+                <div class="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full bg-white/15"></div>
+                <div class="relative flex items-center justify-between">
+                    <p class="text-sm font-medium text-white/85">Sản phẩm bán</p>
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="text-white/90" />
                 </div>
-
-                <p class="mt-4 text-2xl font-bold text-slate-900">
+                <p class="relative mt-4 text-2xl font-bold">
                     @_report.OverallOverview.TotalProductsSold
                 </p>
-                <p class="mt-1 text-sm text-slate-500">Tính theo đơn hoàn thành</p>
+                <p class="relative mt-1 text-sm text-white/80">Tính theo đơn hoàn thành</p>
             </div>
 
-            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-                <div class="flex items-center justify-between">
-                    <p class="text-sm font-medium text-slate-500">Đơn hủy</p>
-                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Class="text-slate-500" />
+            <div class="!bg-gradient-to-br relative overflow-hidden !rounded-2xl from-[#FE9496] to-[#f87171] !p-5 text-white shadow-md">
+                <div class="pointer-events-none absolute -top-6 -right-6 h-24 w-24 rounded-full bg-white/15"></div>
+                <div class="relative flex items-center justify-between">
+                    <p class="text-sm font-medium text-white/85">Đơn hủy</p>
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Class="text-white/90" />
                 </div>
-
-                <p class="mt-4 text-2xl font-bold text-slate-900">
+                <p class="relative mt-4 text-2xl font-bold">
                     @_report.OverallOverview.TotalCancelledOrders
                 </p>
-                <p class="mt-1 text-sm text-rose-600">Các đơn bị hủy</p>
+                <p class="relative mt-1 text-sm text-white/80">Các đơn bị hủy</p>
             </div>
         </div>
 
@@ -189,6 +189,7 @@
                 <MudChart ChartType="ChartType.Line"
                           ChartSeries="@_revenueSeries"
                           ChartLabels="@_periodLabels"
+                          ChartOptions="@_lineChartOptions"
                           Width="100%"
                           Height="320px"
                           CanHideSeries="false"
@@ -202,6 +203,7 @@
                 <MudChart ChartType="ChartType.Bar"
                           ChartSeries="@_ordersSeries"
                           ChartLabels="@_periodLabels"
+                          ChartOptions="@_ordersChartOptions"
                           Width="100%"
                           Height="280px"
                           CanHideSeries="false"
@@ -213,6 +215,7 @@
                 <MudChart ChartType="ChartType.Bar"
                           ChartSeries="@_productsSeries"
                           ChartLabels="@_periodLabels"
+                          ChartOptions="@_productsChartOptions"
                           Width="100%"
                           Height="280px"
                           CanHideSeries="false"
@@ -330,6 +333,21 @@
     private List<ChartSeries<double>> _revenueSeries = new();
     private List<ChartSeries<double>> _ordersSeries = new();
     private List<ChartSeries<double>> _productsSeries = new();
+
+    private readonly LineChartOptions _lineChartOptions = new()
+    {
+        ChartPalette = new[] { "#A05AFF", "#9E58FF", "#4BCBEB", "#1BCFB4", "#FE9496" }
+    };
+
+    private readonly BarChartOptions _ordersChartOptions = new()
+    {
+        ChartPalette = new[] { "#4BCBEB", "#A05AFF", "#1BCFB4", "#FE9496", "#9E58FF" }
+    };
+
+    private readonly BarChartOptions _productsChartOptions = new()
+    {
+        ChartPalette = new[] { "#1BCFB4", "#A05AFF", "#4BCBEB", "#FE9496", "#9E58FF" }
+    };
 
     private record MonthOption(string Key, string Label);
 

@@ -9,15 +9,15 @@
 }
 else
 {
-    <div class="flex w-full items-center justify-center !bg-slate-100 !px-4 !py-10">
+    <div class="flex w-full items-center justify-center !bg-[#f4f5f7] !px-4 !py-10">
         <div class="w-full max-w-md">
             <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-8 shadow-sm">
                 <div class="flex flex-col items-center text-center">
-                    <div class="flex !h-14 !w-14 items-center justify-center !rounded-2xl !bg-slate-900 !text-white shadow-sm">
+                    <div class="flex !h-14 !w-14 items-center justify-center !rounded-2xl !bg-[#A05AFF] !text-white shadow-sm">
                         <span class="text-xl font-bold">P</span>
                     </div>
 
-                    <h1 class="!mt-5 text-2xl font-bold tracking-tight text-slate-900">
+                    <h1 class="!mt-5 text-2xl font-bold tracking-tight text-[#A05AFF]">
                         PICKLECHIC
                     </h1>
 
@@ -55,13 +55,13 @@ else
 
                         <div class="flex justify-end">
                             <a href="@RouterConfig.Admin.AdminForgotPassword"
-                               class="text-sm font-semibold text-slate-900 transition hover:text-slate-600">
+                               class="text-sm font-semibold text-[#A05AFF] transition hover:text-[#8B3FE6]">
                                 Quên mật khẩu?
                             </a>
                         </div>
 
                         <MudButton Variant="Variant.Filled"
-                                   Color="Color.Dark"
+                                   Color="Color.Primary"
                                    StartIcon="@Icons.Material.Filled.Login"
                                    Disabled="@_isSubmitting"
                                    OnClick="SubmitAsync"

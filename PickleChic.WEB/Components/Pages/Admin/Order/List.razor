@@ -1,4 +1,4 @@
-﻿@attribute [Route(RouterConfig.Admin.Orders)]
+@attribute [Route(RouterConfig.Admin.Orders)]
 @layout AdminLayout
 
 <PageTitle>@Constant.metaDataAdmin Hóa đơn</PageTitle>
@@ -23,7 +23,7 @@
                               Class="flex-1" />
 
                 <MudButton Variant="Variant.Filled"
-                           Color="Color.Dark"
+                           Color="Color.Primary"
                            StartIcon="@Icons.Material.Filled.Search"
                            OnClick="SearchAsync"
                            Disabled="@_isLoading"
@@ -116,7 +116,7 @@
 
                 <MudTd DataLabel="Chi tiết" Class="text-right">
                     <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.OrderDetail, context.Id)"
-                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-slate-500 transition hover:!bg-slate-100 hover:text-slate-900">
+                       class="inline-flex !h-9 !w-9 items-center justify-center !rounded-lg text-[#4BCBEB] transition hover:!bg-[#4BCBEB]/15 hover:text-[#4BCBEB]">
                         <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
                     </a>
                 </MudTd>

@@ -1,11 +1,11 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider />
+<MudThemeProvider Theme="@ThemeConfig.AdminTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<div class="min-h-screen !bg-slate-100 text-slate-900">
+<div class="min-h-screen !bg-[#f4f5f7] text-slate-900">
     <main class="flex min-h-screen items-center justify-center !px-4 !py-10">
         @Body
     </main>
