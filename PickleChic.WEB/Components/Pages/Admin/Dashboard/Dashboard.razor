@@ -1,143 +1,712 @@
 ﻿@page "/admin/dashboard"
 @layout AdminLayout
+@using MudBlazor.Charts
 
 <PageTitle>PickleChic Management - Dashboard</PageTitle>
 
-<div class="!space-y-6">
-    <div>
-        <h2 class="text-2xl font-bold text-slate-900">Tổng quan</h2>
-        <p class="mt-1 text-slate-500">
-            Theo dõi nhanh tình hình bán hàng và hoạt động hệ thống.
-        </p>
-    </div>
-
-    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Doanh thu</p>
-                <MudIcon Icon="@Icons.Material.Filled.Payments" Class="text-slate-500" />
-            </div>
-
-            <p class="mt-4 text-2xl font-bold text-slate-900">24.500.000đ</p>
-            <p class="mt-1 text-sm text-emerald-600">+12% so với tháng trước</p>
+<div class="!mx-auto w-full !space-y-6 !p-8">
+    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Thống kê bán hàng</h1>
+            <p class="mt-1 text-sm text-slate-500">
+                Theo dõi doanh thu, đơn hàng và sản phẩm theo khoảng thời gian.
+            </p>
         </div>
 
-        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Đơn hàng</p>
-                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="text-slate-500" />
-            </div>
-
-            <p class="mt-4 text-2xl font-bold text-slate-900">128</p>
-            <p class="mt-1 text-sm text-emerald-600">+8 đơn hôm nay</p>
-        </div>
-
-        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Sản phẩm</p>
-                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="text-slate-500" />
-            </div>
-
-            <p class="mt-4 text-2xl font-bold text-slate-900">356</p>
-            <p class="mt-1 text-sm text-slate-500">Đang hoạt động</p>
-        </div>
-
-        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-            <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-slate-500">Khách hàng</p>
-                <MudIcon Icon="@Icons.Material.Filled.Groups" Class="text-slate-500" />
-            </div>
-
-            <p class="mt-4 text-2xl font-bold text-slate-900">1.204</p>
-            <p class="mt-1 text-sm text-emerald-600">+34 khách mới</p>
+        <div class="flex items-center gap-3">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Primary"
+                       OnClick="ResetAsync"
+                       Disabled="@_isLoading"
+                       Class="!rounded-xl">
+                Làm mới
+            </MudButton>
         </div>
     </div>
 
-    <div class="grid gap-5 xl:grid-cols-3">
-        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm xl:col-span-2">
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="grid items-center !gap-4 md:grid-cols-12">
+            <div class="md:col-span-3">
+                @if (_groupBy == "year")
+                {
+                    <MudSelect T="int"
+                               @bind-Value="_startYear"
+                               Label="Năm bắt đầu"
+                               Variant="Variant.Outlined">
+                        @foreach (var y in YearOptions)
+                        {
+                            <MudSelectItem T="int" Value="@y">@y</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else
+                {
+                    <MudSelect T="string"
+                               @bind-Value="_startMonthKey"
+                               Label="Tháng bắt đầu"
+                               Variant="Variant.Outlined">
+                        @foreach (var opt in MonthOptions)
+                        {
+                            <MudSelectItem T="string" Value="@opt.Key">@opt.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+            </div>
+
+            <div class="md:col-span-3">
+                @if (_groupBy == "year")
+                {
+                    <MudSelect T="int"
+                               @bind-Value="_endYear"
+                               Label="Năm kết thúc"
+                               Variant="Variant.Outlined">
+                        @foreach (var y in YearOptions)
+                        {
+                            <MudSelectItem T="int" Value="@y">@y</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+                else
+                {
+                    <MudSelect T="string"
+                               @bind-Value="_endMonthKey"
+                               Label="Tháng kết thúc"
+                               Variant="Variant.Outlined">
+                        @foreach (var opt in MonthOptions)
+                        {
+                            <MudSelectItem T="string" Value="@opt.Key">@opt.Label</MudSelectItem>
+                        }
+                    </MudSelect>
+                }
+            </div>
+
+            <div class="md:col-span-4">
+                <MudSelect T="string"
+                           Value="_groupBy"
+                           ValueChanged="OnGroupByChanged"
+                           Label="Nhóm theo"
+                           Variant="Variant.Outlined">
+                    <MudSelectItem T="string" Value="@("month")">Theo tháng</MudSelectItem>
+                    <MudSelectItem T="string" Value="@("year")">Theo năm</MudSelectItem>
+                </MudSelect>
+            </div>
+
+            <div class="md:col-span-2">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Dark"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="ApplyFilterAsync"
+                           Disabled="@_isLoading"
+                           Class="!h-14 w-full !rounded-xl !px-6 !py-2.5 !normal-case">
+                    Áp dụng
+                </MudButton>
+            </div>
+        </div>
+    </div>
+
+    @if (_isLoading && _report is null)
+    {
+        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            @for (var i = 0; i < 4; i++)
+            {
+                <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                    <MudSkeleton Height="22px" Width="70%" Animation="Animation.Wave" />
+                    <MudSkeleton Height="42px" Width="55%" Animation="Animation.Wave" Class="mt-4" />
+                    <MudSkeleton Height="18px" Width="65%" Animation="Animation.Wave" Class="mt-2" />
+                </div>
+            }
+        </div>
+    }
+    else if (_report is null)
+    {
+        <div class="!rounded-2xl !border !border-dashed !border-slate-300 !bg-slate-50 !p-6 text-center">
+            Không có dữ liệu thống kê.
+        </div>
+    }
+    else
+    {
+        <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-slate-500">Doanh thu</p>
+                    <MudIcon Icon="@Icons.Material.Filled.Payments" Class="text-slate-500" />
+                </div>
+
+                <p class="mt-4 text-2xl font-bold text-slate-900">
+                    @FormatCurrency(_report.OverallOverview.Revenue)
+                </p>
+                <p class="mt-1 text-sm text-slate-500">
+                    @GetGroupByText(_report.GroupBy)
+                </p>
+            </div>
+
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-slate-500">Tổng đơn</p>
+                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="text-slate-500" />
+                </div>
+
+                <p class="mt-4 text-2xl font-bold text-slate-900">
+                    @_report.OverallOverview.TotalOrders
+                </p>
+                <p class="mt-1 text-sm text-emerald-600">Trong khoảng thời gian</p>
+            </div>
+
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-slate-500">Sản phẩm bán</p>
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="text-slate-500" />
+                </div>
+
+                <p class="mt-4 text-2xl font-bold text-slate-900">
+                    @_report.OverallOverview.TotalProductsSold
+                </p>
+                <p class="mt-1 text-sm text-slate-500">Tính theo đơn hoàn thành</p>
+            </div>
+
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium text-slate-500">Đơn hủy</p>
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Class="text-slate-500" />
+                </div>
+
+                <p class="mt-4 text-2xl font-bold text-slate-900">
+                    @_report.OverallOverview.TotalCancelledOrders
+                </p>
+                <p class="mt-1 text-sm text-rose-600">Các đơn bị hủy</p>
+            </div>
+        </div>
+
+        <div class="grid gap-5 xl:grid-cols-1">
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                <div class="mb-4 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-slate-900">Doanh thu theo kỳ</h3>
+                    <span class="text-sm font-medium text-slate-500">
+                        @_report.StartDate.ToString("dd/MM/yyyy") - @_report.EndDate.ToString("dd/MM/yyyy")
+                    </span>
+                </div>
+
+                <MudChart ChartType="ChartType.Line"
+                          ChartSeries="@_revenueSeries"
+                          ChartLabels="@_periodLabels"
+                          Width="100%"
+                          Height="320px"
+                          CanHideSeries="false"
+                          MatchBoundsToSize="true" />
+            </div>
+        </div>
+
+        <div class="grid gap-5 md:grid-cols-2">
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                <h3 class="mb-4 text-lg font-semibold text-slate-900">Đơn hàng theo kỳ</h3>
+                <MudChart ChartType="ChartType.Bar"
+                          ChartSeries="@_ordersSeries"
+                          ChartLabels="@_periodLabels"
+                          Width="100%"
+                          Height="280px"
+                          CanHideSeries="false"
+                          MatchBoundsToSize="true" />
+            </div>
+
+            <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+                <h3 class="mb-4 text-lg font-semibold text-slate-900">Sản phẩm bán theo kỳ</h3>
+                <MudChart ChartType="ChartType.Bar"
+                          ChartSeries="@_productsSeries"
+                          ChartLabels="@_periodLabels"
+                          Width="100%"
+                          Height="280px"
+                          CanHideSeries="false"
+                          MatchBoundsToSize="true" />
+            </div>
+        </div>
+
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
             <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-slate-900">Đơn hàng gần đây</h3>
-
-                <a href="/admin/orders"
-                   class="text-sm font-medium text-slate-700 hover:text-slate-950">
-                    Xem tất cả
-                </a>
+                <h3 class="text-lg font-semibold text-slate-900">Top danh mục</h3>
             </div>
 
             <div class="overflow-hidden !rounded-xl !border !border-slate-200">
                 <table class="w-full text-left text-sm">
                     <thead class="!bg-slate-50 text-slate-500">
                         <tr>
-                            <th class="!px-4 !py-3 font-medium">Mã đơn</th>
-                            <th class="!px-4 !py-3 font-medium">Khách hàng</th>
-                            <th class="!px-4 !py-3 font-medium">Tổng tiền</th>
-                            <th class="!px-4 !py-3 font-medium">Trạng thái</th>
+                            <th class="!px-4 !py-3 font-medium">#</th>
+                            <th class="!px-4 !py-3 font-medium">Danh mục</th>
+                            <th class="!px-4 !py-3 text-right font-medium">SL bán</th>
+                            <th class="!px-4 !py-3 text-right font-medium">Doanh thu</th>
                         </tr>
                     </thead>
-
                     <tbody class="divide-y divide-slate-200 !bg-white">
-                        <tr>
-                            <td class="!px-4 !py-3 font-medium text-slate-900">#DH001</td>
-                            <td class="!px-4 !py-3 text-slate-600">Nguyễn Văn A</td>
-                            <td class="!px-4 !py-3 text-slate-600">1.250.000đ</td>
-                            <td class="!px-4 !py-3">
-                                <span class="!rounded-full !bg-emerald-50 !px-3 !py-1 text-xs font-medium text-emerald-700">
-                                    Hoàn thành
-                                </span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td class="!px-4 !py-3 font-medium text-slate-900">#DH002</td>
-                            <td class="!px-4 !py-3 text-slate-600">Trần Thị B</td>
-                            <td class="!px-4 !py-3 text-slate-600">850.000đ</td>
-                            <td class="!px-4 !py-3">
-                                <span class="!rounded-full !bg-amber-50 !px-3 !py-1 text-xs font-medium text-amber-700">
-                                    Đang xử lý
-                                </span>
-                            </td>
-                        </tr>
-
-                        <tr>
-                            <td class="!px-4 !py-3 font-medium text-slate-900">#DH003</td>
-                            <td class="!px-4 !py-3 text-slate-600">Lê Văn C</td>
-                            <td class="!px-4 !py-3 text-slate-600">2.100.000đ</td>
-                            <td class="!px-4 !py-3">
-                                <span class="!rounded-full !bg-sky-50 !px-3 !py-1 text-xs font-medium text-sky-700">
-                                    Đang giao
-                                </span>
-                            </td>
-                        </tr>
+                        @{
+                            var categoryIndex = 1;
+                        }
+                        @foreach (var item in _report.TopCategories)
+                        {
+                            <tr>
+                                <td class="!px-4 !py-3 font-medium text-slate-900">@categoryIndex</td>
+                                <td class="!px-4 !py-3 font-medium text-slate-900">@item.CategoryName</td>
+                                <td class="!px-4 !py-3 text-right font-medium text-slate-900">@item.TotalProductsSold</td>
+                                <td class="!px-4 !py-3 text-right font-medium text-slate-900">@FormatCurrency(item.Revenue)</td>
+                            </tr>
+                            categoryIndex++;
+                        }
                     </tbody>
                 </table>
             </div>
         </div>
 
         <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
-            <h3 class="text-lg font-semibold text-slate-900">Ghi chú quản trị</h3>
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-900">Top 10 biến thể sản phẩm</h3>
+            </div>
 
-            <div class="mt-4 space-y-3">
-                <div class="!rounded-xl !bg-slate-50 !p-4">
-                    <p class="text-sm font-medium text-slate-800">Kiểm tra tồn kho</p>
-                    <p class="mt-1 text-sm text-slate-500">
-                        Có 12 sản phẩm sắp hết hàng.
-                    </p>
-                </div>
+            <div class="overflow-hidden !rounded-xl !border !border-slate-200">
+                <table class="w-full text-left text-sm">
+                    <thead class="!bg-slate-50 text-slate-500">
+                        <tr>
+                            <th class="!px-4 !py-3 font-medium">#</th>
+                            <th class="!px-4 !py-3 font-medium">Sản phẩm</th>
+                            <th class="!px-4 !py-3 font-medium">SKU</th>
+                            <th class="!px-4 !py-3 font-medium">Danh mục</th>
+                            <th class="!px-4 !py-3 text-right font-medium">SL</th>
+                            <th class="!px-4 !py-3 text-right font-medium">Doanh thu</th>
+                        </tr>
+                    </thead>
 
-                <div class="!rounded-xl !bg-slate-50 !p-4">
-                    <p class="text-sm font-medium text-slate-800">Đơn chờ xử lý</p>
-                    <p class="mt-1 text-sm text-slate-500">
-                        Cần xác nhận 5 đơn mới.
-                    </p>
-                </div>
-
-                <div class="!rounded-xl !bg-slate-50 !p-4">
-                    <p class="text-sm font-medium text-slate-800">Báo cáo doanh thu</p>
-                    <p class="mt-1 text-sm text-slate-500">
-                        Cập nhật dữ liệu trong ngày.
-                    </p>
-                </div>
+                    <tbody class="divide-y divide-slate-200 !bg-white">
+                        @{
+                            var index = 1;
+                        }
+                        @foreach (var item in _report.TopProductVariants)
+                        {
+                            <tr>
+                                <td class="!px-4 !py-3 font-medium text-slate-900">@index</td>
+                                <td class="!px-4 !py-3 font-medium text-slate-900">
+                                    @item.ProductName
+                                    @if (!string.IsNullOrWhiteSpace(item.VariantName))
+                                    {
+                                        <div class="text-xs text-slate-500">@item.VariantName</div>
+                                    }
+                                </td>
+                                <td class="!px-4 !py-3 text-slate-700">@item.SKU</td>
+                                <td class="!px-4 !py-3 text-slate-700">@item.CategoryName</td>
+                                <td class="!px-4 !py-3 text-right font-medium text-slate-900">@item.QuantitySold</td>
+                                <td class="!px-4 !py-3 text-right font-medium text-slate-900">
+                                    @FormatCurrency(item.Revenue)
+                                </td>
+                            </tr>
+                            index++;
+                        }
+                    </tbody>
+                </table>
             </div>
         </div>
-    </div>
+    }
 </div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "startDate")]
+    public DateTime? StartDateQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "endDate")]
+    public DateTime? EndDateQuery { get; set; }
+
+    [SupplyParameterFromQuery(Name = "groupBy")]
+    public string? GroupByQuery { get; set; }
+
+    private bool _isLoading;
+    private ReportResponseDto? _report;
+
+    private DateTime? _startDate;
+    private DateTime? _endDate;
+    private string _groupBy = "month";
+    private string _lastQueryState = string.Empty;
+
+    private int _startYear = DateTime.Today.Year - 4;
+    private int _endYear = DateTime.Today.Year;
+    private string _startMonthKey = ToMonthKey(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-11));
+    private string _endMonthKey = ToMonthKey(new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1));
+
+    private string[] _periodLabels = Array.Empty<string>();
+    private List<ChartSeries<double>> _revenueSeries = new();
+    private List<ChartSeries<double>> _ordersSeries = new();
+    private List<ChartSeries<double>> _productsSeries = new();
+
+    private record MonthOption(string Key, string Label);
+
+    private async Task ResetAsync()
+    {
+        var today = DateTime.Today;
+
+        if (_groupBy == "year")
+        {
+            _startYear = MinYear;
+            _endYear = MaxYear;
+            _startDate = new DateTime(_startYear, 1, 1);
+            _endDate = new DateTime(_endYear, 12, 31).AddDays(1).AddTicks(-1);
+        }
+        else
+        {
+            var monthStart = new DateTime(today.Year, today.Month, 1).AddMonths(-11);
+            _startMonthKey = ToMonthKey(monthStart);
+            _endMonthKey = ToMonthKey(new DateTime(today.Year, today.Month, 1));
+            _startDate = monthStart;
+            _endDate = new DateTime(today.Year, today.Month, 1).AddMonths(1).AddTicks(-1);
+        }
+
+        ClampDatesToAllowed();
+        SyncSelectionsFromDates();
+
+        var resetUri = BuildDashboardUri(_startDate, _endDate, _groupBy);
+        _navigation.NavigateTo(resetUri, replace: true);
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _groupBy = NormalizeGroupBy(GroupByQuery);
+
+        var today = DateTime.Today;
+        if (StartDateQuery.HasValue && EndDateQuery.HasValue)
+        {
+            _startDate = StartDateQuery;
+            _endDate = EndDateQuery;
+        }
+        else if (_groupBy == "year")
+        {
+            _startDate = new DateTime(today.Year - 4, 1, 1);
+            _endDate = new DateTime(today.Year, 12, 31).AddDays(1).AddTicks(-1);
+        }
+        else
+        {
+            var monthStart = new DateTime(today.Year, today.Month, 1).AddMonths(-11);
+            _startDate = monthStart;
+            _endDate = new DateTime(today.Year, today.Month, 1).AddMonths(1).AddTicks(-1);
+        }
+
+        ClampDatesToAllowed();
+        SyncSelectionsFromDates();
+
+        var currentQueryState = $"{_startDate:yyyy-MM-dd}|{_endDate:yyyy-MM-dd}|{_groupBy}";
+        if (string.Equals(_lastQueryState, currentQueryState, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        _lastQueryState = currentQueryState;
+        await LoadStatisticsAsync();
+    }
+
+    private void OnGroupByChanged(string value)
+    {
+        _groupBy = NormalizeGroupBy(value);
+        ClampDatesToAllowed();
+        SyncSelectionsFromDates();
+    }
+
+    private async Task ApplyFilterAsync()
+    {
+        if (_groupBy == "year")
+        {
+            if (_startYear > _endYear)
+            {
+                (_startYear, _endYear) = (_endYear, _startYear);
+            }
+
+            _startDate = new DateTime(_startYear, 1, 1);
+            _endDate = new DateTime(_endYear, 12, 31).AddDays(1).AddTicks(-1);
+        }
+
+        if (_groupBy == "month")
+        {
+            var startMonthStart = MonthKeyToMonthStart(_startMonthKey);
+            var endMonthStart = MonthKeyToMonthStart(_endMonthKey);
+
+            if (startMonthStart > endMonthStart)
+            {
+                (startMonthStart, endMonthStart) = (endMonthStart, startMonthStart);
+            }
+
+            _startDate = startMonthStart;
+            _endDate = endMonthStart.AddMonths(1).AddTicks(-1);
+        }
+
+        ClampDatesToAllowed();
+
+        if (_startDate.HasValue && _endDate.HasValue && _startDate.Value > _endDate.Value)
+        {
+            _snackbar.Add("Khoảng thời gian không hợp lệ.", Severity.Error);
+            return;
+        }
+
+        SyncSelectionsFromDates();
+
+        var uri = BuildDashboardUri(_startDate, _endDate, _groupBy);
+        _navigation.NavigateTo(uri, replace: true);
+        await Task.CompletedTask;
+    }
+
+    private async Task LoadStatisticsAsync()
+    {
+        if (_startDate.HasValue && _endDate.HasValue && _startDate.Value > _endDate.Value)
+        {
+            _snackbar.Add("Ngày bắt đầu không được lớn hơn ngày kết thúc.", Severity.Error);
+            return;
+        }
+
+        _isLoading = true;
+        try
+        {
+            var url = EndPointConfig.Report.Statistics(_startDate, _endDate, _groupBy);
+            var result = await _apiProvider.GetAsync<ReportResponseDto>(url, requireAuth: true);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(result.Message, Severity.Error);
+                return;
+            }
+
+            _report = result.Data;
+            BuildChartModels();
+        }
+        catch (Exception ex)
+        {
+            _snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void BuildChartModels()
+    {
+        var labels = _report?.PeriodBreakdowns
+            .Select(FormatPeriodLabel)
+            .ToList() ?? new List<string>();
+        _periodLabels = BuildSparseLabels(labels);
+
+        var revenueValues = _report?.PeriodBreakdowns.Select(x => (double)x.Revenue).ToArray() ?? Array.Empty<double>();
+        var ordersValues = _report?.PeriodBreakdowns.Select(x => (double)x.TotalOrders).ToArray() ?? Array.Empty<double>();
+        var productsValues = _report?.PeriodBreakdowns.Select(x => (double)x.TotalProductsSold).ToArray() ?? Array.Empty<double>();
+
+        _revenueSeries = new()
+        {
+            new ChartSeries<double>
+            {
+                Name = "Doanh thu",
+                Data = revenueValues
+            }
+        };
+
+        _ordersSeries = new()
+        {
+            new ChartSeries<double>
+            {
+                Name = "Đơn hàng",
+                Data = ordersValues
+            }
+        };
+
+        _productsSeries = new()
+        {
+            new ChartSeries<double>
+            {
+                Name = "Sản phẩm bán",
+                Data = productsValues
+            }
+        };
+    }
+
+    private static string FormatCurrency(decimal value)
+    {
+        return $"{value.ToString("N0", System.Globalization.CultureInfo.InvariantCulture)}đ";
+    }
+
+    private static string NormalizeGroupBy(string? groupBy)
+    {
+        var value = groupBy?.Trim().ToLowerInvariant();
+        return value == "year" ? "year" : "month";
+    }
+
+    private static string GetGroupByText(string? groupBy)
+    {
+        return string.Equals(groupBy, "year", StringComparison.OrdinalIgnoreCase)
+            ? "Theo năm"
+            : "Theo tháng";
+    }
+
+    private string BuildDashboardUri(DateTime? startDate, DateTime? endDate, string groupBy)
+    {
+        var startText = (startDate ?? new DateTime(DateTime.Now.Year, 1, 1)).ToString("yyyy-MM-dd");
+        var endText = (endDate ?? DateTime.Today).ToString("yyyy-MM-dd");
+        var normalizedGroupBy = NormalizeGroupBy(groupBy);
+        return $"/admin/dashboard?startDate={startText}&endDate={endText}&groupBy={normalizedGroupBy}";
+    }
+
+    private int MinYear => DateTime.Today.Year - 4;
+    private int MaxYear => DateTime.Today.Year;
+
+    private IReadOnlyList<int> YearOptions => Enumerable.Range(MinYear, 5).ToArray();
+
+    private IReadOnlyList<MonthOption> MonthOptions
+    {
+        get
+        {
+            var today = DateTime.Today;
+            var start = new DateTime(today.Year, today.Month, 1).AddMonths(-11);
+            var list = new List<MonthOption>(12);
+
+            for (var i = 0; i < 12; i++)
+            {
+                var dt = start.AddMonths(i);
+                list.Add(new MonthOption(ToMonthKey(dt), dt.ToString("MM/yyyy")));
+            }
+
+            return list;
+        }
+    }
+
+    private void SyncSelectionsFromDates()
+    {
+        if (!_startDate.HasValue || !_endDate.HasValue)
+        {
+            return;
+        }
+
+        if (_groupBy == "year")
+        {
+            _startYear = _startDate.Value.Year;
+            _endYear = _endDate.Value.Year;
+        }
+        else
+        {
+            _startMonthKey = ToMonthKey(_startDate.Value);
+            _endMonthKey = ToMonthKey(_endDate.Value);
+        }
+    }
+
+    private void ClampDatesToAllowed()
+    {
+        if (!_startDate.HasValue || !_endDate.HasValue)
+        {
+            return;
+        }
+
+        var today = DateTime.Today;
+
+        if (_groupBy == "year")
+        {
+            var minYear = MinYear;
+            var maxYear = MaxYear;
+
+            var startYear = _startDate.Value.Year;
+            var endYear = _endDate.Value.Year;
+
+            startYear = Math.Max(minYear, Math.Min(maxYear, startYear));
+            endYear = Math.Max(minYear, Math.Min(maxYear, endYear));
+
+            if (startYear > endYear)
+            {
+                (startYear, endYear) = (endYear, startYear);
+            }
+
+            if (endYear - startYear > 4)
+            {
+                startYear = endYear - 4;
+            }
+
+            if (startYear < minYear)
+            {
+                startYear = minYear;
+                endYear = minYear + 4;
+            }
+
+            if (endYear > maxYear)
+            {
+                endYear = maxYear;
+            }
+
+            _startDate = new DateTime(startYear, 1, 1);
+            _endDate = new DateTime(endYear, 12, 31).AddDays(1).AddTicks(-1);
+        }
+        else
+        {
+            var allowedStartMonth = new DateTime(today.Year, today.Month, 1).AddMonths(-11);
+            var allowedMaxMonth = new DateTime(today.Year, today.Month, 1);
+
+            var startMonth = new DateTime(_startDate.Value.Year, _startDate.Value.Month, 1);
+            var endMonth = new DateTime(_endDate.Value.Year, _endDate.Value.Month, 1);
+
+            if (startMonth < allowedStartMonth) startMonth = allowedStartMonth;
+            if (endMonth > allowedMaxMonth) endMonth = allowedMaxMonth;
+
+            if (startMonth > endMonth)
+            {
+                (startMonth, endMonth) = (endMonth, startMonth);
+            }
+
+            var startIndex = MonthIndex(startMonth);
+            var endIndex = MonthIndex(endMonth);
+
+            if (endIndex - startIndex > 11)
+            {
+                startIndex = endIndex - 11;
+                startMonth = MonthStartFromIndex(startIndex);
+            }
+
+            var allowedStartIndex = MonthIndex(allowedStartMonth);
+            if (startIndex < allowedStartIndex)
+            {
+                startMonth = allowedStartMonth;
+                endMonth = allowedStartMonth.AddMonths(11);
+            }
+
+            if (endMonth > allowedMaxMonth)
+            {
+                endMonth = allowedMaxMonth;
+            }
+
+            _startDate = startMonth;
+            _endDate = endMonth.AddMonths(1).AddTicks(-1);
+        }
+    }
+
+    private static int MonthIndex(DateTime monthStart)
+        => monthStart.Year * 12 + (monthStart.Month - 1);
+
+    private static DateTime MonthStartFromIndex(int index)
+        => new DateTime(index / 12, index % 12 + 1, 1);
+
+    private static string ToMonthKey(DateTime dt)
+        => new DateTime(dt.Year, dt.Month, 1).ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
+
+    private static DateTime MonthKeyToMonthStart(string key)
+        => DateTime.ParseExact(key, "yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
+
+    private string FormatPeriodLabel(PeriodOverviewDto period)
+    {
+        return _groupBy == "year"
+            ? $"N{period.StartDate:yyyy}"
+            : $"T{period.StartDate:MM/yy}";
+    }
+
+    private static string[] BuildSparseLabels(IReadOnlyList<string> labels)
+    {
+        if (labels.Count <= 8)
+        {
+            return labels.ToArray();
+        }
+
+        var step = (int)Math.Ceiling(labels.Count / 8.0);
+        var sparse = new string[labels.Count];
+
+        for (var i = 0; i < labels.Count; i++)
+        {
+            sparse[i] = i % step == 0 || i == labels.Count - 1
+                ? labels[i]
+                : string.Empty;
+        }
+
+        return sparse;
+    }
+}

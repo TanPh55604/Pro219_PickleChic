@@ -268,5 +268,39 @@
                 return url;
             }
         }
+
+        public static class Report
+        {
+            public static string Statistics(DateTime? startDate = null, DateTime? endDate = null, string? groupBy = null)
+            {
+                var url = "management/report/statistics";
+
+                var queryParts = new List<string>();
+
+                if (startDate.HasValue)
+                {
+                    queryParts.Add(
+                        $"startDate={startDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}");
+                }
+
+                if (endDate.HasValue)
+                {
+                    queryParts.Add(
+                        $"endDate={endDate.Value.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(groupBy))
+                {
+                    queryParts.Add($"groupBy={Uri.EscapeDataString(groupBy.Trim())}");
+                }
+
+                if (queryParts.Count == 0)
+                {
+                    return url;
+                }
+
+                return $"{url}?{string.Join("&", queryParts)}";
+            }
+        }
     }
 }
