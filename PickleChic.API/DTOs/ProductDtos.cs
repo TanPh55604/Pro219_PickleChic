@@ -78,3 +78,30 @@ public class ProductSearchResultDto
     public List<ProductVariantFilterDto> ProductVariants { get; set; } = new();
 }
 
+public class ProductFilterRequestDto
+{
+    public string? Keyword { get; set; }
+    public int? BrandId { get; set; }
+    public int? CategoryId { get; set; }
+    public int? AttributeId { get; set; }
+    public List<int>? AttributeValueIds { get; set; }
+    public bool IncludeInactiveVariants { get; set; } = false;
+}
+
+public class ProductFilterResponseDto
+{
+    public int Id { get; set; }
+    public string ProductName { get; set; } = null!;
+    public string? Description { get; set; }
+    public int CategoryId { get; set; }
+    public string? CategoryName { get; set; }
+    public int BrandId { get; set; }
+    public string? BrandName { get; set; }
+    public int Status { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+    public List<ProductVariantDetailDto> ProductVariants { get; set; } = new();
+}
+
+

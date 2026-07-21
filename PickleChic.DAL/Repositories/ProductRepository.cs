@@ -185,4 +185,69 @@ public class ProductRepository
 
         return await query.ToListAsync();
     }
+
+    public async Task<List<Product>> FilterProductsWithDetailsAsync(
+        string? keyword,
+        int? brandId,
+        int? categoryId,
+        int? attributeId,
+        List<int>? attributeValueIds)
+    {
+        var query = _context.Products
+            .Include(p => p.Category)
+            .Include(p => p.Brand)
+            .Include(p => p.ProductVariants!)
+                .ThenInclude(pv => pv.ProductVariantImages)
+            .Include(p => p.ProductVariants!)
+                .ThenInclude(pv => pv.ProductVariantAttributes!)
+                    .ThenInclude(pva => pva.AttributeValue)
+                        .ThenInclude(av => av!.ProductAttribute)
+            .Where(p => !p.IsDeleted
+                && p.Status == 1
+                && _context.Categories.Any(c => c.Id == p.CategoryId && !c.Delete && c.Status == 1)
+                && _context.Brands.Any(b => b.Id == p.BrandId && !b.Delete && b.Status == 1));
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var lowerKeyword = keyword.ToLower();
+            query = query.Where(p =>
+                p.ProductName.ToLower().Contains(lowerKeyword)
+                || (p.ProductVariants != null && p.ProductVariants.Any(pv =>
+                    pv.SKU.ToLower().Contains(lowerKeyword)
+                    || (pv.VariantName != null && pv.VariantName.ToLower().Contains(lowerKeyword))
+                ))
+            );
+        }
+
+        if (brandId.HasValue)
+        {
+            query = query.Where(p => p.BrandId == brandId.Value);
+        }
+
+        if (categoryId.HasValue)
+        {
+            query = query.Where(p => p.CategoryId == categoryId.Value);
+        }
+
+        if (attributeId.HasValue)
+        {
+            query = query.Where(p => p.ProductVariants != null && p.ProductVariants.Any(pv =>
+                pv.ProductVariantAttributes != null && pv.ProductVariantAttributes.Any(pva =>
+                    pva.AttributeValue != null && pva.AttributeValue.AttributeId == attributeId.Value
+                )
+            ));
+        }
+
+        if (attributeValueIds != null && attributeValueIds.Any())
+        {
+            query = query.Where(p => p.ProductVariants != null && p.ProductVariants.Any(pv =>
+                pv.ProductVariantAttributes != null && pv.ProductVariantAttributes.Any(pva =>
+                    attributeValueIds.Contains(pva.AttributeValueId)
+                )
+            ));
+        }
+
+        return await query.ToListAsync();
+    }
 }
+

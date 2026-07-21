@@ -314,4 +314,89 @@ public class ProductController : ControllerBase
             return StatusCode(500, "Db Error");
         }
     }
+
+    [HttpGet("filter")]
+    public async Task<ActionResult<List<ProductFilterResponseDto>>> FilterProducts([FromQuery] ProductFilterRequestDto request)
+    {
+        try
+        {
+            var products = await _repository.FilterProductsWithDetailsAsync(
+                request.Keyword,
+                request.BrandId,
+                request.CategoryId,
+                request.AttributeId,
+                request.AttributeValueIds);
+
+            foreach (var product in products)
+            {
+                if (product.ProductVariants is null)
+                {
+                    continue;
+                }
+
+                product.ProductVariants = product.ProductVariants
+                    .Where(pv =>
+                        (request.IncludeInactiveVariants || pv.Status == 1)
+                        && (pv.ProductVariantAttributes == null
+                            || !pv.ProductVariantAttributes.Any()
+                            || pv.ProductVariantAttributes.All(pva =>
+                                pva.AttributeValue != null
+                                && pva.AttributeValue.ProductAttribute != null)))
+                    .ToList();
+            }
+
+            products = products.Where(p => p.ProductVariants?.Any() == true).ToList();
+
+            if (products.Count == 0)
+                return NoContent();
+
+            var dtos = products.Select(p => new ProductFilterResponseDto
+            {
+                Id = p.Id,
+                ProductName = p.ProductName,
+                Description = p.Description,
+                CategoryId = p.CategoryId,
+                CategoryName = p.Category?.Name,
+                BrandId = p.BrandId,
+                BrandName = p.Brand?.Name,
+                Status = p.Status,
+                CreatedAt = p.CreatedAt,
+                UpdatedAt = p.UpdatedAt,
+                UpdatedBy = p.UpdatedBy,
+                ProductVariants = p.ProductVariants?.Select(pv => new ProductVariantDetailDto
+                {
+                    Id = pv.Id,
+                    ProductId = pv.ProductId,
+                    SKU = pv.SKU,
+                    VariantName = pv.VariantName,
+                    Price = pv.Price,
+                    StockQuantity = pv.StockQuantity,
+                    Status = pv.Status,
+                    Images = pv.ProductVariantImages?.Select(pvi => new ProductVariantImageDetailDto
+                    {
+                        Id = pvi.Id,
+                        URL = pvi.URL,
+                        Name = pvi.Name,
+                        Description = pvi.Description,
+                        IsMain = pvi.IsMain
+                    }).ToList() ?? new List<ProductVariantImageDetailDto>(),
+                    Attributes = pv.ProductVariantAttributes?.Select(pva => new AttributeValueDetailDto
+                    {
+                        Id = pva.AttributeValue?.Id ?? 0,
+                        AttributeId = pva.AttributeValue?.AttributeId ?? 0,
+                        AttributeName = pva.AttributeValue?.ProductAttribute?.AttributeName ?? string.Empty,
+                        Value = pva.AttributeValue?.Value ?? string.Empty,
+                        Note = pva.AttributeValue?.Note
+                    }).ToList() ?? new List<AttributeValueDetailDto>()
+                }).ToList() ?? new List<ProductVariantDetailDto>()
+            }).ToList();
+
+            return Ok(dtos);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
 }
+
