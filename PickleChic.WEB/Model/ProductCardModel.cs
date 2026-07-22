@@ -44,7 +44,7 @@ namespace PickleChic.WEB.Model
         public string ResolvedDetailUrl =>
             DetailUrl ?? (ProductId > 0
                 ? RouterConfig.BuildRoute(RouterConfig.Customer.ProductDetail, ProductId)
-                : RouterConfig.Customer.Search);
+                : RouterConfig.Customer.Products);
 
         public static ProductCardModel FromVariant(ProductVariantSearchResponse variant)
         {

@@ -7,7 +7,7 @@ namespace PickleChic.WEB.Services.Customer
 {
     public interface IProductService
     {
-        Task<ApiResult<ProductVariantSearchPageResponse>> SearchAsync(ProductSearchQuery query);
+        Task<ApiResult<ProductFilterPageResponse>> FilterAsync(ProductSearchQuery query);
 
         Task<ApiResult<ProductDetailResponse>> GetByIdWithDetailsAsync(int id);
 

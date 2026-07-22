@@ -316,16 +316,27 @@ public class ProductController : ControllerBase
     }
 
     [HttpGet("filter")]
-    public async Task<ActionResult<List<ProductFilterResponseDto>>> FilterProducts([FromQuery] ProductFilterRequestDto request)
+    public async Task<ActionResult<ProductFilterPageDto>> FilterProducts([FromQuery] ProductFilterRequestDto request)
     {
         try
         {
+            var pageNumber = request.PageNumber < 1 ? 1 : request.PageNumber;
+            var pageSize = request.PageSize < 1 ? 12 : Math.Min(request.PageSize, 100);
+            var sortBy = request.SortBy?.Trim().ToLowerInvariant();
+            var attributeValueIds = request.AttributeValueIds?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
             var products = await _repository.FilterProductsWithDetailsAsync(
                 request.Keyword,
                 request.BrandId,
                 request.CategoryId,
                 request.AttributeId,
-                request.AttributeValueIds);
+                attributeValueIds,
+                request.StartingPrice,
+                request.ToPrice,
+                sortBy);
 
             foreach (var product in products)
             {
@@ -334,7 +345,7 @@ public class ProductController : ControllerBase
                     continue;
                 }
 
-                product.ProductVariants = product.ProductVariants
+                var variants = product.ProductVariants
                     .Where(pv =>
                         (request.IncludeInactiveVariants || pv.Status == 1)
                         && (pv.ProductVariantAttributes == null
@@ -342,56 +353,117 @@ public class ProductController : ControllerBase
                             || pv.ProductVariantAttributes.All(pva =>
                                 pva.AttributeValue != null
                                 && pva.AttributeValue.ProductAttribute != null)))
-                    .ToList();
+                    .AsEnumerable();
+
+                if (request.StartingPrice.HasValue)
+                {
+                    variants = variants.Where(pv => pv.Price >= request.StartingPrice.Value);
+                }
+
+                if (request.ToPrice.HasValue)
+                {
+                    variants = variants.Where(pv => pv.Price <= request.ToPrice.Value);
+                }
+
+                if (request.AttributeId.HasValue)
+                {
+                    variants = variants.Where(pv =>
+                        pv.ProductVariantAttributes != null
+                        && pv.ProductVariantAttributes.Any(pva =>
+                            pva.AttributeValue != null
+                            && pva.AttributeValue.AttributeId == request.AttributeId.Value));
+                }
+
+                if (attributeValueIds is { Count: > 0 })
+                {
+                    variants = variants.Where(pv =>
+                        pv.ProductVariantAttributes != null
+                        && pv.ProductVariantAttributes.Any(pva =>
+                            attributeValueIds.Contains(pva.AttributeValueId)));
+                }
+
+                if (!string.IsNullOrWhiteSpace(sortBy))
+                {
+                    variants = sortBy switch
+                    {
+                        "price_asc" => variants.OrderBy(pv => pv.Price),
+                        "price_desc" => variants.OrderByDescending(pv => pv.Price),
+                        _ => variants
+                    };
+                }
+
+                product.ProductVariants = variants.ToList();
             }
 
             products = products.Where(p => p.ProductVariants?.Any() == true).ToList();
 
-            if (products.Count == 0)
-                return NoContent();
+            var variantItems = products
+                .SelectMany(p => (p.ProductVariants ?? new List<ProductVariant>())
+                    .Select(pv => new ProductVariantFilterDto
+                    {
+                        Id = pv.Id,
+                        ProductId = pv.ProductId,
+                        SKU = pv.SKU,
+                        VariantName = pv.VariantName,
+                        Price = pv.Price,
+                        StockQuantity = pv.StockQuantity,
+                        Status = pv.Status,
+                        ProductName = p.ProductName,
+                        ProductDescription = p.Description,
+                        CategoryName = p.Category?.Name,
+                        CategoryDescription = p.Category?.Description,
+                        BrandName = p.Brand?.Name,
+                        BrandDescription = p.Brand?.Description,
+                        Images = pv.ProductVariantImages?.Select(pvi => new ProductVariantImageDetailDto
+                        {
+                            Id = pvi.Id,
+                            URL = pvi.URL,
+                            Name = pvi.Name,
+                            Description = pvi.Description,
+                            IsMain = pvi.IsMain
+                        }).ToList() ?? new List<ProductVariantImageDetailDto>(),
+                        Attributes = pv.ProductVariantAttributes?.Select(pva => new AttributeValueDetailDto
+                        {
+                            Id = pva.AttributeValue?.Id ?? 0,
+                            AttributeId = pva.AttributeValue?.AttributeId ?? 0,
+                            AttributeName = pva.AttributeValue?.ProductAttribute?.AttributeName ?? string.Empty,
+                            Value = pva.AttributeValue?.Value ?? string.Empty,
+                            Note = pva.AttributeValue?.Note
+                        }).ToList() ?? new List<AttributeValueDetailDto>()
+                    }))
+                .ToList();
 
-            var dtos = products.Select(p => new ProductFilterResponseDto
+            if (!string.IsNullOrWhiteSpace(sortBy))
             {
-                Id = p.Id,
-                ProductName = p.ProductName,
-                Description = p.Description,
-                CategoryId = p.CategoryId,
-                CategoryName = p.Category?.Name,
-                BrandId = p.BrandId,
-                BrandName = p.Brand?.Name,
-                Status = p.Status,
-                CreatedAt = p.CreatedAt,
-                UpdatedAt = p.UpdatedAt,
-                UpdatedBy = p.UpdatedBy,
-                ProductVariants = p.ProductVariants?.Select(pv => new ProductVariantDetailDto
+                variantItems = sortBy switch
                 {
-                    Id = pv.Id,
-                    ProductId = pv.ProductId,
-                    SKU = pv.SKU,
-                    VariantName = pv.VariantName,
-                    Price = pv.Price,
-                    StockQuantity = pv.StockQuantity,
-                    Status = pv.Status,
-                    Images = pv.ProductVariantImages?.Select(pvi => new ProductVariantImageDetailDto
-                    {
-                        Id = pvi.Id,
-                        URL = pvi.URL,
-                        Name = pvi.Name,
-                        Description = pvi.Description,
-                        IsMain = pvi.IsMain
-                    }).ToList() ?? new List<ProductVariantImageDetailDto>(),
-                    Attributes = pv.ProductVariantAttributes?.Select(pva => new AttributeValueDetailDto
-                    {
-                        Id = pva.AttributeValue?.Id ?? 0,
-                        AttributeId = pva.AttributeValue?.AttributeId ?? 0,
-                        AttributeName = pva.AttributeValue?.ProductAttribute?.AttributeName ?? string.Empty,
-                        Value = pva.AttributeValue?.Value ?? string.Empty,
-                        Note = pva.AttributeValue?.Note
-                    }).ToList() ?? new List<AttributeValueDetailDto>()
-                }).ToList() ?? new List<ProductVariantDetailDto>()
-            }).ToList();
+                    "name_asc" => variantItems
+                        .OrderBy(v => v.ProductName)
+                        .ThenBy(v => v.VariantName)
+                        .ToList(),
+                    "name_desc" => variantItems
+                        .OrderByDescending(v => v.ProductName)
+                        .ThenByDescending(v => v.VariantName)
+                        .ToList(),
+                    "price_asc" => variantItems.OrderBy(v => v.Price).ToList(),
+                    "price_desc" => variantItems.OrderByDescending(v => v.Price).ToList(),
+                    _ => variantItems
+                };
+            }
 
-            return Ok(dtos);
+            var totalCount = variantItems.Count;
+            var pageItems = variantItems
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return Ok(new ProductFilterPageDto
+            {
+                Items = pageItems,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            });
         }
         catch (Exception)
         {

@@ -15,11 +15,11 @@ namespace PickleChic.WEB.Services.Customer
             _apiProvider = apiProvider;
         }
 
-        public async Task<ApiResult<ProductVariantSearchPageResponse>> SearchAsync(ProductSearchQuery query)
+        public async Task<ApiResult<ProductFilterPageResponse>> FilterAsync(ProductSearchQuery query)
         {
-            var url = BuildSearchUrl(query);
+            var url = BuildFilterUrl(query);
 
-            return await _apiProvider.GetAsync<ProductVariantSearchPageResponse>(
+            return await _apiProvider.GetAsync<ProductFilterPageResponse>(
                 url,
                 requireAuth: false);
         }
@@ -55,7 +55,7 @@ namespace PickleChic.WEB.Services.Customer
             return ApiResult<List<ProductVariantSearchResponse>>.Ok(related);
         }
 
-        private static string BuildSearchUrl(ProductSearchQuery query)
+        private static string BuildFilterUrl(ProductSearchQuery query)
         {
             var parameters = new List<string>();
 
@@ -66,12 +66,12 @@ namespace PickleChic.WEB.Services.Customer
 
             if (query.MinPrice.HasValue)
             {
-                parameters.Add($"startingPrice={query.MinPrice.Value}");
+                parameters.Add($"startingPrice={query.MinPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
             }
 
             if (query.MaxPrice.HasValue)
             {
-                parameters.Add($"toPrice={query.MaxPrice.Value}");
+                parameters.Add($"toPrice={query.MaxPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
             }
 
             if (!string.IsNullOrWhiteSpace(query.SortBy))
@@ -89,10 +89,15 @@ namespace PickleChic.WEB.Services.Customer
                 parameters.Add($"brandId={query.BrandId.Value}");
             }
 
+            foreach (var attributeValueId in query.AttributeValueIds.Distinct().Where(id => id > 0))
+            {
+                parameters.Add($"attributeValueIds={attributeValueId}");
+            }
+
             parameters.Add($"pageNumber={query.PageNumber}");
             parameters.Add($"pageSize={query.PageSize}");
 
-            return $"{EndPointConfig.Product.Search}?{string.Join("&", parameters)}";
+            return $"{EndPointConfig.Product.Filter}?{string.Join("&", parameters)}";
         }
     }
 }

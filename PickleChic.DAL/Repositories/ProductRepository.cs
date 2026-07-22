@@ -191,7 +191,10 @@ public class ProductRepository
         int? brandId,
         int? categoryId,
         int? attributeId,
-        List<int>? attributeValueIds)
+        List<int>? attributeValueIds,
+        decimal? startingPrice = null,
+        decimal? toPrice = null,
+        string? sortBy = null)
     {
         var query = _context.Products
             .Include(p => p.Category)
@@ -245,6 +248,34 @@ public class ProductRepository
                     attributeValueIds.Contains(pva.AttributeValueId)
                 )
             ));
+        }
+
+        if (startingPrice.HasValue)
+        {
+            query = query.Where(p => p.ProductVariants != null
+                && p.ProductVariants.Any(pv => pv.Price >= startingPrice.Value));
+        }
+
+        if (toPrice.HasValue)
+        {
+            query = query.Where(p => p.ProductVariants != null
+                && p.ProductVariants.Any(pv => pv.Price <= toPrice.Value));
+        }
+
+        if (!string.IsNullOrWhiteSpace(sortBy))
+        {
+            query = sortBy.Trim().ToLowerInvariant() switch
+            {
+                "name_asc" => query.OrderBy(p => p.ProductName),
+                "name_desc" => query.OrderByDescending(p => p.ProductName),
+                "price_asc" => query.OrderBy(p => p.ProductVariants!.Min(pv => (decimal?)pv.Price) ?? 0),
+                "price_desc" => query.OrderByDescending(p => p.ProductVariants!.Max(pv => (decimal?)pv.Price) ?? 0),
+                _ => query.OrderBy(p => p.ProductName)
+            };
+        }
+        else
+        {
+            query = query.OrderBy(p => p.ProductName);
         }
 
         return await query.ToListAsync();
