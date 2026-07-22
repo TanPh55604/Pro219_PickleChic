@@ -51,7 +51,7 @@ namespace PickleChic.WEB.Model
                 StockQuantity = variant?.StockQuantity ?? 0,
                 ProductUrl = productId > 0
                     ? RouterConfig.BuildRoute(RouterConfig.Customer.ProductDetail, productId)
-                    : RouterConfig.Customer.Search
+                    : RouterConfig.Customer.Products
             };
         }
     }
