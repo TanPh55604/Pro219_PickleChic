@@ -16,6 +16,8 @@ namespace PickleChic.WEB.Model
 
         public string? SortBy { get; set; }
 
+        public List<int> AttributeValueIds { get; set; } = new();
+
         public int PageNumber { get; set; } = ProductSearchDefaults.DefaultPageNumber;
 
         public int PageSize { get; set; } = ProductSearchDefaults.DefaultPageSize;

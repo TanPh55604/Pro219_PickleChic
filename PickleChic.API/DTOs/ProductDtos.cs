@@ -85,6 +85,11 @@ public class ProductFilterRequestDto
     public int? CategoryId { get; set; }
     public int? AttributeId { get; set; }
     public List<int>? AttributeValueIds { get; set; }
+    public decimal? StartingPrice { get; set; }
+    public decimal? ToPrice { get; set; }
+    public string? SortBy { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 12;
     public bool IncludeInactiveVariants { get; set; } = false;
 }
 
@@ -102,6 +107,14 @@ public class ProductFilterResponseDto
     public DateTime? UpdatedAt { get; set; }
     public string? UpdatedBy { get; set; }
     public List<ProductVariantDetailDto> ProductVariants { get; set; } = new();
+}
+
+public class ProductFilterPageDto
+{
+    public List<ProductVariantFilterDto> Items { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int PageNumber { get; set; }
+    public int PageSize { get; set; }
 }
 
 

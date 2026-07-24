@@ -107,9 +107,17 @@
             public static string Delete(int id) => $"management/attribute-value/delete/{id}";
         }
 
+        public static class PublicAttribute
+        {
+            public const string GetAll = "product-attribute/get-all";
+
+            public static string GetAllByCategoryId(int categoryId) =>
+                $"product-attribute/get-all-by-categoryId?categoryId={categoryId}";
+        }
+
         public static class Product
         {
-            public const string Search = "product-variant/search";
+            public const string Filter = "product/filter";
 
             public static string GetByIdWithDetailsPublic(int id) => $"product/get-by-id-with-details/{id}";
 

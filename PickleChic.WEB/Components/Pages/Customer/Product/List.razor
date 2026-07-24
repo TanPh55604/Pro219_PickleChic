@@ -4,163 +4,390 @@
 <PageTitle>@Constant.metaDataCustomer Sản phẩm</PageTitle>
 
 <div class="min-h-[calc(100vh-180px)] bg-neutral-50 !px-4 !pt-8 !pb-14">
-    <div class="!mx-auto w-full max-w-7xl !space-y-14">
-        <div>
-            <p class="text-xs font-black tracking-[0.28em] text-[#d71920] uppercase">
-                PickleChic Store
-            </p>
+    <div class="!mx-auto w-full max-w-7xl !space-y-6">
+        <div class="flex flex-col !gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-xs font-black tracking-[0.28em] text-[#d71920] uppercase">
+                    PickleChic Store
+                </p>
+                <h1 class="!mt-2 text-3xl font-black tracking-tight text-neutral-950 sm:text-4xl">
+                    Tìm kiếm sản phẩm
+                </h1>
+            </div>
 
-            <h1 class="!mt-2 text-3xl font-black tracking-tight text-neutral-950 sm:text-4xl">
-                Sản phẩm
-            </h1>
+            <button type="button"
+                    @onclick="() => _showMobileFilters = true"
+                    class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-300 !bg-white !px-5 !py-2.5 text-sm font-black text-neutral-900 transition hover:!border-[#d71920] hover:!text-[#d71920] lg:!hidden">
+                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" />
+                Bộ lọc
+            </button>
         </div>
 
-        <section>
-            <div class="flex items-end justify-between !gap-4">
-                <div>
-                    <h2 class="text-2xl font-black text-neutral-950">
-                        Danh mục
-                    </h2>
+        <div class="grid !gap-6 lg:grid-cols-10">
+            <aside class="hidden lg:col-span-3 lg:block">
+                @RenderFilters(sticky: true, groupKey: "desktop")
+            </aside>
 
-                    <p class="!mt-1 text-sm text-neutral-500">
-                        Khám phá theo loại sản phẩm
-                    </p>
-                </div>
-            </div>
+            <section class="lg:col-span-7">
+                @if (_isLoadingProducts)
+                {
+                    <div class="mb-6 flex items-center justify-between">
+                        <MudSkeleton Width="120px" Height="20px" />
+                        <div class="flex items-center !gap-3">
+                            <MudSkeleton Width="128px" Height="56px" />
+                            <MudSkeleton Width="200px" Height="56px" />
+                        </div>
+                    </div>
+                    <ProductListSkeleton Count="@_pageSize" />
+                }
+                else
+                {
+                    <div class="flex w-full flex-col !gap-3 sm:!flex-row sm:!items-center sm:!justify-between">
+                        <p class="text-sm font-bold text-neutral-600">
+                            @GetResultSummary()
+                        </p>
 
-            @if (_isLoading)
-            {
-                <div class="!mt-6 grid grid-cols-2 !gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    @for (var i = 0; i < 6; i++)
+                        <div class="flex w-full flex-col !gap-3 sm:!flex-row sm:!items-center sm:w-auto">
+                            <div class="w-full sm:w-32">
+                                <MudSelect T="int"
+                                           Value="_pageSize"
+                                           ValueChanged="OnPageSizeChanged"
+                                           Label="Hiển thị"
+                                           Variant="Variant.Outlined"
+                                           Dense="true"
+                                           Class="w-full">
+                                    @foreach (var size in ProductSearchDefaults.PageSizeOptions)
+                                    {
+                                        <MudSelectItem T="int" Value="@size">@size</MudSelectItem>
+                                    }
+                                </MudSelect>
+                            </div>
+
+                            <div class="w-full sm:w-60">
+                                <MudSelect T="string?"
+                                           Value="_sortBy"
+                                           ValueChanged="OnSortChanged"
+                                           Label="Sắp xếp"
+                                           Variant="Variant.Outlined"
+                                           Dense="true"
+                                           Clearable="true"
+                                           Class="w-full">
+                                    <MudSelectItem T="string?" Value="@ProductSearchSort.NameAsc">Tên A → Z</MudSelectItem>
+                                    <MudSelectItem T="string?" Value="@ProductSearchSort.NameDesc">Tên Z → A</MudSelectItem>
+                                    <MudSelectItem T="string?" Value="@ProductSearchSort.PriceAsc">Giá thấp → cao</MudSelectItem>
+                                    <MudSelectItem T="string?" Value="@ProductSearchSort.PriceDesc">Giá cao → thấp</MudSelectItem>
+                                </MudSelect>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!_products.Any())
                     {
-                        <div class="aspect-square overflow-hidden !rounded-2xl bg-white shadow-sm">
-                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100%" Width="100%" />
+                        <div class="!mt-6 !rounded-3xl border border-neutral-200 bg-white !p-12 text-center shadow-sm">
+                            <div class="!mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full bg-neutral-100 text-neutral-400">
+                                <MudIcon Icon="@Icons.Material.Filled.SearchOff" Size="Size.Large" />
+                            </div>
+                            <h2 class="!mt-5 text-2xl font-black text-neutral-950">Không tìm thấy sản phẩm</h2>
+                            <p class="!mt-2 text-sm text-neutral-500">Thử đổi từ khóa hoặc bộ lọc khác</p>
                         </div>
                     }
-                </div>
-            }
-            else if (!_categories.Any())
-            {
-                <div class="!mt-6 !rounded-3xl border border-neutral-200 bg-white !p-10 text-center shadow-sm">
-                    <p class="text-sm font-semibold text-neutral-500">Chưa có danh mục nào.</p>
-                </div>
-            }
-            else
-            {
-                <div class="!mt-6 grid grid-cols-2 !gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    @foreach (var category in _categories)
+                    else
                     {
-                        <a href="@RouterConfig.BuildRoute(RouterConfig.Customer.CategoryDetail, category.Id)"
-                           class="group flex aspect-square flex-col overflow-hidden !rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#d71920] hover:shadow-lg">
-                            <div class="relative flex-1 overflow-hidden bg-neutral-100">
-                                @if (!string.IsNullOrWhiteSpace(category.LinkImage))
-                                {
-                                    <img src="@category.LinkImage"
-                                         alt="@category.Name"
-                                         class="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-                                }
-                                else
-                                {
-                                    <div class="bg-gradient-to-br flex h-full w-full items-center justify-center from-neutral-100 to-neutral-200">
-                                        <MudIcon Icon="@Icons.Material.Filled.Category"
-                                                 Size="Size.Large"
-                                                 Class="text-neutral-400" />
-                                    </div>
-                                }
-
-                                <div class="bg-gradient-to-t absolute inset-0 from-black/55 via-black/10 to-transparent opacity-80"></div>
-                            </div>
-
-                            <div class="!p-3">
-                                <p class="line-clamp-2 text-center text-sm leading-5 font-black text-neutral-900 group-hover:!text-[#d71920]">
-                                    @category.Name
-                                </p>
-                            </div>
-                        </a>
-                    }
-                </div>
-            }
-        </section>
-
-        <section>
-            <div>
-                <h2 class="text-2xl font-black text-neutral-950">
-                    Thương hiệu
-                </h2>
-
-                <p class="!mt-1 text-sm text-neutral-500">
-                    Mua sắm theo hãng yêu thích
-                </p>
-            </div>
-
-            @if (_isLoading)
-            {
-                <div class="!mt-6 grid grid-cols-2 !gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    @for (var i = 0; i < 6; i++)
-                    {
-                        <div class="aspect-square overflow-hidden !rounded-2xl bg-white shadow-sm">
-                            <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="100%" Width="100%" />
+                        <div class="!mt-6 grid !gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                            @foreach (var product in _products)
+                            {
+                                <CustomerProductCard Item="@ProductCardModel.FromVariant(product)" />
+                            }
                         </div>
                     }
-                </div>
-            }
-            else if (!_brands.Any())
-            {
-                <div class="!mt-6 !rounded-3xl border border-neutral-200 bg-white !p-10 text-center shadow-sm">
-                    <p class="text-sm font-semibold text-neutral-500">Chưa có thương hiệu nào.</p>
-                </div>
-            }
-            else
-            {
-                <div class="!mt-6 grid grid-cols-2 !gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    @foreach (var brand in _brands)
+
+                    @if (ShowPagination)
                     {
-                        <a href="@RouterConfig.BuildRoute(RouterConfig.Customer.BrandDetail, brand.Id)"
-                           class="group flex aspect-square flex-col overflow-hidden !rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-[#d71920] hover:shadow-lg">
-                            <div class="bg-gradient-to-br relative flex flex-1 items-center justify-center overflow-hidden from-neutral-950 to-neutral-700 !p-4">
-                                <span class="text-center text-3xl font-black tracking-tight !text-white sm:text-4xl">
-                                    @GetBrandInitial(brand.Name)
-                                </span>
+                        <div class="!mt-8 flex flex-col items-center !gap-3 sm:flex-row sm:justify-center">
+                            <button type="button"
+                                    @onclick="() => GoToPage(_pageNumber - 1)"
+                                    disabled="@(!HasPreviousPage)"
+                                    class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-300 !bg-white !px-5 !py-2.5 text-sm font-black text-neutral-900 transition disabled:cursor-not-allowed disabled:opacity-40 enabled:hover:!border-[#d71920] enabled:hover:!text-[#d71920]">
+                                <MudIcon Icon="@Icons.Material.Filled.ChevronLeft" Size="Size.Small" />
+                                Trước
+                            </button>
 
-                                <div class="absolute inset-0 bg-[#d71920]/0 transition group-hover:bg-[#d71920]/15"></div>
-                            </div>
+                            <span class="text-sm font-bold text-neutral-600">
+                                Trang @_pageNumber/@_totalPages
+                            </span>
 
-                            <div class="!p-3">
-                                <p class="line-clamp-2 text-center text-sm leading-5 font-black text-neutral-900 group-hover:!text-[#d71920]">
-                                    @brand.Name
-                                </p>
-                            </div>
-                        </a>
+                            <button type="button"
+                                    @onclick="() => GoToPage(_pageNumber + 1)"
+                                    disabled="@(!HasNextPage)"
+                                    class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-300 !bg-white !px-5 !py-2.5 text-sm font-black text-neutral-900 transition enabled:hover:!border-[#d71920] enabled:hover:!text-[#d71920] disabled:cursor-not-allowed disabled:opacity-40">
+                                Sau
+                                <MudIcon Icon="@Icons.Material.Filled.ChevronRight" Size="Size.Small" />
+                            </button>
+                        </div>
                     }
-                </div>
-            }
-        </section>
+                }
+            </section>
+        </div>
     </div>
 </div>
 
+@if (_showMobileFilters)
+{
+    <MudDrawer Open="_showMobileFilters"
+               OpenChanged="OnMobileFiltersOpenChanged"
+               Anchor="Anchor.Left"
+               Variant="DrawerVariant.Temporary"
+               Elevation="2"
+               Class="lg:!hidden"
+               Width="320px">
+        <div class="!p-4">
+            @RenderFilters(sticky: false, groupKey: "mobile")
+        </div>
+    </MudDrawer>
+}
+
 @code {
-    private bool _isLoading = true;
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? Keyword { get; set; }
+
+    [SupplyParameterFromQuery(Name = "categoryId")]
+    public int? CategoryId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "brandId")]
+    public int? BrandId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "minPrice")]
+    public decimal? MinPrice { get; set; }
+
+    [SupplyParameterFromQuery(Name = "maxPrice")]
+    public decimal? MaxPrice { get; set; }
+
+    [SupplyParameterFromQuery(Name = "sort")]
+    public string? Sort { get; set; }
+
+    [SupplyParameterFromQuery(Name = "page")]
+    public int? Page { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pageSize")]
+    public int? PageSize { get; set; }
+
+    [SupplyParameterFromQuery(Name = "attributeValueIds")]
+    public int[]? AttributeValueIds { get; set; }
+
+    private bool _showMobileFilters;
+    private bool _isLoadingProducts = true;
+    private bool _isLoadingAttributes;
+
+    private string _keywordInput = string.Empty;
+    private string? _minPriceInput;
+    private string? _maxPriceInput;
+    private int? _selectedCategoryId;
+    private int? _selectedBrandId;
+    private HashSet<int> _selectedAttributeValueIds = new();
+
+    private string? _sortBy;
+    private int _pageNumber = ProductSearchDefaults.DefaultPageNumber;
+    private int _pageSize = ProductSearchDefaults.DefaultPageSize;
+    private int _totalCount;
+    private int _totalPages;
 
     private List<CustomerCategoryResponse> _categories = new();
-
     private List<CustomerBrandResponse> _brands = new();
+    private List<CustomerAttributeResponse> _attributes = new();
+    private List<ProductVariantSearchResponse> _products = new();
+
+    private bool ShowPagination => _totalPages > 1;
+    private bool HasPreviousPage => _pageNumber > 1;
+    private bool HasNextPage => _pageNumber < _totalPages;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadCatalogAsync();
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        SyncFromQuery();
+        await LoadAttributesAsync();
+        await LoadProductsAsync();
+    }
+
+    private void SyncFromQuery()
+    {
+        _keywordInput = Keyword ?? string.Empty;
+        _selectedCategoryId = CategoryId;
+        _selectedBrandId = BrandId;
+        _minPriceInput = MinPrice?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _maxPriceInput = MaxPrice?.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        _sortBy = string.IsNullOrWhiteSpace(Sort) ? null : Sort.Trim();
+        _pageNumber = Math.Max(1, Page.GetValueOrDefault(ProductSearchDefaults.DefaultPageNumber));
+        _pageSize = ResolvePageSize(PageSize);
+        _selectedAttributeValueIds = (AttributeValueIds ?? Array.Empty<int>())
+            .Where(id => id > 0)
+            .ToHashSet();
+    }
+
+    private static int ResolvePageSize(int? pageSize)
+    {
+        if (!pageSize.HasValue || !ProductSearchDefaults.PageSizeOptions.Contains(pageSize.Value))
+        {
+            return ProductSearchDefaults.DefaultPageSize;
+        }
+
+        return pageSize.Value;
+    }
+
+    private RenderFragment RenderFilters(bool sticky, string groupKey) => __builder =>
+    {
+        var categoryGroup = $"filter-category-{groupKey}";
+        var brandGroup = $"filter-brand-{groupKey}";
+
+        <div class="@(sticky ? "sticky top-24" : "") !space-y-5 !rounded-3xl border border-neutral-200 bg-white !p-5 shadow-sm">
+            <div>
+                <p class="text-sm font-black text-neutral-900">Từ khóa</p>
+                <MudTextField @bind-Value="_keywordInput"
+                              Placeholder="Tên sản phẩm, SKU..."
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              Immediate="true"
+                              Class="!mt-2"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              OnKeyDown="HandleKeywordKeyDown" />
+            </div>
+
+            <div>
+                <p class="text-sm font-black text-neutral-900">Danh mục</p>
+                <div class="!mt-2 max-h-48 space-y-1 overflow-y-auto">
+                    <label class="flex cursor-pointer items-center !gap-2 !rounded-xl !px-2 !py-1.5 text-sm hover:!bg-neutral-50">
+                        <input type="radio"
+                               name="@categoryGroup"
+                               checked="@(!_selectedCategoryId.HasValue)"
+                               @onchange="OnCategoryCleared" />
+                        <span>Tất cả</span>
+                    </label>
+                    @foreach (var category in _categories)
+                    {
+                        <label class="flex cursor-pointer items-center !gap-2 !rounded-xl !px-2 !py-1.5 text-sm hover:!bg-neutral-50">
+                            <input type="radio"
+                                   name="@categoryGroup"
+                                   checked="@(_selectedCategoryId == category.Id)"
+                                   @onchange="() => OnCategorySelected(category.Id)" />
+                            <span class="truncate">@category.Name</span>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div>
+                <p class="text-sm font-black text-neutral-900">Thương hiệu</p>
+                <div class="!mt-2 max-h-48 space-y-1 overflow-y-auto">
+                    <label class="flex cursor-pointer items-center !gap-2 !rounded-xl !px-2 !py-1.5 text-sm hover:!bg-neutral-50">
+                        <input type="radio"
+                               name="@brandGroup"
+                               checked="@(!_selectedBrandId.HasValue)"
+                               @onchange="OnBrandCleared" />
+                        <span>Tất cả</span>
+                    </label>
+                    @foreach (var brand in _brands)
+                    {
+                        <label class="flex cursor-pointer items-center !gap-2 !rounded-xl !px-2 !py-1.5 text-sm hover:!bg-neutral-50">
+                            <input type="radio"
+                                   name="@brandGroup"
+                                   checked="@(_selectedBrandId == brand.Id)"
+                                   @onchange="() => OnBrandSelected(brand.Id)" />
+                            <span class="truncate">@brand.Name</span>
+                        </label>
+                    }
+                </div>
+            </div>
+
+            <div>
+                <p class="text-sm font-black text-neutral-900">Thuộc tính</p>
+                @if (_isLoadingAttributes)
+                {
+                    <MudProgressLinear Indeterminate="true" Class="!mt-3" Color="Color.Error" />
+                }
+                else if (!_attributes.Any())
+                {
+                    <p class="!mt-2 text-xs text-neutral-500">Không có thuộc tính</p>
+                }
+                else
+                {
+                    <div class="!mt-2 max-h-64 space-y-4 overflow-y-auto">
+                        @foreach (var attr in _attributes)
+                        {
+                            <div>
+                                <p class="text-xs font-bold tracking-wide text-neutral-500 uppercase">
+                                    @attr.AttributeName
+                                </p>
+                                <div class="!mt-1 space-y-1">
+                                    @foreach (var value in attr.AttributeValues ?? new())
+                                    {
+                                        <label class="flex cursor-pointer items-center !gap-2 !rounded-xl !px-2 !py-1 text-sm hover:!bg-neutral-50">
+                                            <input type="checkbox"
+                                                   checked="@_selectedAttributeValueIds.Contains(value.Id)"
+                                                   @onchange="e => ToggleAttributeValue(value.Id, (bool)(e.Value ?? false))" />
+                                            <span class="truncate">@value.Value</span>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div>
+                <p class="text-sm font-black text-neutral-900">Khoảng giá</p>
+                <div class="!mt-2 grid grid-cols-2 !gap-2">
+                    <MudTextField @bind-Value="_minPriceInput"
+                                  Placeholder="Từ"
+                                  Variant="Variant.Outlined"
+                                  Dense="true"
+                                  Immediate="true"
+                                  InputType="InputType.Number" />
+                    <MudTextField @bind-Value="_maxPriceInput"
+                                  Placeholder="Đến"
+                                  Variant="Variant.Outlined"
+                                  Dense="true"
+                                  Immediate="true"
+                                  InputType="InputType.Number" />
+                </div>
+            </div>
+
+            <div class="flex flex-col !gap-2">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Error"
+                           Class="w-full !rounded-xl !font-black !normal-case"
+                           OnClick="ApplyFilters">
+                    Áp dụng
+                </MudButton>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           Class="w-full !rounded-xl !font-black !normal-case"
+                           OnClick="ClearFilters">
+                    Xóa bộ lọc
+                </MudButton>
+            </div>
+        </div>
+    };
+
     private async Task LoadCatalogAsync()
     {
-        _isLoading = true;
-
         var categoryTask = _customerCategoryService.GetAllAsync();
         var brandTask = _customerBrandService.GetAllAsync();
-
         await Task.WhenAll(categoryTask, brandTask);
 
         var categoryResult = await categoryTask;
         var brandResult = await brandTask;
+
+        _categories = categoryResult.Success
+            ? categoryResult.Data ?? new()
+            : new();
+        _brands = brandResult.Success
+            ? brandResult.Data ?? new()
+            : new();
 
         if (!categoryResult.Success)
         {
@@ -171,25 +398,294 @@
         {
             _snackbar.Add("Không thể tải thương hiệu", Severity.Error);
         }
-
-        _categories = categoryResult.Success
-            ? categoryResult.Data ?? new List<CustomerCategoryResponse>()
-            : new List<CustomerCategoryResponse>();
-
-        _brands = brandResult.Success
-            ? brandResult.Data ?? new List<CustomerBrandResponse>()
-            : new List<CustomerBrandResponse>();
-
-        _isLoading = false;
     }
 
-    private static string GetBrandInitial(string name)
+    private async Task LoadAttributesAsync()
     {
-        if (string.IsNullOrWhiteSpace(name))
+        _isLoadingAttributes = true;
+
+        try
         {
-            return "B";
+            ApiResult<List<CustomerAttributeResponse>> result;
+
+            if (_selectedCategoryId.HasValue)
+            {
+                result = await _customerAttributeService.GetAllByCategoryIdAsync(_selectedCategoryId.Value);
+            }
+            else
+            {
+                result = await _customerAttributeService.GetAllAsync();
+            }
+
+            _attributes = result.Success
+                ? result.Data ?? new()
+                : new();
+
+            var validIds = _attributes
+                .SelectMany(a => a.AttributeValues ?? new())
+                .Select(v => v.Id)
+                .ToHashSet();
+
+            _selectedAttributeValueIds.RemoveWhere(id => !validIds.Contains(id));
+        }
+        finally
+        {
+            _isLoadingAttributes = false;
+        }
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        _isLoadingProducts = true;
+
+        try
+        {
+            var query = new ProductSearchQuery
+            {
+                Keyword = Keyword,
+                CategoryId = CategoryId,
+                BrandId = BrandId,
+                MinPrice = MinPrice,
+                MaxPrice = MaxPrice,
+                SortBy = _sortBy,
+                PageNumber = _pageNumber,
+                PageSize = _pageSize,
+                AttributeValueIds = _selectedAttributeValueIds.ToList()
+            };
+
+            var result = await _productService.FilterAsync(query);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                _products = new();
+                _totalCount = 0;
+                _totalPages = 0;
+                return;
+            }
+
+            var data = result.Data;
+            _totalCount = data.TotalCount;
+            _totalPages = data.TotalCount <= 0
+                ? 0
+                : (int)Math.Ceiling(data.TotalCount / (double)_pageSize);
+
+            if (_totalPages > 0 && _pageNumber > _totalPages)
+            {
+                Navigate(pageNumber: _totalPages);
+                return;
+            }
+
+            if (_totalCount == 0 && _pageNumber > 1)
+            {
+                Navigate(pageNumber: ProductSearchDefaults.DefaultPageNumber);
+                return;
+            }
+
+            _products = data.Items ?? new();
+        }
+        finally
+        {
+            _isLoadingProducts = false;
+        }
+    }
+
+    private void OnMobileFiltersOpenChanged(bool open)
+    {
+        _showMobileFilters = open;
+    }
+
+    private void OnCategorySelected(int categoryId)
+    {
+        if (_selectedCategoryId == categoryId)
+        {
+            return;
         }
 
-        return name.Trim()[0].ToString().ToUpperInvariant();
+        _selectedCategoryId = categoryId;
+        _ = ReloadAttributesForCategoryAsync();
+    }
+
+    private void OnCategoryCleared()
+    {
+        if (!_selectedCategoryId.HasValue)
+        {
+            return;
+        }
+
+        _selectedCategoryId = null;
+        _ = ReloadAttributesForCategoryAsync();
+    }
+
+    private void OnBrandSelected(int brandId)
+    {
+        _selectedBrandId = brandId;
+    }
+
+    private void OnBrandCleared()
+    {
+        _selectedBrandId = null;
+    }
+
+    private async Task ReloadAttributesForCategoryAsync()
+    {
+        await LoadAttributesAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleAttributeValue(int valueId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            _selectedAttributeValueIds.Add(valueId);
+        }
+        else
+        {
+            _selectedAttributeValueIds.Remove(valueId);
+        }
+    }
+
+    private async Task HandleKeywordKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            ApplyFilters();
+            await Task.CompletedTask;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        _showMobileFilters = false;
+        Navigate(
+            keyword: _keywordInput.Trim(),
+            categoryId: _selectedCategoryId,
+            brandId: _selectedBrandId,
+            minPrice: ParsePrice(_minPriceInput),
+            maxPrice: ParsePrice(_maxPriceInput),
+            attributeValueIds: _selectedAttributeValueIds,
+            pageNumber: ProductSearchDefaults.DefaultPageNumber,
+            replaceCategory: true,
+            replaceBrand: true,
+            replaceMinPrice: true,
+            replaceMaxPrice: true,
+            replaceAttributeValues: true);
+    }
+
+    private void ClearFilters()
+    {
+        _keywordInput = string.Empty;
+        _selectedCategoryId = null;
+        _selectedBrandId = null;
+        _minPriceInput = null;
+        _maxPriceInput = null;
+        _selectedAttributeValueIds.Clear();
+        _showMobileFilters = false;
+
+        Navigate(
+            keyword: string.Empty,
+            categoryId: null,
+            brandId: null,
+            minPrice: null,
+            maxPrice: null,
+            attributeValueIds: Array.Empty<int>(),
+            pageNumber: ProductSearchDefaults.DefaultPageNumber,
+            replaceCategory: true,
+            replaceBrand: true,
+            replaceMinPrice: true,
+            replaceMaxPrice: true,
+            replaceAttributeValues: true,
+            replaceKeyword: true);
+    }
+
+    private void OnSortChanged(string? newSort)
+    {
+        Navigate(sortBy: newSort, pageNumber: ProductSearchDefaults.DefaultPageNumber, replaceSort: true);
+    }
+
+    private void OnPageSizeChanged(int newPageSize)
+    {
+        Navigate(pageNumber: ProductSearchDefaults.DefaultPageNumber, pageSize: newPageSize);
+    }
+
+    private void GoToPage(int pageNumber)
+    {
+        if (pageNumber < 1 || (_totalPages > 0 && pageNumber > _totalPages))
+        {
+            return;
+        }
+
+        Navigate(pageNumber: pageNumber);
+    }
+
+    private void Navigate(
+        string? keyword = null,
+        int? categoryId = null,
+        int? brandId = null,
+        decimal? minPrice = null,
+        decimal? maxPrice = null,
+        string? sortBy = null,
+        int? pageNumber = null,
+        int? pageSize = null,
+        IEnumerable<int>? attributeValueIds = null,
+        bool replaceKeyword = false,
+        bool replaceCategory = false,
+        bool replaceBrand = false,
+        bool replaceMinPrice = false,
+        bool replaceMaxPrice = false,
+        bool replaceSort = false,
+        bool replaceAttributeValues = false)
+    {
+        var url = RouterConfig.BuildSearchUrl(
+            keyword: replaceKeyword ? keyword : (keyword ?? Keyword),
+            categoryId: replaceCategory ? categoryId : (categoryId ?? CategoryId),
+            brandId: replaceBrand ? brandId : (brandId ?? BrandId),
+            minPrice: replaceMinPrice ? minPrice : (minPrice ?? MinPrice),
+            maxPrice: replaceMaxPrice ? maxPrice : (maxPrice ?? MaxPrice),
+            sortBy: replaceSort ? sortBy : (sortBy ?? _sortBy),
+            pageNumber: pageNumber ?? _pageNumber,
+            pageSize: pageSize ?? _pageSize,
+            attributeValueIds: replaceAttributeValues
+                ? attributeValueIds
+                : (attributeValueIds ?? _selectedAttributeValueIds));
+
+        _navigation.NavigateTo(url);
+    }
+
+    private static decimal? ParsePrice(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return null;
+        }
+
+        if (decimal.TryParse(input.Trim(), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var value)
+            || decimal.TryParse(input.Trim(), out value))
+        {
+            return value < 0 ? null : value;
+        }
+
+        return null;
+    }
+
+    private string GetResultSummary()
+    {
+        if (_totalCount <= 0)
+        {
+            return "0 sản phẩm";
+        }
+
+        return $"{_totalCount} sản phẩm";
+    }
+
+    private static string ConvertErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách sản phẩm",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
     }
 }

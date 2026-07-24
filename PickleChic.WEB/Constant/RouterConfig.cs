@@ -15,7 +15,6 @@
 
             // Product
             public const string Products = "/product";
-            public const string Search = "/product/search";
             public const string ProductDetail = "/product/detail/{id:int}";
 
             // Catalog
@@ -209,7 +208,8 @@
             decimal? maxPrice = null,
             string? sortBy = null,
             int? pageNumber = null,
-            int? pageSize = null)
+            int? pageSize = null,
+            IEnumerable<int>? attributeValueIds = null)
         {
             var parameters = new List<string>();
 
@@ -230,17 +230,25 @@
 
             if (minPrice.HasValue)
             {
-                parameters.Add($"minPrice={minPrice.Value}");
+                parameters.Add($"minPrice={minPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
             }
 
             if (maxPrice.HasValue)
             {
-                parameters.Add($"maxPrice={maxPrice.Value}");
+                parameters.Add($"maxPrice={maxPrice.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
             }
 
             if (!string.IsNullOrWhiteSpace(sortBy))
             {
                 parameters.Add($"sort={Uri.EscapeDataString(sortBy)}");
+            }
+
+            if (attributeValueIds is not null)
+            {
+                foreach (var id in attributeValueIds.Distinct().Where(x => x > 0))
+                {
+                    parameters.Add($"attributeValueIds={id}");
+                }
             }
 
             var resolvedPageNumber = pageNumber ?? ProductSearchDefaults.DefaultPageNumber;
@@ -258,10 +266,10 @@
 
             if (parameters.Count == 0)
             {
-                return Customer.Search;
+                return Customer.Products;
             }
 
-            return $"{Customer.Search}?{string.Join("&", parameters)}";
+            return $"{Customer.Products}?{string.Join("&", parameters)}";
         }
 
         public static string BuildCategoryUrl(

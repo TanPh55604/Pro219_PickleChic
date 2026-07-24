@@ -37,18 +37,20 @@ builder.Services.AddScoped<IBrandService, BrandService>();
 builder.Services.AddScoped<IRankService, RankService>();
 builder.Services.AddScoped<IAttributeService, AttributeService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IProductService, PickleChic.WEB.Services.Admin.ProductService>();
-builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IProductVariantService, PickleChic.WEB.Services.Admin.ProductVariantService>();
 builder.Services.AddScoped<IProductVariantImageService, ProductVariantImageService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IVoucherService, PickleChic.WEB.Services.Admin.VoucherService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IVoucherService, PickleChic.WEB.Services.Customer.VoucherService>();
 builder.Services.AddScoped<ICustomerCategoryService, CustomerCategoryService>();
 builder.Services.AddScoped<ICustomerBrandService, CustomerBrandService>();
+builder.Services.AddScoped<ICustomerAttributeService, CustomerAttributeService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductService, PickleChic.WEB.Services.Customer.ProductService>();
 builder.Services.AddScoped<ICustomerCartService, CustomerCartService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<ICustomerOrderService, CustomerOrderService>();
 builder.Services.AddScoped<IPointHistoryService, PointHistoryService>();
+builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductVariantService, PickleChic.WEB.Services.Customer.ProductVariantService>();
 
 builder.Services.AddScoped(sp =>
 {

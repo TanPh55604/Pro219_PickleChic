@@ -184,11 +184,25 @@
                     </MudMenu>
                 </div>
 
-                <a href="@RouterConfig.Customer.Search"
-                   class="hidden !rounded-full !border !border-neutral-300 !px-4 !py-2.5 text-sm font-black transition hover:!border-[#d71920] hover:!text-[#d71920] sm:!inline-flex md:!px-5"
+                <form class="hidden items-center !gap-2 sm:!flex"
+                      @onsubmit="SubmitHeaderSearch"
+                      @onsubmit:preventDefault="true">
+                    <input type="search"
+                           @bind="_headerSearch"
+                           @bind:event="oninput"
+                           placeholder="Tìm sản phẩm..."
+                           class="w-40 !rounded-full !border !border-neutral-300 !bg-white !px-4 !py-2 text-sm font-semibold text-neutral-900 outline-none transition focus:!border-[#d71920] md:w-56" />
+                    <button type="submit"
+                            class="!rounded-full !border !border-neutral-300 !px-4 !py-2.5 text-sm font-black transition hover:!border-[#d71920] hover:!text-[#d71920]"
+                            title="Tìm kiếm">
+                        <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" />
+                    </button>
+                </form>
+
+                <a href="@RouterConfig.Customer.Products"
+                   class="!rounded-full !border !border-neutral-300 !px-3 !py-2.5 text-sm font-black transition hover:!border-[#d71920] hover:!text-[#d71920] sm:!hidden"
                    title="Tìm kiếm">
-                    <span class="hidden md:inline">Tìm kiếm</span>
-                    <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="md:!hidden" />
+                    <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" />
                 </a>
 
                 <button type="button"
@@ -297,6 +311,8 @@
 
     private bool _isLoadingCatalog = true;
 
+    private string _headerSearch = string.Empty;
+
     private List<CustomerCategoryResponse> _categories = new();
 
     private List<CustomerBrandResponse> _brands = new();
@@ -304,6 +320,16 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadCatalogAsync();
+    }
+
+    private void SubmitHeaderSearch()
+    {
+        var keyword = _headerSearch.Trim();
+        var url = string.IsNullOrWhiteSpace(keyword)
+            ? RouterConfig.Customer.Products
+            : RouterConfig.BuildSearchUrl(keyword: keyword);
+
+        _navigation.NavigateTo(url);
     }
 
     private async Task LoadCatalogAsync()
