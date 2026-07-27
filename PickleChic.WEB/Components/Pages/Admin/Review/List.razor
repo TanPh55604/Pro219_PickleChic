@@ -1,14 +1,333 @@
 ﻿@attribute [Route(RouterConfig.Admin.Reviews)]
 @layout AdminLayout
 
-<PageTitle>@Constant.metaDataAdmin Attributes</PageTitle>
+<PageTitle>@Constant.metaDataAdmin Review</PageTitle>
 
 <div class="!space-y-5">
     <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-slate-900">Đánh giá</h1>
+            <p class="!mt-1 text-sm text-slate-500">
+                Quản lý đánh giá khách hàng
+            </p>
         </div>
+    </div>
+
+    <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
+        <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="flex w-full flex-col !gap-2 md:max-w-3xl md:flex-row">
+                <MudTextField @bind-Value="_searchText"
+                              Placeholder="Tìm kiếm theo khách hàng, sản phẩm, nội dung.."
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Search"
+                              OnKeyDown="HandleSearchKeyDown"
+                              Class="flex-1" />
+
+                <MudSelect T="int?"
+                           @bind-Value="_statusFilter"
+                           Placeholder="Trạng thái"
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           Disabled="@_isLoading"
+                           Class="md:!w-[180px]">
+                    <MudSelectItem T="int?" Value="@((int?)1)">Đang hiện</MudSelectItem>
+                    <MudSelectItem T="int?" Value="@((int?)2)">Đang ẩn</MudSelectItem>
+                </MudSelect>
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Search"
+                           OnClick="SearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Tìm kiếm
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Default"
+                           StartIcon="@Icons.Material.Filled.Refresh"
+                           OnClick="ResetSearchAsync"
+                           Disabled="@_isLoading"
+                           Class="!rounded-xl !px-5 !normal-case">
+                    Làm mới
+                </MudButton>
+            </div>
+        </div>
+
+        <MudTable Items="_reviews"
+                  Loading="@_isLoading"
+                  Hover="true"
+                  Elevation="0"
+                  FixedHeader="true"
+                  Height="calc(100vh - 360px)"
+                  RowsPerPage="10">
+            <HeaderContent>
+                <MudTh>STT</MudTh>
+                <MudTh>Khách hàng</MudTh>
+                <MudTh>Sản phẩm</MudTh>
+                <MudTh>Đánh giá</MudTh>
+                <MudTh>Nội dung</MudTh>
+                <MudTh>Ngày</MudTh>
+                <MudTh>Trạng thái</MudTh>
+                <MudTh Class="text-right">Thao tác</MudTh>
+            </HeaderContent>
+
+            <RowTemplate>
+                <MudTd DataLabel="STT">
+                    <span class="font-medium text-slate-700">
+                        @(_reviews.IndexOf(context) + 1)
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Khách hàng">
+                    <div class="text-sm">
+                        <p class="font-semibold text-slate-900">
+                            @(context.CustomerName ?? "—")
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(context.CustomerUsername))
+                        {
+                            <p class="text-slate-400">@@@context.CustomerUsername</p>
+                        }
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="Sản phẩm">
+                    <div class="max-w-[220px] text-sm">
+                        <p class="line-clamp-1 font-semibold text-slate-900">
+                            @(context.ProductName ?? "—")
+                        </p>
+                        <p class="line-clamp-1 text-slate-500">
+                            @(context.VariantName ?? context.SKU ?? $"Variant #{context.ProductVariantId}")
+                        </p>
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="Đánh giá">
+                    <div class="flex items-center !gap-1">
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Star"
+                                     Size="Size.Small"
+                                     Class="@(i <= context.Overall ? "text-amber-400" : "text-slate-300")" />
+                        }
+                        <span class="!ml-1 text-sm font-semibold text-slate-600">@context.Overall</span>
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="Nội dung">
+                    <div class="max-w-xs text-sm text-slate-600">
+                        @if (!string.IsNullOrWhiteSpace(context.Title))
+                        {
+                            <p class="line-clamp-1 font-semibold text-slate-800">@context.Title</p>
+                        }
+                        <p class="line-clamp-2">@context.Content</p>
+                    </div>
+                </MudTd>
+
+                <MudTd DataLabel="Ngày">
+                    <span class="text-sm text-slate-600">
+                        @context.CreateAt.ToString("dd/MM/yyyy HH:mm")
+                    </span>
+                </MudTd>
+
+                <MudTd DataLabel="Trạng thái">
+                    @if (context.IsVisible)
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
+                            Đang hiện
+                        </MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
+                            Đang ẩn
+                        </MudChip>
+                    }
+                </MudTd>
+
+                <MudTd DataLabel="Thao tác" Class="text-right">
+                    <div class="inline-flex items-center !gap-1">
+                        <MudTooltip Text="@(context.IsVisible ? "Ẩn đánh giá" : "Hiện đánh giá")">
+                            <MudIconButton Icon="@(context.IsVisible ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                           Color="@(context.IsVisible ? Color.Warning : Color.Success)"
+                                           Size="Size.Small"
+                                           Disabled="@_isUpdating"
+                                           OnClick="() => ToggleStatusAsync(context)" />
+                        </MudTooltip>
+
+                        <MudTooltip Text="Xóa đánh giá">
+                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                           Color="Color.Error"
+                                           Size="Size.Small"
+                                           Disabled="@_isUpdating"
+                                           OnClick="() => DeleteAsync(context)" />
+                        </MudTooltip>
+                    </div>
+                </MudTd>
+            </RowTemplate>
+
+            <NoRecordsContent>
+                <div class="!py-10 text-center text-slate-500">
+                    Không có đánh giá nào
+                </div>
+            </NoRecordsContent>
+
+            <PagerContent>
+                <MudTablePager PageSizeOptions="new int[] { 5, 10, 20 }" />
+            </PagerContent>
+        </MudTable>
     </div>
 </div>
 
-@code {}
+@code {
+    private string _searchText = string.Empty;
+    private int? _statusFilter;
+    private bool _isLoading = true;
+    private bool _isUpdating;
+    private List<AdminReviewResponse> _reviews = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReviewsAsync();
+    }
+
+    private async Task LoadReviewsAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _adminReviewService.GetAllAsync(_searchText, _statusFilter);
+
+            if (!result.Success)
+            {
+                _snackbar.Add(ConvertErrorMessage(result.Message), Severity.Error);
+                _reviews = new();
+                return;
+            }
+
+            _reviews = result.Data ?? new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SearchAsync() => await LoadReviewsAsync();
+
+    private async Task ResetSearchAsync()
+    {
+        _searchText = string.Empty;
+        _statusFilter = null;
+        await LoadReviewsAsync();
+    }
+
+    private async Task HandleSearchKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private async Task ToggleStatusAsync(AdminReviewResponse review)
+    {
+        var nextStatus = review.IsVisible ? 2 : 1;
+        var actionLabel = nextStatus == 1 ? "hiện" : "ẩn";
+
+        _isUpdating = true;
+        try
+        {
+            var result = await _adminReviewService.UpdateStatusAsync(review.Id, nextStatus);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(
+                    string.IsNullOrWhiteSpace(result.Message)
+                        ? $"Không thể {actionLabel} đánh giá"
+                        : result.Message,
+                    Severity.Error);
+                return;
+            }
+
+            var index = _reviews.FindIndex(r => r.Id == review.Id);
+            if (index >= 0)
+            {
+                _reviews[index] = result.Data;
+            }
+
+            _snackbar.Add(
+                nextStatus == 1 ? "Đã hiện đánh giá trên cửa hàng" : "Đã ẩn đánh giá khỏi cửa hàng",
+                Severity.Success);
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+
+    private async Task DeleteAsync(AdminReviewResponse review)
+    {
+        var parameters = new DialogParameters<ReviewDeleteDialog>
+        {
+            { x => x.Review, review }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<ReviewDeleteDialog>(
+            "Xóa đánh giá",
+            parameters,
+            options);
+
+        var result = await dialog.Result;
+        if (result is null || result.Canceled)
+        {
+            return;
+        }
+
+        _isUpdating = true;
+        try
+        {
+            var deleteResult = await _adminReviewService.DeleteAsync(review.Id);
+
+            if (!deleteResult.Success)
+            {
+                _snackbar.Add(
+                    string.IsNullOrWhiteSpace(deleteResult.Message)
+                        ? "Không thể xóa đánh giá"
+                        : deleteResult.Message,
+                    Severity.Error);
+                return;
+            }
+
+            _reviews.RemoveAll(r => r.Id == review.Id);
+            _snackbar.Add("Đã xóa đánh giá", Severity.Success);
+        }
+        finally
+        {
+            _isUpdating = false;
+        }
+    }
+
+    private static string ConvertErrorMessage(string message)
+    {
+        return message switch
+        {
+            "Db Error" => "Không thể tải danh sách đánh giá",
+            "TokenExpired" => "Phiên đăng nhập đã hết hạn",
+            "InvalidToken" => "Phiên đăng nhập không hợp lệ",
+            _ => string.IsNullOrWhiteSpace(message)
+                ? "Có lỗi xảy ra. Vui lòng thử lại"
+                : message
+        };
+    }
+}

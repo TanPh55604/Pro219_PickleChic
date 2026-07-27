@@ -1,0 +1,427 @@
+@if (ProductVariantId > 0)
+{
+<section class="product-review-section !mt-8 overflow-hidden !rounded-3xl !border !border-neutral-800 !bg-[#111111] !p-5 text-white shadow-sm md:!p-8">
+    <div class="grid !gap-8 lg:grid-cols-2 lg:!gap-10">
+        <div>
+            <div class="flex flex-wrap items-baseline !gap-2">
+                <h2 class="text-2xl font-black tracking-tight text-white">
+                    Đánh giá
+                </h2>
+                <span class="text-sm font-bold text-neutral-400">
+                    (@_reviews.Count @(_reviews.Count == 1 ? "review" : "reviews"))
+                </span>
+            </div>
+
+            <div class="!mt-6 !space-y-3">
+                @for (var star = 5; star >= 1; star--)
+                {
+                    var count = GetStarCount(star);
+                    var percent = _reviews.Count == 0 ? 0 : (count * 100.0 / _reviews.Count);
+
+                    <div class="flex items-center !gap-3">
+                        <div class="flex w-28 shrink-0 items-center !gap-0.5">
+                            @for (var i = 1; i <= 5; i++)
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.Star"
+                                         Size="Size.Small"
+                                         Class="@(i <= star ? "!text-amber-400" : "!text-neutral-700")"
+                                         Style="font-size: 16px;" />
+                            }
+                        </div>
+
+                        <div class="h-2.5 flex-1 overflow-hidden !rounded-full !bg-neutral-800">
+                            <div class="h-full !rounded-full !bg-amber-400 transition-all"
+                                 style="width: @(percent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                        </div>
+
+                        <span class="w-6 text-right text-sm font-bold text-neutral-300">
+                            @count
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="relative overflow-hidden !rounded-2xl !border !border-neutral-700 !bg-[#1a1a1a] !p-5 md:!p-6">
+            <div class="@(_eligibility?.CanReview == true ? string.Empty : "pointer-events-none select-none blur-[1.5px] opacity-40")">
+                <div>
+                    <p class="text-sm font-bold text-neutral-300">Đánh giá của bạn</p>
+                    <div class="!mt-2 flex items-center !gap-1">
+                        @for (var i = 1; i <= 5; i++)
+                        {
+                            var rating = i;
+                            <button type="button"
+                                    @onclick="() => SetRating(rating)"
+                                    class="transition hover:scale-110"
+                                    disabled="@(!_canSubmit)">
+                                <MudIcon Icon="@(rating <= _overall ? Icons.Material.Filled.Star : Icons.Material.Outlined.StarBorder)"
+                                         Class="@(rating <= _overall ? "!text-amber-400" : "!text-neutral-500")" />
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="!mt-4 !space-y-3">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-bold text-neutral-400">Họ và tên</label>
+                        <input type="text"
+                               value="@_displayName"
+                               readonly
+                               disabled
+                               class="w-full !rounded-xl !border !border-neutral-700 !bg-[#111111] !px-3 !py-2.5 text-sm text-neutral-300 outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-xs font-bold text-neutral-400">Tiêu đề</label>
+                        <input type="text"
+                               @bind="_title"
+                               disabled="@(!_canSubmit)"
+                               placeholder="Tóm tắt trải nghiệm của bạn"
+                               class="w-full !rounded-xl !border !border-neutral-700 !bg-[#111111] !px-3 !py-2.5 text-sm text-white outline-none transition focus:!border-[#d71920] disabled:opacity-60" />
+                    </div>
+
+                    <div>
+                        <label class="mb-1.5 block text-xs font-bold text-neutral-400">Nhận xét của bạn</label>
+                        <textarea @bind="_content"
+                                  disabled="@(!_canSubmit)"
+                                  rows="4"
+                                  placeholder="Chia sẻ cảm nhận về sản phẩm..."
+                                  class="w-full resize-y !rounded-xl !border !border-neutral-700 !bg-[#111111] !px-3 !py-2.5 text-sm text-white outline-none transition focus:!border-[#d71920] disabled:opacity-60"></textarea>
+                    </div>
+                </div>
+
+                <button type="button"
+                        @onclick="SubmitAsync"
+                        disabled="@(!_canSubmit || _isSubmitting)"
+                        class="!mt-5 w-full !rounded-xl !bg-[#d71920] !px-4 !py-3 text-sm font-black uppercase tracking-wide !text-white transition hover:!bg-[#b5141a] disabled:cursor-not-allowed disabled:opacity-50">
+                    @(_isSubmitting ? "Đang gửi..." : "Gửi đánh giá")
+                </button>
+            </div>
+
+            @if (_eligibility is null || !_eligibility.CanReview)
+            {
+                <div class="absolute inset-0 flex items-center justify-center !bg-[#111111]/85 !p-5 backdrop-blur-[2px]">
+                    <div class="max-w-sm text-center">
+                        <div class="!mx-auto flex !h-14 !w-14 items-center justify-center !rounded-full !bg-[#d71920]/20 !text-[#d71920]">
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" />
+                        </div>
+
+                        <h3 class="!mt-4 text-xl font-black text-white">
+                            @GetLockTitle()
+                        </h3>
+
+                        <p class="!mt-2 text-sm leading-6 text-neutral-400">
+                            @GetLockDescription()
+                        </p>
+
+                        @if (!string.IsNullOrWhiteSpace(GetMyReviewStateNote()))
+                        {
+                            <p class="!mt-2 text-xs font-medium text-amber-400/90">
+                                @GetMyReviewStateNote()
+                            </p>
+                        }
+
+                        @if (ShowLockAction)
+                        {
+                            <button type="button"
+                                    @onclick="HandleLockAction"
+                                    class="!mt-5 inline-flex items-center justify-center !rounded-xl !bg-[#d71920] !px-5 !py-3 text-sm font-black uppercase tracking-wide !text-white transition hover:!bg-[#b5141a]">
+                                @GetLockActionText()
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="!mt-10">
+        <h3 class="text-xl font-black text-white">
+            Đánh giá của mọi người
+        </h3>
+
+        @if (_isLoading)
+        {
+            <div class="!mt-6 flex justify-center !py-8">
+                <MudProgressCircular Color="Color.Error" Indeterminate="true" />
+            </div>
+        }
+        else if (_reviews.Count == 0)
+        {
+            <p class="!mt-4 text-sm text-neutral-500">
+                Chưa có đánh giá nào cho biến thể này.
+            </p>
+        }
+        else
+        {
+            <div class="!mt-5 !space-y-4">
+                @foreach (var review in _reviews)
+                {
+                    var initial = GetInitial(review);
+
+                    <article class="!rounded-2xl !border !border-neutral-800 !bg-[#1a1a1a] !p-5">
+                        <div class="flex items-start !gap-3">
+                            <div class="flex !h-11 !w-11 shrink-0 items-center justify-center !rounded-full !bg-[#d71920] text-sm font-black !text-white">
+                                @initial
+                            </div>
+
+                            <div class="min-w-0 flex-1">
+                                <div class="flex flex-wrap items-center !gap-2">
+                                    <p class="font-black text-white">
+                                        @(string.IsNullOrWhiteSpace(review.CustomerUsername)
+                                            ? (review.CustomerName ?? "Khách hàng")
+                                            : review.CustomerUsername)
+                                    </p>
+
+                                    <div class="flex items-center !gap-0.5">
+                                        @for (var i = 1; i <= 5; i++)
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Star"
+                                                     Size="Size.Small"
+                                                     Class="@(i <= review.Overall ? "!text-amber-400" : "!text-neutral-700")"
+                                                     Style="font-size: 14px;" />
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(review.Title))
+                                {
+                                    <p class="!mt-2 text-base font-black text-white">
+                                        @review.Title
+                                    </p>
+                                }
+
+                                <p class="!mt-1 text-sm leading-6 text-neutral-300">
+                                    @review.Content
+                                </p>
+
+                                <p class="!mt-2 text-xs font-bold text-neutral-500">
+                                    @review.CreateAt.ToString("dd/MM/yyyy HH:mm")
+                                </p>
+                            </div>
+                        </div>
+                    </article>
+                }
+            </div>
+        }
+    </div>
+</section>
+}
+
+@code {
+    [Parameter]
+    public int ProductVariantId { get; set; }
+
+    [Parameter]
+    public string? ProductName { get; set; }
+
+    private List<ReviewResponse> _reviews = new();
+    private ReviewEligibilityResponse? _eligibility;
+    private string _displayName = string.Empty;
+    private string _title = string.Empty;
+    private string _content = string.Empty;
+    private int _overall = 5;
+    private bool _isLoading = true;
+    private bool _isSubmitting;
+    private int _loadedVariantId;
+
+    private bool _canSubmit => _eligibility?.CanReview == true && !_isSubmitting;
+
+    private bool ShowLockAction =>
+        _eligibility?.LockReason == "login";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ProductVariantId <= 0 || ProductVariantId == _loadedVariantId)
+        {
+            return;
+        }
+
+        _loadedVariantId = ProductVariantId;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var user = await _authStorageService.GetUserAsync();
+            _displayName = !string.IsNullOrWhiteSpace(user?.FullName)
+                ? user.FullName
+                : (user?.Username ?? string.Empty);
+
+            // Sequential to keep eligibility auth stable with shared HttpClient consumers.
+            var reviewsResult = await _customerReviewService.GetByVariantAsync(ProductVariantId);
+            var eligibilityResult = await _customerReviewService.GetEligibilityAsync(ProductVariantId);
+
+            _reviews = reviewsResult.Success && reviewsResult.Data is not null
+                ? reviewsResult.Data.OrderByDescending(x => x.CreateAt).ToList()
+                : new List<ReviewResponse>();
+
+            if (eligibilityResult.Success && eligibilityResult.Data is not null)
+            {
+                _eligibility = eligibilityResult.Data;
+            }
+            else
+            {
+                var isAuthenticated = await _authStorageService.IsAuthenticatedAsync();
+                _eligibility = new ReviewEligibilityResponse
+                {
+                    IsAuthenticated = isAuthenticated,
+                    CanReview = false,
+                    LockReason = isAuthenticated ? "not_purchased" : "login"
+                };
+            }
+
+            // Safety net: if API miss-detects but current user already has a visible review.
+            if (_eligibility.LockReason is "not_purchased" or "none"
+                && user is not null
+                && HasOwnVisibleReview(user.Username, user.FullName))
+            {
+                _eligibility = new ReviewEligibilityResponse
+                {
+                    IsAuthenticated = true,
+                    CanReview = false,
+                    AlreadyReviewed = true,
+                    HasCompletedPurchase = true,
+                    LockReason = "already_reviewed",
+                    MyReviewState = "visible"
+                };
+            }
+
+            if (string.IsNullOrWhiteSpace(_displayName) && _eligibility.IsAuthenticated)
+            {
+                _displayName = "Khách hàng";
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private bool HasOwnVisibleReview(string? username, string? fullName)
+    {
+        return _reviews.Any(r =>
+            (!string.IsNullOrWhiteSpace(username)
+             && string.Equals(r.CustomerUsername, username, StringComparison.OrdinalIgnoreCase))
+            || (!string.IsNullOrWhiteSpace(fullName)
+                && string.Equals(r.CustomerName, fullName, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private int GetStarCount(int star) =>
+        _reviews.Count(r => r.Overall == star);
+
+    private void SetRating(int rating)
+    {
+        if (!_canSubmit)
+        {
+            return;
+        }
+
+        _overall = rating;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (!_canSubmit)
+        {
+            return;
+        }
+
+        if (_overall < 1 || _overall > 5)
+        {
+            _snackbar.Add("Vui lòng chọn số sao đánh giá", Severity.Warning);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_content))
+        {
+            _snackbar.Add("Vui lòng nhập nhận xét", Severity.Warning);
+            return;
+        }
+
+        _isSubmitting = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _customerReviewService.CreateAsync(new ReviewCreateRequest
+            {
+                ProductVariantId = ProductVariantId,
+                Title = string.IsNullOrWhiteSpace(_title) ? null : _title.Trim(),
+                Content = _content.Trim(),
+                Overall = _overall
+            });
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(
+                    string.IsNullOrWhiteSpace(result.Message)
+                        ? "Không thể gửi đánh giá"
+                        : result.Message,
+                    Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Đã gửi đánh giá thành công", Severity.Success);
+            _title = string.Empty;
+            _content = string.Empty;
+            _overall = 5;
+            await LoadAsync();
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private string GetLockTitle() => _eligibility?.LockReason switch
+    {
+        "login" => "Chưa thể đánh giá",
+        "already_reviewed" => "Bạn đã đánh giá",
+        "not_purchased" => "Chưa thể đánh giá",
+        _ => "Chưa thể đánh giá"
+    };
+
+    private string GetLockDescription()
+    {
+        var productLabel = string.IsNullOrWhiteSpace(ProductName) ? "sản phẩm này" : ProductName;
+
+        return _eligibility?.LockReason switch
+        {
+            "login" => "Bạn cần đăng nhập và mua sản phẩm (đơn hoàn thành) để gửi nhận xét.",
+            "already_reviewed" => "Mỗi tài khoản chỉ được đánh giá một lần cho biến thể này.",
+            "not_purchased" => $"Bạn cần mua và hoàn thành đơn hàng chứa {productLabel} để mở khóa đánh giá.",
+            _ => "Hiện chưa thể gửi đánh giá."
+        };
+    }
+
+    private string? GetMyReviewStateNote() => _eligibility?.MyReviewState switch
+    {
+        "hidden" => "Đánh giá của bạn đã bị ẩn.",
+        "deleted" => "Đánh giá của bạn đã bị xóa.",
+        _ => null
+    };
+
+    private string GetLockActionText() => "Đăng nhập để mở khóa";
+
+    private void HandleLockAction()
+    {
+        _navigation.NavigateTo(RouterConfig.Customer.Login);
+    }
+
+    private static string GetInitial(ReviewResponse review)
+    {
+        var source = !string.IsNullOrWhiteSpace(review.CustomerUsername)
+            ? review.CustomerUsername
+            : review.CustomerName;
+
+        return string.IsNullOrWhiteSpace(source)
+            ? "?"
+            : char.ToUpperInvariant(source.Trim()[0]).ToString();
+    }
+}

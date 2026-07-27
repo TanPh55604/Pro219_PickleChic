@@ -232,6 +232,47 @@
                 $"point-history/customer/{customerId}";
         }
 
+        public static class Review
+        {
+            public const string Create = "review/create";
+
+            public const string Unreviewed = "review/customer/unreviewed";
+
+            public static string ByVariant(int productVariantId) =>
+                $"review/variant/{productVariantId}";
+
+            public static string Eligibility(int productVariantId) =>
+                $"review/variant/{productVariantId}/eligibility";
+
+            public static class Management
+            {
+                public const string UpdateStatus = "management/review/update-status";
+
+                public static string GetAll(string? keyword = null, int? status = null)
+                {
+                    var queryParts = new List<string>();
+
+                    if (!string.IsNullOrWhiteSpace(keyword))
+                    {
+                        queryParts.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+                    }
+
+                    if (status.HasValue)
+                    {
+                        queryParts.Add($"status={status.Value}");
+                    }
+
+                    return queryParts.Count == 0
+                        ? "management/review/get-all"
+                        : $"management/review/get-all?{string.Join("&", queryParts)}";
+                }
+
+                public static string GetById(int id) => $"management/review/get-by-id/{id}";
+
+                public static string Delete(int id) => $"management/review/delete/{id}";
+            }
+        }
+
         public static class Order
         {
             public const string GetAll = "management/order/get-all";

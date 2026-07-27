@@ -41,6 +41,7 @@ builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IProductVariantService,
 builder.Services.AddScoped<IProductVariantImageService, ProductVariantImageService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Admin.IVoucherService, PickleChic.WEB.Services.Admin.VoucherService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IAdminReviewService, AdminReviewService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IVoucherService, PickleChic.WEB.Services.Customer.VoucherService>();
 builder.Services.AddScoped<ICustomerCategoryService, CustomerCategoryService>();
 builder.Services.AddScoped<ICustomerBrandService, CustomerBrandService>();
@@ -49,6 +50,7 @@ builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductService, Pic
 builder.Services.AddScoped<ICustomerCartService, CustomerCartService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<ICustomerOrderService, CustomerOrderService>();
+builder.Services.AddScoped<ICustomerReviewService, CustomerReviewService>();
 builder.Services.AddScoped<IPointHistoryService, PointHistoryService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductVariantService, PickleChic.WEB.Services.Customer.ProductVariantService>();
 
