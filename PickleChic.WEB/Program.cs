@@ -51,6 +51,7 @@ builder.Services.AddScoped<ICustomerCartService, CustomerCartService>();
 builder.Services.AddScoped<IAddressService, AddressService>();
 builder.Services.AddScoped<ICustomerOrderService, CustomerOrderService>();
 builder.Services.AddScoped<ICustomerReviewService, CustomerReviewService>();
+builder.Services.AddScoped<ICustomerWishlistService, CustomerWishlistService>();
 builder.Services.AddScoped<IPointHistoryService, PointHistoryService>();
 builder.Services.AddScoped<PickleChic.WEB.Services.Customer.IProductVariantService, PickleChic.WEB.Services.Customer.ProductVariantService>();
 

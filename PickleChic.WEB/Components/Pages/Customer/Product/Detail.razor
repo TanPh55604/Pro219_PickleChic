@@ -210,8 +210,9 @@
                         </div>
 
                         <button type="button"
-                                @onclick="ToggleFavorite"
-                                class="!mt-4 inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-300 !px-6 !py-3 text-sm font-black text-neutral-700 transition hover:!border-[#d71920] hover:!text-[#d71920]">
+                                @onclick="ToggleFavoriteAsync"
+                                disabled="@_isFavoriteBusy"
+                                class="!mt-4 inline-flex items-center justify-center !gap-2 !rounded-full !border !border-neutral-300 !px-6 !py-3 text-sm font-black text-neutral-700 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
                             <MudIcon Icon="@(_isFavorite ? Icons.Material.Filled.Favorite : Icons.Material.Outlined.FavoriteBorder)"
                                      Size="Size.Small"
                                      Class="@(_isFavorite ? "text-[#d71920]" : string.Empty)" />
@@ -301,6 +302,10 @@
 
   private bool _isFavorite;
 
+  private bool _isFavoriteBusy;
+
+  private int? _wishlistItemId;
+
   private bool HasMultipleVariants => _activeVariants.Count > 1;
 
   private List<ProductVariantSummaryResponse> _activeVariants =>
@@ -359,11 +364,32 @@
 
       SelectInitialVariant();
       await LoadRelatedProductsAsync();
+      await LoadFavoriteStateAsync();
     }
     finally
     {
       _isLoading = false;
     }
+  }
+
+  private async Task LoadFavoriteStateAsync()
+  {
+    _isFavorite = false;
+    _wishlistItemId = null;
+
+    if (_product is null || !await _authStorageService.IsAuthenticatedAsync())
+    {
+      return;
+    }
+
+    var result = await _customerWishlistService.GetFavoriteStateAsync(_product.Id);
+    if (!result.Success)
+    {
+      return;
+    }
+
+    _isFavorite = result.Data.IsFavorite;
+    _wishlistItemId = result.Data.WishlistId;
   }
 
   private async Task LoadRelatedProductsAsync()
@@ -572,15 +598,46 @@
     }
   }
 
-  private void ToggleFavorite()
+  private async Task ToggleFavoriteAsync()
   {
-    _isFavorite = !_isFavorite;
+    if (_product is null || _isFavoriteBusy)
+    {
+      return;
+    }
 
-    _snackbar.Add(
-      _isFavorite
-        ? "Đã thêm vào danh sách yêu thích (demo)"
-        : "Đã bỏ khỏi danh sách yêu thích (demo)",
-      Severity.Info);
+    if (!await _authStorageService.IsAuthenticatedAsync())
+    {
+      _navigation.NavigateTo(RouterConfig.Customer.Login);
+      return;
+    }
+
+    _isFavoriteBusy = true;
+    try
+    {
+      var result = await _customerWishlistService.ToggleAsync(_product.Id);
+      if (!result.Success)
+      {
+        _snackbar.Add(
+          string.IsNullOrWhiteSpace(result.Message)
+            ? "Không thể cập nhật yêu thích"
+            : result.Message,
+          Severity.Error);
+        return;
+      }
+
+      _isFavorite = result.Data.IsFavorite;
+      _wishlistItemId = result.Data.WishlistId;
+
+      _snackbar.Add(
+        _isFavorite
+          ? "Đã thêm vào danh sách yêu thích"
+          : "Đã bỏ khỏi danh sách yêu thích",
+        Severity.Success);
+    }
+    finally
+    {
+      _isFavoriteBusy = false;
+    }
   }
 
   private static string ConvertErrorMessage(string message)

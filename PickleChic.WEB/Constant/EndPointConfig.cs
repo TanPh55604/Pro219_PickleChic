@@ -226,6 +226,18 @@
             }
         }
 
+        public static class Wishlist
+        {
+            public const string Create = "wishlist/create";
+
+            public const string ManagementGetAll = "management/wishlist/get-all";
+
+            public static string GetAllByUserId(int userId) =>
+                $"wishlist/get-all-by-userId/{userId}";
+
+            public static string Delete(int id) => $"wishlist/delete/{id}";
+        }
+
         public static class PointHistory
         {
             public static string GetByCustomer(int customerId) =>
