@@ -238,6 +238,9 @@
                 </div>
             </section>
 
+            <ProductReviewSection ProductVariantId="@(_selectedVariant?.Id ?? 0)"
+                                  ProductName="@GetDisplayName()" />
+
             @if (_relatedProducts.Count > 0)
             {
                 <section class="!mt-12">
