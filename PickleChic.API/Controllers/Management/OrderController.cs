@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using PickleChic.API.DTOs;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
+using PickleChic.API.Utilities;
 
 namespace PickleChic.API.Controllers.Management;
 
@@ -186,6 +187,226 @@ public class OrderController : ControllerBase
             {
                 var pointHistoryRepository = new PointHistoryRepository();
                 await pointHistoryRepository.RefundPointsForOrderAsync(existingOrder.Id);
+            }
+
+            if (dto.OrderStatus == Constant.OrderStatus.Done)
+            {
+                if (existingOrder.Customer != null && 
+                    !string.IsNullOrWhiteSpace(existingOrder.Customer.Email) && 
+                    existingOrder.Customer.Email != "guest@example.com")
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var emailAddress = existingOrder.Customer.Email;
+                            var receiverName = existingOrder.Customer.FullName;
+                            var subject = "[PickleChic] Đơn hàng #" + existingOrder.OrderCode + " đã hoàn thành thành công!";
+                            
+                            decimal totalPrice = existingOrder.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
+                            decimal discountAmount = 0;
+                            if (existingOrder.Voucher != null)
+                            {
+                                var voucher = existingOrder.Voucher;
+                                if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    discountAmount = totalPrice * (voucher.DiscountValue / 100);
+                                    if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                                    {
+                                        discountAmount = voucher.MaxDiscountAmount.Value;
+                                    }
+                                }
+                                else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    discountAmount = voucher.DiscountValue;
+                                }
+                                discountAmount = Math.Min(discountAmount, totalPrice);
+                            }
+                            decimal finalPrice = Math.Max(0, totalPrice - discountAmount + existingOrder.ShippingFee);
+
+                            string fullAddress = "";
+                            if (existingOrder.Address != null)
+                            {
+                                var addr = existingOrder.Address;
+                                var parts = new List<string>();
+                                if (!string.IsNullOrWhiteSpace(addr.DetailInfo)) parts.Add(addr.DetailInfo);
+                                if (addr.Ward != null)
+                                {
+                                    parts.Add(addr.Ward.Name);
+                                    if (addr.Ward.District != null)
+                                    {
+                                        parts.Add(addr.Ward.District.Name);
+                                        if (addr.Ward.District.Province != null)
+                                        {
+                                            parts.Add(addr.Ward.District.Province.Name);
+                                        }
+                                    }
+                                }
+                                fullAddress = string.Join(", ", parts);
+                            }
+
+                            var itemsTableRows = new System.Text.StringBuilder();
+                            if (existingOrder.OrderItems != null)
+                            {
+                                foreach (var item in existingOrder.OrderItems)
+                                {
+                                    var productName = item.ProductVariant?.Product?.ProductName ?? "Sản phẩm";
+                                    var variantName = item.ProductVariant?.VariantName;
+                                    var displayName = string.IsNullOrEmpty(variantName) ? productName : $"{productName} ({variantName})";
+                                    var unitPriceStr = item.UnitPrice.ToString("#,##0") + " ₫";
+                                    var subtotalStr = item.Subtotal.ToString("#,##0") + " ₫";
+
+                                    itemsTableRows.Append($@"
+                                        <tr style=""border-bottom: 1px solid #f1f5f9;"">
+                                            <td style=""padding: 12px 0; text-align: left; font-size: 14px; color: #334155;"">
+                                                <div style=""font-weight: 600;"">{displayName}</div>
+                                            </td>
+                                            <td style=""padding: 12px 0; text-align: center; font-size: 14px; color: #64748b;"">
+                                                {item.Quantity}
+                                            </td>
+                                            <td style=""padding: 12px 0; text-align: right; font-size: 14px; color: #64748b;"">
+                                                {unitPriceStr}
+                                            </td>
+                                            <td style=""padding: 12px 0; text-align: right; font-size: 14px; font-weight: bold; color: #0f172a;"">
+                                                {subtotalStr}
+                                            </td>
+                                        </tr>");
+                                }
+                            }
+
+                            string voucherDiscountRow = "";
+                            if (discountAmount > 0)
+                            {
+                                voucherDiscountRow = $@"
+                                    <tr>
+                                        <td style=""padding: 6px 0; font-size: 14px; color: #64748b;"">Giảm giá voucher:</td>
+                                        <td style=""padding: 6px 0; font-size: 14px; color: #ef4444; text-align: right;"">-{discountAmount.ToString("#,##0")} ₫</td>
+                                    </tr>";
+                            }
+
+                            var bodyHTML = $@"
+                            <!DOCTYPE html>
+                            <html lang=""vi"">
+                            <head>
+                                <meta charset=""UTF-8"">
+                                <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+                                <title>Đơn hàng hoàn thành thành công</title>
+                            </head>
+                            <body style=""margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f6f9fc; -webkit-font-smoothing: antialiased;"">
+                                <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""table-layout: fixed; background-color: #f6f9fc; padding: 40px 0;"">
+                                    <tr>
+                                        <td align=""center"">
+                                            <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);"">
+                                                <tr>
+                                                    <td align=""center"" style=""background: linear-gradient(135deg, #A05AFF 0%, #FE9496 100%); padding: 40px 20px; color: #ffffff;"">
+                                                        <h1 style=""margin: 0; font-size: 28px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;"">PickleChic</h1>
+                                                        <p style=""margin: 10px 0 0 0; font-size: 16px; opacity: 0.9; font-weight: 300;"">ĐƠN HÀNG HOÀN THÀNH THÀNH CÔNG</p>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td style=""padding: 40px 30px;"">
+                                                        <p style=""margin: 0 0 20px 0; font-size: 16px; line-height: 1.6; color: #333333;"">
+                                                            Xin chào <strong>{receiverName}</strong>,
+                                                        </p>
+                                                        <p style=""margin: 0 0 30px 0; font-size: 16px; line-height: 1.6; color: #555555;"">
+                                                            Cảm ơn bạn đã mua sắm tại <strong>PickleChic</strong>. Chúng tôi rất vui mừng thông báo đơn hàng của bạn đã được hoàn thành và giao hàng thành công!
+                                                        </p>
+                                                        
+                                                        <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""background-color: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 30px;"">
+                                                            <tr>
+                                                                <td style=""padding: 4px 0; font-size: 14px; color: #64748b;"">Mã đơn hàng:</td>
+                                                                <td style=""padding: 4px 0; font-size: 14px; font-weight: bold; color: #0f172a; text-align: right;"">#{existingOrder.OrderCode}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style=""padding: 4px 0; font-size: 14px; color: #64748b;"">Ngày đặt hàng:</td>
+                                                                <td style=""padding: 4px 0; font-size: 14px; color: #0f172a; text-align: right;"">{existingOrder.OrderDate:dd/MM/yyyy HH:mm}</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style=""padding: 4px 0; font-size: 14px; color: #64748b;"">Phương thức thanh toán:</td>
+                                                                <td style=""padding: 4px 0; font-size: 14px; color: #0f172a; text-align: right;"">{(existingOrder.PaymentMethod?.Name ?? "Thẻ/Ví điện tử/COD")}</td>
+                                                            </tr>
+                                                        </table>
+
+                                                        <h3 style=""margin: 0 0 15px 0; font-size: 16px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;"">Chi tiết sản phẩm</h3>
+                                                        
+                                                        <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""margin-bottom: 30px; border-collapse: collapse;"">
+                                                            <thead>
+                                                                <tr style=""border-bottom: 2px solid #e2e8f0;"">
+                                                                    <th style=""padding: 10px 0; text-align: left; font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase;"">Sản phẩm</th>
+                                                                    <th style=""padding: 10px 0; text-align: center; font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 60px;"">SL</th>
+                                                                    <th style=""padding: 10px 0; text-align: right; font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 100px;"">Đơn giá</th>
+                                                                    <th style=""padding: 10px 0; text-align: right; font-size: 13px; font-weight: 600; color: #64748b; text-transform: uppercase; width: 100px;"">Thành tiền</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {itemsTableRows}
+                                                            </tbody>
+                                                        </table>
+
+                                                        <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""border-top: 1px solid #e2e8f0; padding-top: 15px; margin-bottom: 35px;"">
+                                                            <tr>
+                                                                <td style=""padding: 6px 0; font-size: 14px; color: #64748b;"">Tạm tính:</td>
+                                                                <td style=""padding: 6px 0; font-size: 14px; color: #0f172a; text-align: right;"">{totalPrice.ToString("#,##0")} ₫</td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style=""padding: 6px 0; font-size: 14px; color: #64748b;"">Phí vận chuyển:</td>
+                                                                <td style=""padding: 6px 0; font-size: 14px; color: #0f172a; text-align: right;"">{existingOrder.ShippingFee.ToString("#,##0")} ₫</td>
+                                                            </tr>
+                                                            {voucherDiscountRow}
+                                                            <tr>
+                                                                <td style=""padding: 12px 0 0 0; font-size: 16px; font-weight: bold; color: #0f172a; border-top: 1px dashed #e2e8f0; margin-top: 10px;"">Tổng tiền thanh toán:</td>
+                                                                <td style=""padding: 12px 0 0 0; font-size: 20px; font-weight: 800; color: #A05AFF; text-align: right; border-top: 1px dashed #e2e8f0; margin-top: 10px;"">{finalPrice.ToString("#,##0")} ₫</td>
+                                                            </tr>
+                                                        </table>
+
+                                                        <h3 style=""margin: 0 0 15px 0; font-size: 16px; font-weight: 700; color: #0f172a; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;"">Thông tin giao nhận</h3>
+                                                        <table border=""0"" cellpadding=""0"" cellspacing=""0"" width=""100%"" style=""background-color: #f8fafc; border-radius: 12px; padding: 20px; font-size: 14px; line-height: 1.6; color: #334155;"">
+                                                            <tr>
+                                                                <td style=""padding-bottom: 8px;"">
+                                                                    <strong>Người nhận:</strong> {(existingOrder.Address?.FullName ?? receiverName)}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td style=""padding-bottom: 8px;"">
+                                                                    <strong>Số điện thoại:</strong> {(existingOrder.Address?.PhoneNumber ?? "")}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td>
+                                                                    <strong>Địa chỉ giao hàng:</strong> {fullAddress}
+                                                                </td>
+                                                            </tr>
+                                                        </table>
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td align=""center"" style=""background-color: #f8fafc; padding: 30px; border-top: 1px solid #f1f5f9; text-align: center;"">
+                                                        <p style=""margin: 0 0 10px 0; font-size: 13px; color: #64748b; line-height: 1.5;"">
+                                                            Nếu bạn có bất kỳ câu hỏi nào về đơn hàng, vui lòng liên hệ với chúng tôi qua email <a href=""mailto:picklechic@proton.me"" style=""color: #A05AFF; text-decoration: none;"">picklechic@proton.me</a>.
+                                                        </p>
+                                                        <p style=""margin: 0; font-size: 12px; color: #94a3b8;"">
+                                                            &copy; 2026 PickleChic. All rights reserved.
+                                                        </p>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </body>
+                            </html>";
+
+                            var plainBody = "Xin chào " + receiverName + ", Đơn hàng #" + existingOrder.OrderCode + " của bạn đã hoàn thành thành công! Tổng số tiền thanh toán: " + finalPrice.ToString("#,##0") + " ₫. Trân trọng, Đội ngũ PickleChic.";
+                            
+                            var utilityFunc = new UtilityFunc();
+                            await utilityFunc.SendEmailToAddress(emailAddress, receiverName, subject, plainBody, bodyHTML);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("Lỗi gửi email đơn hàng hoàn thành: " + ex.Message);
+                        }
+                    });
+                }
             }
 
             return Ok(updated);

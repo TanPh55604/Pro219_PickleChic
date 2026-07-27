@@ -26,12 +26,12 @@ namespace PickleChic.API.Utilities
 
         public async Task<bool> SendEmailToAddress(string emailAddress,string nameRecivecer, string subject, string body, string bodyHTML)
         {
-            MailjetClient client = new MailjetClient("76c6220ae1a01e1008c6f48c42e8ab3d", "9d3aedd2a7d39b8517775e5080b65031");
+            MailjetClient client = new MailjetClient("d6c5e816cacd0645137110f9f3401997", "6a39d9d6578839fd30be7993fc049d4b");
             MailjetRequest request = new MailjetRequest
             {
                 Resource = Send.Resource,
             }
-               .Property(Send.FromEmail, "")
+               .Property(Send.FromEmail, "hlk9@proton.me")
                .Property(Send.FromName, "PickleChic")
                .Property(Send.Subject, subject)
                .Property(Send.TextPart, body)

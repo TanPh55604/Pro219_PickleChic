@@ -36,4 +36,6 @@ public class ProductVariant
     public ICollection<OrderItem>? OrderItems { get; set; }
 
     public ICollection<PromotionDetail>? PromotionDetails { get; set; }
+
+    public ICollection<Review>? Reviews { get; set; }
 }
