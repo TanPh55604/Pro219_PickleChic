@@ -95,6 +95,7 @@ builder.Services.AddScoped<VoucherRepository>();
 builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<OrderItemRepository>();
 builder.Services.AddScoped<PaymentMethodRepository>();
+builder.Services.AddScoped<ReviewRepository>();
 
 builder.Services.AddScoped<PickleChic.API.Services.OrderManagerService>();
 

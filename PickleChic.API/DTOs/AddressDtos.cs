@@ -7,8 +7,8 @@ public class AddressCreateDto
     public string PhoneNumber { get; set; } = null!;
     public string DetailInfo { get; set; } = null!;
     public int WardId { get; set; }
-    public bool IsDefault { get; set; }
-    public int Status { get; set; }
+    public bool IsDefault { get; set; } = false;
+    public int Status { get; set; } = 1;
 }
 
 public class AddressUpdateDto : AddressCreateDto

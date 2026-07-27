@@ -45,4 +45,6 @@ public class OrderItem
     public ProductVariant? ProductVariant { get; set; }
 
     public Promotion? Promotion { get; set; }
+
+    public Review? Review { get; set; }
 }
