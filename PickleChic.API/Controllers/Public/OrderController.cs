@@ -673,6 +673,334 @@ public class OrderController : ControllerBase
         return BadRequest("Phương thức thanh toán không hợp lệ");
     }
 
+    [HttpPost("POS-Checkout")]
+    public async Task<ActionResult<UserOrderDetailDto>> PosCheckout([FromBody] PosCheckoutDto dto)
+    {
+        if (dto == null || dto.ListItemCheckout == null || !dto.ListItemCheckout.Any())
+        {
+            return BadRequest("Dữ liệu checkout không hợp lệ");
+        }
+
+        var variantDict = new Dictionary<int, ProductVariant>();
+        foreach (var item in dto.ListItemCheckout)
+        {
+            if (item.ProductVariantId <= 0 || item.Quantity <= 0)
+            {
+                return BadRequest("Sản phẩm bạn đã chọn đã hết hoặc số lượng không hợp lệ");
+            }
+
+            var variant = await _productVariantRepository.GetVariantWithDetailsByIdAsync(item.ProductVariantId);
+            if (variant == null || variant.Status == -1)
+            {
+                return BadRequest("Sản phẩm không còn hoạt động hoặc đã bị xóa");
+            }
+
+            if (variant.StockQuantity < item.Quantity)
+            {
+                return BadRequest($"Số lượng kho của biến thể '{variant.VariantName}' không đủ");
+            }
+
+            var product = variant.Product;
+            if (product == null || product.IsDeleted || product.Status == -1)
+            {
+                return BadRequest("Sản phẩm không còn hoạt động hoặc đã bị xóa");
+            }
+
+            var brand = product.Brand;
+            if (brand == null || brand.Delete || brand.Status == -1)
+            {
+                return BadRequest("Thương hiệu đã ngừng kinh doanh");
+            }
+
+            variantDict[item.ProductVariantId] = variant;
+        }
+
+        decimal totalPrice = 0;
+        var orderItemDetails = new List<(ProductVariant Variant, int Quantity, int? PromotionId, decimal DiscountAmount, decimal Subtotal)>();
+
+        foreach (var product in dto.ListItemCheckout)
+        {
+            var variant = variantDict[product.ProductVariantId];
+            
+            var activePromoDetail = variant.PromotionDetails?
+                .FirstOrDefault(pd => pd.Promotion != null 
+                                      && pd.Promotion.IsActive 
+                                      && DateTime.Now >= pd.Promotion.StartDate 
+                                      && DateTime.Now <= pd.Promotion.EndDate);
+
+            int? itemPromotionId = null;
+            decimal itemDiscountAmount = 0;
+
+            if (activePromoDetail != null)
+            {
+                itemPromotionId = activePromoDetail.PromotionId;
+                if (activePromoDetail.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+                {
+                    itemDiscountAmount = variant.Price * (activePromoDetail.DiscountValue / 100);
+                }
+                else if (activePromoDetail.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+                {
+                    itemDiscountAmount = activePromoDetail.DiscountValue;
+                }
+                itemDiscountAmount = Math.Min(itemDiscountAmount, variant.Price);
+            }
+
+            decimal itemSubtotal = (variant.Price - itemDiscountAmount) * product.Quantity;
+            totalPrice += itemSubtotal;
+
+            orderItemDetails.Add((variant, product.Quantity, itemPromotionId, itemDiscountAmount, itemSubtotal));
+        }
+
+        int customerId = -1;
+        Address address = null!;
+        int addressId = 0;
+        decimal shippingFee = 0;
+
+        if (dto.AddressId.HasValue && dto.AddressId.Value > 0)
+        {
+            address = await _addressRepository.GetByIdAsync(dto.AddressId.Value);
+            if (address == null)
+            {
+                return BadRequest("Địa chỉ giao hàng không tồn tại");
+            }
+            addressId = address.Id;
+            customerId = address.CustomerId;
+
+            var toDistrictCode = address.Ward?.District?.Code;
+            var toWardCode = address.Ward?.Code;
+
+            if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
+            {
+                var feeItems = orderItemDetails.Select(i => new FeeItemDTO
+                {
+                    Name = i.Variant.VariantName ?? i.Variant.Product?.ProductName ?? "Sản phẩm",
+                    Quantity = i.Quantity,
+                    Length = 30,
+                    Width = 40,
+                    Height = 5,
+                    Weight = 400
+                }).ToList();
+
+                shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
+            }
+        }
+        else
+        {
+            customerId = -1;
+
+            if (dto.AddressDTO != null)
+            {
+                var newAddress = new Address
+                {
+                    CustomerId = -1,
+                    FullName = dto.AddressDTO.FullName,
+                    PhoneNumber = dto.AddressDTO.PhoneNumber,
+                    WardId = dto.AddressDTO.WardId,
+                    DetailInfo = dto.AddressDTO.DetailInfo,
+                    IsDefault = false,
+                    Status = 1,
+                    InsertedAt = DateTime.Now,
+                    Delete = false
+                };
+
+                var savedAddress = await _addressRepository.AddAsync(newAddress);
+                if (savedAddress == null)
+                {
+                    return BadRequest("Không thể tạo địa chỉ giao hàng cho khách vãng lai");
+                }
+
+                address = await _addressRepository.GetByIdAsync(savedAddress.Id) ?? savedAddress;
+                addressId = address.Id;
+
+                var toDistrictCode = address.Ward?.District?.Code;
+                var toWardCode = address.Ward?.Code;
+
+                if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
+                {
+                    var feeItems = orderItemDetails.Select(i => new FeeItemDTO
+                    {
+                        Name = i.Variant.VariantName ?? i.Variant.Product?.ProductName ?? "Sản phẩm",
+                        Quantity = i.Quantity,
+                        Length = 30,
+                        Width = 40,
+                        Height = 5,
+                        Weight = 400
+                    }).ToList();
+
+                    shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
+                }
+            }
+            else
+            {
+                shippingFee = 0;
+                var existingAddresses = await _addressRepository.GetByCustomerIdAsync(-1);
+                var dummyAddress = existingAddresses.FirstOrDefault(a => a.DetailInfo == "Mua tại quầy" && !a.Delete);
+                if (dummyAddress == null)
+                {
+                    dummyAddress = new Address
+                    {
+                        CustomerId = -1,
+                        FullName = "Khách vãng lai",
+                        PhoneNumber = "0000000000",
+                        WardId = 1,
+                        DetailInfo = "Mua tại quầy",
+                        IsDefault = true,
+                        Status = 1,
+                        InsertedAt = DateTime.Now,
+                        Delete = false
+                    };
+                    dummyAddress = await _addressRepository.AddAsync(dummyAddress);
+                }
+                address = dummyAddress;
+                addressId = dummyAddress.Id;
+            }
+        }
+
+        decimal discountAmount = 0;
+        if (dto.VoucherId.HasValue)
+        {
+            if (customerId == -1)
+            {
+                return BadRequest("Khách vãng lai không được áp dụng voucher.");
+            }
+
+            var (discount, errorMsg) = await ApplyDiscount(totalPrice, dto.VoucherId.Value, customerId, address?.PhoneNumber);
+            if (errorMsg != null)
+            {
+                return BadRequest(errorMsg);
+            }
+            discountAmount = discount;
+        }
+
+        int pointsUsed = 0;
+        Customer? customerForPoints = null;
+        if (customerId != -1 && dto.UsePoints == true)
+        {
+            customerForPoints = await _customerRepository.GetByIdAsync(customerId);
+            if (customerForPoints != null && customerForPoints.TotalPoints > 0)
+            {
+                decimal tempFinal = totalPrice - discountAmount + shippingFee;
+                pointsUsed = (int)Math.Min((decimal)customerForPoints.TotalPoints, Math.Max(0, tempFinal));
+            }
+        }
+
+        int ordCode = new Random().Next(1, int.MaxValue);
+        Order order = new Order();
+        try
+        {
+            var statusHistory = ParseStatusHistory(order.StatusHistory);
+            statusHistory.Add(new StatusHistoryEntry
+            {
+                Index = statusHistory.Count + 1,
+                Status = Constant.OrderStatus.Done,
+                OrderStatus = Constant.OrderStatus.Done,
+                PaymentStatus = Constant.PaymentStatus.Completed,
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+            });
+            order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
+
+            order.OrderCode = "DH" + ordCode.ToString();
+            order.AddressId = addressId;
+            order.Notes = dto.Note;
+            order.ShippingFee = shippingFee;
+            order.OrderDate = DateTime.Now;
+            order.PaymentStatus = Constant.PaymentStatus.Completed;
+            order.OrderStatus = Constant.OrderStatus.Done;
+            order.VoucherId = dto.VoucherId;
+            order.InsertedAt = DateTime.Now;
+            order.LastUpdate = DateTime.Now;
+            order.UpdateBy = "System";
+            order.IsOrderPOS = true;
+            order.Delete = false;
+
+            order.CustomerId = customerId;
+            order.CustomerType = customerId != -1 ? Constant.CustomerType.RegisteredOrder : Constant.CustomerType.GuestOrder;
+            order.PaymentMethodId = dto.PaymentMethodTypeId ?? 1;
+
+            var result = await _orderRepository.AddAsync(order);
+            if (result == null)
+            {
+                return BadRequest("Không thể tạo đơn hàng");
+            }
+
+            if (pointsUsed > 0 && customerForPoints != null)
+            {
+                customerForPoints.TotalPoints -= pointsUsed;
+                await _customerRepository.UpdateAsync(customerForPoints);
+
+                var pointHistory = new PointHistory
+                {
+                    CustomerId = customerForPoints.Id,
+                    OrderId = result.Id,
+                    Points = -pointsUsed,
+                    TransactionType = "Dùng điểm",
+                    Description = $"Dùng điểm cho đơn hàng {result.OrderCode}",
+                    CreatedAt = DateTime.Now
+                };
+                await _pointHistoryRepository.AddAsync(pointHistory);
+            }
+
+            foreach (var detail in orderItemDetails)
+            {
+                OrderItem orderItem = new OrderItem
+                {
+                    OrderId = result.Id,
+                    ProductVariantId = detail.Variant.Id,
+                    PromotionId = detail.PromotionId,
+                    Quantity = detail.Quantity,
+                    UnitPrice = detail.Variant.Price,
+                    DiscountAmount = detail.DiscountAmount,
+                    Subtotal = detail.Subtotal,
+                    IsReviewed = false,
+                    InsertedAt = DateTime.Now,
+                    Delete = false
+                };
+                var resultItem = await _orderItemRepository.AddAsync(orderItem);
+                if (resultItem == null)
+                {
+                    return BadRequest("Không thể thêm chi tiết đơn hàng");
+                }
+            }
+
+            foreach (var product in dto.ListItemCheckout)
+            {
+                var decreased = await _productVariantRepository.DecreaseStockAsync(product.ProductVariantId, product.Quantity);
+                if (!decreased)
+                {
+                    return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
+                }
+            }
+
+            if (dto.VoucherId != null && discountAmount > 0)
+            {
+                var voucher = await _voucherRepository.GetByIdAsync((int)dto.VoucherId);
+                if (voucher != null)
+                {
+                    voucher.UsedCount++;
+                    await _voucherRepository.UpdateAsync(voucher);
+                }
+            }
+
+            var finalOrder = await _orderRepository.GetOrderDetailByIdAsync(result.Id);
+            if (finalOrder == null)
+            {
+                return BadRequest("Không thể tải thông tin đơn hàng đã tạo");
+            }
+
+            if (customerId != -1)
+            {
+                await ProcessRewardPointsAsync(finalOrder);
+            }
+
+            var orderDetailDto = MapToUserOrderDetailDto(finalOrder);
+            return Ok(orderDetailDto);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, Constant.ErrorCode.OtherError);
+        }
+    }
+
     [HttpGet("PaymentSuccess")]
     public async Task<ActionResult<Order>> PaymentSuccess([FromQuery] int orderId, [FromQuery] bool pos, [FromQuery] string? errorMessage = null)
     {
@@ -990,6 +1318,31 @@ public class OrderController : ControllerBase
             }
 
             var orders = await _orderRepository.GetOrdersForUserAsync(customerId);
+            var dtos = orders.Select(MapToUserOrderDetailDto).ToList();
+            return Ok(dtos);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, Constant.ErrorCode.OtherError);
+        }
+    }
+
+    [HttpGet("lookup")]
+    public async Task<ActionResult<List<UserOrderDetailDto>>> LookupOrders(
+        [FromQuery] string? orderCode,
+        [FromQuery] string? name,
+        [FromQuery] string? phoneNumber)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(orderCode) && 
+                string.IsNullOrWhiteSpace(name) && 
+                string.IsNullOrWhiteSpace(phoneNumber))
+            {
+                return BadRequest("Vui lòng cung cấp ít nhất một thông tin tra cứu (mã đơn hàng, tên hoặc số điện thoại).");
+            }
+
+            var orders = await _orderRepository.LookupOrdersAsync(orderCode, name, phoneNumber);
             var dtos = orders.Select(MapToUserOrderDetailDto).ToList();
             return Ok(dtos);
         }

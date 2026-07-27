@@ -101,3 +101,22 @@ public class OrderCalculationItemResultDto
     public decimal DiscountAmount { get; set; }
     public decimal PriceToPay { get; set; }
 }
+
+public class PosCheckoutDto
+{
+    public List<CartItemCheckoutDTO> ListItemCheckout { get; set; } = null!;
+    public int? AddressId { get; set; }
+    public PosAddressCreateDto? AddressDTO { get; set; } = null;
+    public int? PaymentMethodTypeId { get; set; }
+    public int? VoucherId { get; set; } = null;
+    public string? Note { get; set; } = null;
+    public bool? UsePoints { get; set; } = false;
+}
+
+public class PosAddressCreateDto
+{
+    public string FullName { get; set; } = null!;
+    public string PhoneNumber { get; set; } = null!;
+    public string DetailInfo { get; set; } = null!;
+    public int WardId { get; set; }
+}

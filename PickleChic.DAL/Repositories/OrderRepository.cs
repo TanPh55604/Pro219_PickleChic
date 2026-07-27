@@ -197,6 +197,68 @@ public class OrderRepository
         return totalSpent;
     }
 
+    public async Task<Order?> GetOrderDetailByIdAsync(int id)
+    {
+        return await _context.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.Address)
+                .ThenInclude(a => a!.Ward)
+                    .ThenInclude(w => w!.District)
+                        .ThenInclude(d => d!.Province)
+            .Include(o => o.PaymentMethod)
+            .Include(o => o.Voucher)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.Product)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.ProductVariantAttributes!)
+                        .ThenInclude(pva => pva.AttributeValue!)
+                            .ThenInclude(av => av.ProductAttribute)
+            .FirstOrDefaultAsync(o => o.Id == id && !o.Delete);
+    }
+
+    public async Task<List<Order>> LookupOrdersAsync(string? orderCode, string? name, string? phoneNumber)
+    {
+        var query = _context.Orders
+            .Include(o => o.Customer)
+            .Include(o => o.Address)
+                .ThenInclude(a => a!.Ward)
+                    .ThenInclude(w => w!.District)
+                        .ThenInclude(d => d!.Province)
+            .Include(o => o.Voucher)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.Product)
+            .Include(o => o.OrderItems!)
+                .ThenInclude(oi => oi.ProductVariant!)
+                    .ThenInclude(pv => pv.ProductVariantAttributes!)
+                        .ThenInclude(pva => pva.AttributeValue!)
+                            .ThenInclude(av => av.ProductAttribute)
+            .Where(o => !o.Delete);
+
+        if (!string.IsNullOrWhiteSpace(orderCode))
+        {
+            query = query.Where(o => o.OrderCode.Contains(orderCode));
+        }
+
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            query = query.Where(o => (o.Address != null && o.Address.FullName.Contains(name)) 
+                                  || (o.Customer != null && o.Customer.FullName.Contains(name)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            query = query.Where(o => (o.Address != null && o.Address.PhoneNumber.Contains(phoneNumber)) 
+                                  || (o.Customer != null && o.Customer.PhoneNumber.Contains(phoneNumber)));
+        }
+
+        return await query
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync();
+    }
+
     public async Task<bool> DeleteAsync(int id)
     {
         var entity = await _context.Orders.FirstOrDefaultAsync(o => o.Id == id);
