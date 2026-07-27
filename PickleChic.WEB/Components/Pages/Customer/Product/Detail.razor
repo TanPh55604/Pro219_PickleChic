@@ -24,7 +24,7 @@
                     Sản phẩm có thể đã bị xóa hoặc không còn hiển thị.
                 </p>
 
-                <a href="@RouterConfig.Customer.Search"
+                <a href="@RouterConfig.Customer.Products"
                    class="!mt-6 inline-flex !rounded-full !bg-neutral-950 !px-6 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
                     Xem tất cả sản phẩm
                 </a>
@@ -35,7 +35,7 @@
             <nav class="!mb-6 flex flex-wrap items-center !gap-2 text-xs font-bold text-neutral-500">
                 <a href="@RouterConfig.Customer.Home" class="transition hover:text-[#d71920]">Trang chủ</a>
                 <span>/</span>
-                <a href="@RouterConfig.Customer.Search" class="transition hover:text-[#d71920]">Sản phẩm</a>
+                <a href="@RouterConfig.Customer.Products" class="transition hover:text-[#d71920]">Sản phẩm</a>
                 @if (!string.IsNullOrWhiteSpace(_product.CategoryName))
                 {
                     <span>/</span>

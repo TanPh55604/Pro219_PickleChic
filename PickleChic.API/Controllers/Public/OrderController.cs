@@ -1328,6 +1328,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("lookup")]
+    [AllowAnonymous]
     public async Task<ActionResult<List<UserOrderDetailDto>>> LookupOrders(
         [FromQuery] string? orderCode,
         [FromQuery] string? name,
@@ -1335,14 +1336,31 @@ public class OrderController : ControllerBase
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(orderCode) && 
-                string.IsNullOrWhiteSpace(name) && 
-                string.IsNullOrWhiteSpace(phoneNumber))
+            int? customerId = null;
+            if (User.Identity?.IsAuthenticated == true)
+            {
+                var claimVal = User.FindFirst(ClaimTypes.SerialNumber)?.Value;
+                if (!string.IsNullOrEmpty(claimVal) && int.TryParse(claimVal, out var parsedCustomerId))
+                {
+                    customerId = parsedCustomerId;
+                }
+            }
+
+            var hasFilter = !string.IsNullOrWhiteSpace(orderCode)
+                || !string.IsNullOrWhiteSpace(name)
+                || !string.IsNullOrWhiteSpace(phoneNumber);
+
+            if (!customerId.HasValue && !hasFilter)
             {
                 return BadRequest("Vui lòng cung cấp ít nhất một thông tin tra cứu (mã đơn hàng, tên hoặc số điện thoại).");
             }
 
-            var orders = await _orderRepository.LookupOrdersAsync(orderCode, name, phoneNumber);
+            var orders = await _orderRepository.LookupOrdersAsync(
+                orderCode,
+                name,
+                phoneNumber,
+                customerId);
+
             var dtos = orders.Select(MapToUserOrderDetailDto).ToList();
             return Ok(dtos);
         }
