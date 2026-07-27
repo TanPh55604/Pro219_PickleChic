@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using PickleChic.API.DTOs;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
+using Hangfire;
+using PickleChic.API.Services;
 
 namespace PickleChic.API.Controllers.Management;
 
@@ -10,10 +12,12 @@ namespace PickleChic.API.Controllers.Management;
 public class VoucherController : ControllerBase
 {
     private readonly VoucherRepository _repository;
+    private readonly IBackgroundJobClient _backgroundJobClient;
 
-    public VoucherController(VoucherRepository repository)
+    public VoucherController(VoucherRepository repository, IBackgroundJobClient backgroundJobClient)
     {
         _repository = repository;
+        _backgroundJobClient = backgroundJobClient;
     }
 
     [HttpGet("get-all")]
@@ -76,14 +80,48 @@ public class VoucherController : ControllerBase
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
             };
-            if(dto.IsForever)
+
+            if (dto.IsForever)
             {
                 entity.StartDate = DateTime.MinValue;
                 entity.EndDate = DateTime.MaxValue;
                 entity.UsageLimit = int.MaxValue;
             }
+            else
+            {
+                if (entity.StartDate > DateTime.Now)
+                {
+                    entity.IsActive = false;
+                }
+                else if (entity.EndDate <= DateTime.Now)
+                {
+                    entity.IsActive = false;
+                }
+            }
 
             var created = await _repository.AddAsync(entity);
+
+            if (!dto.IsForever)
+            {
+                if (created.StartDate > DateTime.Now)
+                {
+                    var startDelay = created.StartDate - DateTime.Now;
+                    _backgroundJobClient.Schedule<OrderManagerService>(
+                        x => x.ActivateVoucherJobAsync(created.Id, created.StartDate),
+                        startDelay
+                    );
+                }
+
+                if (created.EndDate > DateTime.Now)
+                {
+                    var endDelay = created.EndDate - DateTime.Now;
+                    _backgroundJobClient.Schedule<OrderManagerService>(
+                        x => x.DeactivateVoucherJobAsync(created.Id, created.EndDate),
+                        endDelay
+                    );
+                }
+            }
+
             return Ok(created);
         }
         catch (Exception)
@@ -113,17 +151,48 @@ public class VoucherController : ControllerBase
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
             };
+
             if (dto.IsForever)
             {
                 entity.StartDate = DateTime.MinValue;
                 entity.EndDate = DateTime.MaxValue;
                 entity.UsageLimit = int.MaxValue;
             }
-
+            else
+            {
+                if (entity.StartDate > DateTime.Now)
+                {
+                    entity.IsActive = false;
+                }
+                else if (entity.EndDate <= DateTime.Now)
+                {
+                    entity.IsActive = false;
+                }
+            }
 
             var updated = await _repository.UpdateAsync(entity);
             if (updated is null)
                 return NotFound();
+            if (!dto.IsForever)
+            {
+                if (updated.StartDate > DateTime.Now)
+                {
+                    var startDelay = updated.StartDate - DateTime.Now;
+                    _backgroundJobClient.Schedule<OrderManagerService>(
+                        x => x.ActivateVoucherJobAsync(updated.Id, updated.StartDate),
+                        startDelay
+                    );
+                }
+
+                if (updated.EndDate > DateTime.Now)
+                {
+                    var endDelay = updated.EndDate - DateTime.Now;
+                    _backgroundJobClient.Schedule<OrderManagerService>(
+                        x => x.DeactivateVoucherJobAsync(updated.Id, updated.EndDate),
+                        endDelay
+                    );
+                }
+            }
 
             return Ok(updated);
         }

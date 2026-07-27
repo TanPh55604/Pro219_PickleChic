@@ -59,4 +59,30 @@ public class OrderManagerService
             await _pointHistoryRepository.RefundPointsForOrderAsync(orderId);
         }
     }
+
+    public async Task ActivateVoucherJobAsync(int voucherId, DateTime scheduledStartDate)
+    {
+        var voucher = await _voucherRepository.GetByIdAsync(voucherId);
+        if (voucher != null)
+        {
+            if (voucher.StartDate == scheduledStartDate && DateTime.Now >= voucher.StartDate && DateTime.Now < voucher.EndDate)
+            {
+                voucher.IsActive = true;
+                await _voucherRepository.UpdateAsync(voucher);
+            }
+        }
+    }
+
+    public async Task DeactivateVoucherJobAsync(int voucherId, DateTime scheduledEndDate)
+    {
+        var voucher = await _voucherRepository.GetByIdAsync(voucherId);
+        if (voucher != null)
+        {
+            if (DateTime.Now >= voucher.EndDate || voucher.EndDate == scheduledEndDate)
+            {
+                voucher.IsActive = false;
+                await _voucherRepository.UpdateAsync(voucher);
+            }
+        }
+    }
 }
