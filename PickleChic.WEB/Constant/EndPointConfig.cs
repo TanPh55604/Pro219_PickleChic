@@ -248,6 +248,33 @@
 
             public const string UserList = "order/user/list";
 
+            public static string Lookup(
+                string? orderCode = null,
+                string? name = null,
+                string? phoneNumber = null)
+            {
+                var parameters = new List<string>();
+
+                if (!string.IsNullOrWhiteSpace(orderCode))
+                {
+                    parameters.Add($"orderCode={Uri.EscapeDataString(orderCode.Trim())}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    parameters.Add($"name={Uri.EscapeDataString(name.Trim())}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(phoneNumber))
+                {
+                    parameters.Add($"phoneNumber={Uri.EscapeDataString(phoneNumber.Trim())}");
+                }
+
+                return parameters.Count == 0
+                    ? "order/lookup"
+                    : $"order/lookup?{string.Join("&", parameters)}";
+            }
+
             public static string GetById(int id) => $"management/order/get-by-id/{id}";
 
             public static string UpdateStatus(int id) => $"management/order/update-status/{id}";

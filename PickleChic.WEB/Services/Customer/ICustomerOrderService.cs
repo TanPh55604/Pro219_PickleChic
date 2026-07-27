@@ -23,5 +23,11 @@ namespace PickleChic.WEB.Services.Customer
         Task<ApiResult<UserOrderDetailResponse>> GetUserOrderDetailAsync(int orderId);
 
         Task<ApiResult<List<UserOrderDetailResponse>>> GetUserOrdersAsync();
+
+        Task<ApiResult<List<UserOrderDetailResponse>>> LookupOrdersAsync(
+            string? orderCode = null,
+            string? name = null,
+            string? phoneNumber = null,
+            bool requireAuth = false);
     }
 }
