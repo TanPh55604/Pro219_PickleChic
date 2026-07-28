@@ -40,6 +40,23 @@ public class OrderController : ControllerBase
         }
     }
 
+    [HttpGet("get-all-bopis")]
+    public async Task<ActionResult<List<Order>>> GetAllBOPIS()
+    {
+        try
+        {
+            var result = await _repository.GetAllAsync();
+            if (result.Count == 0)
+                return NoContent();
+           result = result.Where(o => o.BOPIS == true&&o.Delete!=true).OrderByDescending(x=>x.OrderDate).ToList();
+            return Ok(result);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
+
     [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<Order>> GetById(int id)
     {
