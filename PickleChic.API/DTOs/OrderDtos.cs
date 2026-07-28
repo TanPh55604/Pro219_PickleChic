@@ -10,6 +10,7 @@ public class OrderCreateDto
     public int? VoucherId { get; set; }
     public string PaymentStatus { get; set; } = null!;
     public string OrderStatus { get; set; } = null!;
+    public int? Status { get; set; }
     public string? Notes { get; set; }
     public string? CustomerType { get; set; }
     public bool IsOrderPOS { get; set; }

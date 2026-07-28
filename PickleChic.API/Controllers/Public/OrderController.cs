@@ -284,8 +284,10 @@ public class OrderController : ControllerBase
         [FromQuery] int? voucherId = null, 
         [FromQuery] string note = "", 
         [FromQuery] int addressId = -99,
-        [FromQuery] bool? usePoints = false)
+        [FromQuery] bool? usePoints = false,
+        [FromQuery] bool? bopis = false)
     {
+        //bopis = buy online pick in store
         if (checkoutParam == null || checkoutParam.ListItemCheckout == null || !checkoutParam.ListItemCheckout.Any())
         {
             return BadRequest("Dữ liệu checkout không hợp lệ");
@@ -507,13 +509,14 @@ public class OrderController : ControllerBase
                 order.PaymentStatus = Constant.PaymentStatus.Pending;
                 order.OrderStatus = PaymentMethodTypeId == 2 ? Constant.OrderStatus.WaitingForPayment : Constant.OrderStatus.Pending;
             }
+            order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
             order.VoucherId = voucherId;
             order.InsertedAt = DateTime.Now;
             order.LastUpdate = DateTime.Now;
             order.UpdateBy = "System";
             order.IsOrderPOS = false;
             order.Delete = false;
-
+            order.BOPIS = bopis;
             order.CustomerId = customerId;
             order.CustomerType = customerId != -1 ? Constant.CustomerType.RegisteredOrder : Constant.CustomerType.GuestOrder;
             order.PaymentMethodId = PaymentMethodTypeId ?? 2;
@@ -906,6 +909,7 @@ public class OrderController : ControllerBase
             order.OrderDate = DateTime.Now;
             order.PaymentStatus = Constant.PaymentStatus.Completed;
             order.OrderStatus = Constant.OrderStatus.Done;
+            order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
             order.VoucherId = dto.VoucherId;
             order.InsertedAt = DateTime.Now;
             order.LastUpdate = DateTime.Now;
@@ -1043,6 +1047,7 @@ public class OrderController : ControllerBase
                 order.PaymentStatus = Constant.PaymentStatus.Completed;
                 order.OrderStatus = Constant.OrderStatus.Confirmed;
             }
+            order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
 
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
             order.LastUpdate = DateTime.Now;
@@ -1168,6 +1173,7 @@ public class OrderController : ControllerBase
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
             order.PaymentStatus = Constant.PaymentStatus.Cancelled;
             order.OrderStatus = Constant.OrderStatus.Cancelled;
+            order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
             order.LastUpdate = DateTime.Now;
             order.UpdateBy = "System";
 
@@ -1421,6 +1427,7 @@ public class OrderController : ControllerBase
                 "Expired" or Constant.OrderStatus.Expired => "Hết hạn thanh toán",
                 _ => order.OrderStatus
             },
+            Status = order.Status,
             PaymentLink = order.PaymentLink,
             ReceiverName = order.Address?.FullName ?? "",
             ReceiverPhone = order.Address?.PhoneNumber ?? "",

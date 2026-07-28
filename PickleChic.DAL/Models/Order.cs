@@ -38,6 +38,8 @@ public class Order
 
     public bool IsOrderPOS { get; set; }
 
+    public bool? BOPIS { get; set; } = false;
+
     public string? PaymentLink { get; set; }
 
     public DateTime? PaymentExpiration { get; set; }
@@ -48,6 +50,8 @@ public class Order
     public string? StatusHistory { get; set; }
 
     public string? UpdateBy { get; set; }
+
+    public int? Status { get; set; }
 
     public DateTime InsertedAt { get; set; }
 

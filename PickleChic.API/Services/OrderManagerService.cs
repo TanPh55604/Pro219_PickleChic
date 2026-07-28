@@ -32,6 +32,7 @@ public class OrderManagerService
         if (order != null && order.PaymentStatus == Constant.PaymentStatus.Pending && order.PaymentExpiration < DateTime.Now)
         {
             order.OrderStatus = Constant.OrderStatus.Expired;
+            order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
             order.PaymentStatus = Constant.PaymentStatus.Cancelled;
             order.LastUpdate = DateTime.Now;
             order.UpdateBy = "System";

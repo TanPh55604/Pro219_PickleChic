@@ -69,6 +69,7 @@ public class OrderRepository
             existing.VoucherId = entity.VoucherId;
             existing.PaymentStatus = entity.PaymentStatus;
             existing.OrderStatus = entity.OrderStatus;
+            existing.Status = entity.Status;
             existing.Notes = entity.Notes;
             existing.StatusHistory = entity.StatusHistory;
             existing.CustomerType = entity.CustomerType;

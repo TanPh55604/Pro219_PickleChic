@@ -72,6 +72,7 @@ public class OrderController : ControllerBase
                 VoucherId = dto.VoucherId,
                 PaymentStatus = dto.PaymentStatus,
                 OrderStatus = dto.OrderStatus,
+                Status = Constant.OrderStatus.GetStatusInt(dto.OrderStatus),
                 Notes = dto.Notes,
                 CustomerType = dto.CustomerType,
                 IsOrderPOS = dto.IsOrderPOS,
@@ -109,6 +110,7 @@ public class OrderController : ControllerBase
                 VoucherId = dto.VoucherId,
                 PaymentStatus = dto.PaymentStatus,
                 OrderStatus = dto.OrderStatus,
+                Status = Constant.OrderStatus.GetStatusInt(dto.OrderStatus),
                 Notes = dto.Notes,
                 CustomerType = dto.CustomerType,
                 IsOrderPOS = dto.IsOrderPOS,
@@ -160,6 +162,7 @@ public class OrderController : ControllerBase
 
             existingOrder.PaymentStatus = dto.PaymentStatus;
             existingOrder.OrderStatus = dto.OrderStatus;
+            existingOrder.Status = Constant.OrderStatus.GetStatusInt(dto.OrderStatus);
             existingOrder.LastUpdate = DateTime.Now;
             existingOrder.UpdateBy = dto.UpdateBy ?? "Admin";
 
