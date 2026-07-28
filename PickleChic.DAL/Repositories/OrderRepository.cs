@@ -219,7 +219,11 @@ public class OrderRepository
             .FirstOrDefaultAsync(o => o.Id == id && !o.Delete);
     }
 
-    public async Task<List<Order>> LookupOrdersAsync(string? orderCode, string? name, string? phoneNumber)
+    public async Task<List<Order>> LookupOrdersAsync(
+        string? orderCode,
+        string? name,
+        string? phoneNumber,
+        int? customerId = null)
     {
         var query = _context.Orders
             .Include(o => o.Customer)
@@ -238,6 +242,11 @@ public class OrderRepository
                             .ThenInclude(av => av.ProductAttribute)
             .Where(o => !o.Delete);
 
+        if (customerId.HasValue)
+        {
+            query = query.Where(o => o.CustomerId == customerId.Value);
+        }
+
         if (!string.IsNullOrWhiteSpace(orderCode))
         {
             query = query.Where(o => o.OrderCode.Contains(orderCode));
@@ -245,13 +254,13 @@ public class OrderRepository
 
         if (!string.IsNullOrWhiteSpace(name))
         {
-            query = query.Where(o => (o.Address != null && o.Address.FullName.Contains(name)) 
+            query = query.Where(o => (o.Address != null && o.Address.FullName.Contains(name))
                                   || (o.Customer != null && o.Customer.FullName.Contains(name)));
         }
 
         if (!string.IsNullOrWhiteSpace(phoneNumber))
         {
-            query = query.Where(o => (o.Address != null && o.Address.PhoneNumber.Contains(phoneNumber)) 
+            query = query.Where(o => (o.Address != null && o.Address.PhoneNumber.Contains(phoneNumber))
                                   || (o.Customer != null && o.Customer.PhoneNumber.Contains(phoneNumber)));
         }
 

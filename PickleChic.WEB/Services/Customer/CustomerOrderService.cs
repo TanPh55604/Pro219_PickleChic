@@ -71,5 +71,16 @@ namespace PickleChic.WEB.Services.Customer
                 EndPointConfig.Order.UserList,
                 requireAuth: true);
         }
+
+        public async Task<ApiResult<List<UserOrderDetailResponse>>> LookupOrdersAsync(
+            string? orderCode = null,
+            string? name = null,
+            string? phoneNumber = null,
+            bool requireAuth = false)
+        {
+            return await _apiProvider.GetAsync<List<UserOrderDetailResponse>>(
+                EndPointConfig.Order.Lookup(orderCode, name, phoneNumber),
+                requireAuth: requireAuth);
+        }
     }
 }

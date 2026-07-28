@@ -226,10 +226,63 @@
             }
         }
 
+        public static class Wishlist
+        {
+            public const string Create = "wishlist/create";
+
+            public const string ManagementGetAll = "management/wishlist/get-all";
+
+            public static string GetAllByUserId(int userId) =>
+                $"wishlist/get-all-by-userId/{userId}";
+
+            public static string Delete(int id) => $"wishlist/delete/{id}";
+        }
+
         public static class PointHistory
         {
             public static string GetByCustomer(int customerId) =>
                 $"point-history/customer/{customerId}";
+        }
+
+        public static class Review
+        {
+            public const string Create = "review/create";
+
+            public const string Unreviewed = "review/customer/unreviewed";
+
+            public static string ByVariant(int productVariantId) =>
+                $"review/variant/{productVariantId}";
+
+            public static string Eligibility(int productVariantId) =>
+                $"review/variant/{productVariantId}/eligibility";
+
+            public static class Management
+            {
+                public const string UpdateStatus = "management/review/update-status";
+
+                public static string GetAll(string? keyword = null, int? status = null)
+                {
+                    var queryParts = new List<string>();
+
+                    if (!string.IsNullOrWhiteSpace(keyword))
+                    {
+                        queryParts.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+                    }
+
+                    if (status.HasValue)
+                    {
+                        queryParts.Add($"status={status.Value}");
+                    }
+
+                    return queryParts.Count == 0
+                        ? "management/review/get-all"
+                        : $"management/review/get-all?{string.Join("&", queryParts)}";
+                }
+
+                public static string GetById(int id) => $"management/review/get-by-id/{id}";
+
+                public static string Delete(int id) => $"management/review/delete/{id}";
+            }
         }
 
         public static class Order
@@ -247,6 +300,33 @@
             public static string UserDetail(int orderId) => $"order/user/detail/{orderId}";
 
             public const string UserList = "order/user/list";
+
+            public static string Lookup(
+                string? orderCode = null,
+                string? name = null,
+                string? phoneNumber = null)
+            {
+                var parameters = new List<string>();
+
+                if (!string.IsNullOrWhiteSpace(orderCode))
+                {
+                    parameters.Add($"orderCode={Uri.EscapeDataString(orderCode.Trim())}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    parameters.Add($"name={Uri.EscapeDataString(name.Trim())}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(phoneNumber))
+                {
+                    parameters.Add($"phoneNumber={Uri.EscapeDataString(phoneNumber.Trim())}");
+                }
+
+                return parameters.Count == 0
+                    ? "order/lookup"
+                    : $"order/lookup?{string.Join("&", parameters)}";
+            }
 
             public static string GetById(int id) => $"management/order/get-by-id/{id}";
 

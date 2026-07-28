@@ -29,10 +29,10 @@ namespace PickleChic.WEB.Services.Api
         {
             try
             {
-                await AddAuthorizationHeaderAsync(requireAuth);
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                await AttachAuthorizationAsync(request, requireAuth);
 
-                var response = await _httpClient.GetAsync(url);
-
+                var response = await _httpClient.SendAsync(request);
                 return await ReadResponseAsync<TResponse>(response);
             }
             catch (Exception ex)
@@ -45,15 +45,18 @@ namespace PickleChic.WEB.Services.Api
 
         public async Task<ApiResult<TResponse>> PostAsync<TRequest, TResponse>(
             string url,
-            TRequest request,
+            TRequest requestBody,
             bool requireAuth = false)
         {
             try
             {
-                await AddAuthorizationHeaderAsync(requireAuth);
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = JsonContent.Create(requestBody, options: _jsonOptions)
+                };
+                await AttachAuthorizationAsync(request, requireAuth);
 
-                var response = await _httpClient.PostAsJsonAsync(url, request, _jsonOptions);
-
+                var response = await _httpClient.SendAsync(request);
                 return await ReadResponseAsync<TResponse>(response);
             }
             catch (Exception ex)
@@ -66,15 +69,18 @@ namespace PickleChic.WEB.Services.Api
 
         public async Task<ApiResult<TResponse>> PutAsync<TRequest, TResponse>(
             string url,
-            TRequest request,
+            TRequest requestBody,
             bool requireAuth = false)
         {
             try
             {
-                await AddAuthorizationHeaderAsync(requireAuth);
+                using var request = new HttpRequestMessage(HttpMethod.Put, url)
+                {
+                    Content = JsonContent.Create(requestBody, options: _jsonOptions)
+                };
+                await AttachAuthorizationAsync(request, requireAuth);
 
-                var response = await _httpClient.PutAsJsonAsync(url, request, _jsonOptions);
-
+                var response = await _httpClient.SendAsync(request);
                 return await ReadResponseAsync<TResponse>(response);
             }
             catch (Exception ex)
@@ -87,17 +93,18 @@ namespace PickleChic.WEB.Services.Api
 
         public async Task<ApiResult<TResponse>> PatchAsync<TRequest, TResponse>(
             string url,
-            TRequest request,
+            TRequest requestBody,
             bool requireAuth = false)
         {
             try
             {
-                await AddAuthorizationHeaderAsync(requireAuth);
+                using var request = new HttpRequestMessage(HttpMethod.Patch, url)
+                {
+                    Content = JsonContent.Create(requestBody, options: _jsonOptions)
+                };
+                await AttachAuthorizationAsync(request, requireAuth);
 
-                var content = JsonContent.Create(request, options: _jsonOptions);
-
-                var response = await _httpClient.PatchAsync(url, content);
-
+                var response = await _httpClient.SendAsync(request);
                 return await ReadResponseAsync<TResponse>(response);
             }
             catch (Exception ex)
@@ -114,10 +121,10 @@ namespace PickleChic.WEB.Services.Api
         {
             try
             {
-                await AddAuthorizationHeaderAsync(requireAuth);
+                using var request = new HttpRequestMessage(HttpMethod.Delete, url);
+                await AttachAuthorizationAsync(request, requireAuth);
 
-                var response = await _httpClient.DeleteAsync(url);
-
+                var response = await _httpClient.SendAsync(request);
                 return await ReadResponseAsync<TResponse>(response);
             }
             catch (Exception ex)
@@ -135,10 +142,13 @@ namespace PickleChic.WEB.Services.Api
         {
             try
             {
-                await AddAuthorizationHeaderAsync(requireAuth);
+                using var request = new HttpRequestMessage(HttpMethod.Post, url)
+                {
+                    Content = content
+                };
+                await AttachAuthorizationAsync(request, requireAuth);
 
-                var response = await _httpClient.PostAsync(url, content);
-
+                var response = await _httpClient.SendAsync(request);
                 return await ReadResponseAsync<TResponse>(response);
             }
             catch (Exception ex)
@@ -149,8 +159,9 @@ namespace PickleChic.WEB.Services.Api
             }
         }
 
-        private async Task AddAuthorizationHeaderAsync(bool requireAuth)
+        private async Task AttachAuthorizationAsync(HttpRequestMessage request, bool requireAuth)
         {
+            // Clear any leftover default header from older code paths.
             _httpClient.DefaultRequestHeaders.Authorization = null;
 
             if (!requireAuth)
@@ -159,14 +170,12 @@ namespace PickleChic.WEB.Services.Api
             }
 
             var token = await _authStorageService.GetAccessTokenAsync();
-
             if (string.IsNullOrWhiteSpace(token))
             {
                 return;
             }
 
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
         private async Task<ApiResult<TResponse>> ReadResponseAsync<TResponse>(
