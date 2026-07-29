@@ -86,6 +86,60 @@ public class CartItemController : ControllerBase
         }
     }
 
+    [HttpPost("add-to-cart-pos")]
+    public async Task<ActionResult<AddToCartPosResultDto>> AddToCartPos([FromBody] AddToCartPosDto dto)
+    {
+        try
+        {
+            var variant = await _variantRepository.GetByIdAsync(dto.ProductVariantId);
+            if (variant is null || variant.Status == -1)
+            {
+                return Ok(new AddToCartPosResultDto
+                {
+                    AbleToAdd = false,
+                    ErrorMessage = "Sản phẩm không tồn tại"
+                });
+            }
+
+            if (dto.Quantity <= 0)
+            {
+                return Ok(new AddToCartPosResultDto
+                {
+                    AbleToAdd = true,
+                    ErrorMessage = null
+                });
+            }
+
+            if (variant.StockQuantity <= 0)
+            {
+                return Ok(new AddToCartPosResultDto
+                {
+                    AbleToAdd = false,
+                    ErrorMessage = "Hết hàng"
+                });
+            }
+
+            if (variant.StockQuantity < dto.Quantity)
+            {
+                return Ok(new AddToCartPosResultDto
+                {
+                    AbleToAdd = false,
+                    ErrorMessage = "Số lượng trong kho không đủ"
+                });
+            }
+
+            return Ok(new AddToCartPosResultDto
+            {
+                AbleToAdd = true,
+                ErrorMessage = null
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
+
     [HttpPost("create")]
     public async Task<ActionResult<CartItem>> Create([FromBody] CartItemCreateDto dto)
     {

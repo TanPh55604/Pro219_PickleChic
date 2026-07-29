@@ -33,3 +33,16 @@ public class CartProductVariantDto
     public int Status { get; set; }
     public string ProductName { get; set; } = null!;
 }
+
+public class AddToCartPosDto
+{
+    public int ProductVariantId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class AddToCartPosResultDto
+{
+    public bool AbleToAdd { get; set; }
+    public string? ErrorMessage { get; set; }
+}
+
