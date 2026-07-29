@@ -121,3 +121,12 @@ public class PosAddressCreateDto
     public string DetailInfo { get; set; } = null!;
     public int WardId { get; set; }
 }
+
+public class PosOrderCalculationRequestDto
+{
+    public List<OrderItemCalculationDto> Items { get; set; } = null!;
+    public string? DiscountCode { get; set; }
+    public int? AddressId { get; set; }
+    public bool? UsePoints { get; set; }
+    public PosAddressCreateDto? AddressDTO { get; set; } = null;
+}
