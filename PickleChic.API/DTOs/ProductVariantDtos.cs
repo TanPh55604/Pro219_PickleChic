@@ -77,4 +77,17 @@ public class ProductVariantSearchPageDto
     public int PageSize { get; set; }
 }
 
+public class PosStockCheckDto
+{
+    public int ProductVariantId { get; set; }
+    public int StockQuantity { get; set; }
+    public int RequestedQuantity { get; set; }
+    public bool IsAvailable { get; set; }
+    public decimal UnitPrice { get; set; }
+    public string? ProductName { get; set; }
+    public string? VariantName { get; set; }
+    public string? Sku { get; set; }
+    public string? Message { get; set; }
+}
+
 

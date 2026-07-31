@@ -291,6 +291,10 @@
 
             public const string CalculateTotal = "order/CalculateTotal";
 
+            public const string CalculateTotalPOS = "order/CalculateTotalPOS";
+
+            public const string PosCheckout = "order/POS-Checkout";
+
             public static string PaymentSuccess(int orderId, bool pos = false) =>
                 $"order/PaymentSuccess?orderId={orderId}&pos={pos.ToString().ToLowerInvariant()}";
 
@@ -355,6 +359,65 @@
 
                 return url;
             }
+        }
+
+        public static class Pos
+        {
+            public static string Products(
+                string? keyword = null,
+                int? brandId = null,
+                int? categoryId = null,
+                int pageNumber = 1,
+                int pageSize = 20)
+            {
+                var query = new List<string>
+                {
+                    $"pageNumber={pageNumber}",
+                    $"pageSize={pageSize}"
+                };
+
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    query.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+                }
+
+                if (brandId is > 0)
+                {
+                    query.Add($"brandId={brandId.Value}");
+                }
+
+                if (categoryId is > 0)
+                {
+                    query.Add($"categoryId={categoryId.Value}");
+                }
+
+                return $"management/pos/products?{string.Join("&", query)}";
+            }
+
+            public static string CheckStock(int variantId, int quantity) =>
+                $"management/pos/products/{variantId}/stock?quantity={quantity}";
+
+            public static string Customers(
+                string? keyword = null,
+                int pageNumber = 1,
+                int pageSize = 20)
+            {
+                var query = new List<string>
+                {
+                    $"pageNumber={pageNumber}",
+                    $"pageSize={pageSize}"
+                };
+
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    query.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+                }
+
+                return $"management/pos/customers?{string.Join("&", query)}";
+            }
+
+            public static string Vouchers(int customerId) =>
+                $"management/pos/vouchers?customerId={customerId}";
         }
 
         public static class Report

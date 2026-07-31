@@ -1,0 +1,241 @@
+﻿@using PickleChic.WEB.DTO.Admin
+@using PickleChic.WEB.DTO.Customer
+@using PickleChic.WEB.Model
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Chọn sản phẩm</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="!mb-4 grid !gap-3 md:grid-cols-4">
+            <MudTextField T="string"
+                          @bind-Value="_keyword"
+                          Label="Tìm SKU / tên biến thể"
+                          Variant="Variant.Outlined"
+                          Immediate="true"
+                          OnKeyUp="OnKeywordKeyUp"
+                          Class="md:col-span-2" />
+            <MudSelect T="int"
+                       @bind-Value="_brandId"
+                       Label="Thương hiệu"
+                       Variant="Variant.Outlined"
+                       Clearable="true">
+                <MudSelectItem Value="0">Tất cả</MudSelectItem>
+                @foreach (var brand in _brands)
+                {
+                    <MudSelectItem Value="@brand.Id">@brand.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSelect T="int"
+                       @bind-Value="_categoryId"
+                       Label="Danh mục"
+                       Variant="Variant.Outlined"
+                       Clearable="true">
+                <MudSelectItem Value="0">Tất cả</MudSelectItem>
+                @foreach (var category in _categories)
+                {
+                    <MudSelectItem Value="@category.Id">@category.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
+
+        <div class="!mb-3 flex !gap-2">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="SearchAsync"
+                       Disabled="_loading"
+                       Class="!h-14 !normal-case">
+                Tìm kiếm
+            </MudButton>
+            <MudButton Variant="Variant.Outlined"
+                       OnClick="ResetAsync"
+                       Disabled="_loading"
+                       Class="!h-14 !normal-case">
+                Đặt lại
+            </MudButton>
+        </div>
+
+        <MudTable Items="_items"
+                  Dense="true"
+                  Hover="true"
+                  Loading="_loading"
+                  FixedHeader="true"
+                  Height="360px"
+                  Breakpoint="Breakpoint.Sm">
+            <HeaderContent>
+                <MudTh>Sản phẩm</MudTh>
+                <MudTh>SKU</MudTh>
+                <MudTh>Tồn</MudTh>
+                <MudTh>Giá</MudTh>
+                <MudTh>SL</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Sản phẩm">
+                    <div class="flex items-center !gap-3">
+                        @if (!string.IsNullOrWhiteSpace(context.MainImageUrl))
+                        {
+                            <MudImage Src="@context.MainImageUrl" Width="48" Height="48" ObjectFit="ObjectFit.Cover" Class="!rounded-lg" />
+                        }
+                        <div>
+                            <p class="text-sm font-semibold">@context.ProductName</p>
+                            <p class="text-xs text-slate-500">@context.VariantName</p>
+                        </div>
+                    </div>
+                </MudTd>
+                <MudTd DataLabel="SKU">@context.SKU</MudTd>
+                <MudTd DataLabel="Tồn">@context.StockQuantity</MudTd>
+                <MudTd DataLabel="Giá">@context.Price.ToString("N0") đ</MudTd>
+                <MudTd DataLabel="SL">
+                    <MudNumericField T="int"
+                                     Value="@GetQty(context.Id)"
+                                     ValueChanged="@(v => SetQty(context.Id, v))"
+                                     Min="1"
+                                     Max="@Math.Max(1, context.StockQuantity)"
+                                     Variant="Variant.Outlined"
+                                     Margin="Margin.Dense"
+                                     Class="!max-w-[88px]" />
+                </MudTd>
+                <MudTd>
+                    <MudButton Size="Size.Small"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Disabled="@(context.StockQuantity <= 0 || _addingId == context.Id)"
+                               OnClick="@(() => SelectAsync(context))"
+                               Class="!normal-case">
+                        Chọn
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>Không có sản phẩm phù hợp.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Class="!normal-case">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private readonly Dictionary<int, int> _quantities = new();
+    private List<ProductVariantSearchResponse> _items = new();
+    private List<BrandResponse> _brands = new();
+    private List<CategoryResponse> _categories = new();
+    private string? _keyword;
+    private int _brandId;
+    private int _categoryId;
+    private bool _loading;
+    private int? _addingId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var brandTask = _adminBrandService.GetAllAsync();
+        var categoryTask = _adminCategoryService.GetAllAsync();
+        await Task.WhenAll(brandTask, categoryTask);
+
+        if (brandTask.Result.Success && brandTask.Result.Data is not null)
+        {
+            _brands = brandTask.Result.Data;
+        }
+
+        if (categoryTask.Result.Success && categoryTask.Result.Data is not null)
+        {
+            _categories = categoryTask.Result.Data;
+        }
+
+        await SearchAsync();
+    }
+
+    private int GetQty(int id) =>
+        _quantities.TryGetValue(id, out var qty) ? qty : 1;
+
+    private void SetQty(int id, int value) =>
+        _quantities[id] = Math.Max(1, value);
+
+    private async Task OnKeywordKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await _posService.SearchProductsAsync(
+                _keyword,
+                _brandId > 0 ? _brandId : null,
+                _categoryId > 0 ? _categoryId : null,
+                pageNumber: 1,
+                pageSize: 50);
+
+            if (!result.Success || result.Data is null)
+            {
+                _items = new();
+                _snackbar.Add(result.Message ?? "Không tải được sản phẩm", Severity.Error);
+                return;
+            }
+
+            _items = result.Data.Items;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ResetAsync()
+    {
+        _keyword = null;
+        _brandId = 0;
+        _categoryId = 0;
+        await SearchAsync();
+    }
+
+    private async Task SelectAsync(ProductVariantSearchResponse item)
+    {
+        var quantity = GetQty(item.Id);
+        _addingId = item.Id;
+
+        try
+        {
+            var stock = await _posService.CheckStockAsync(item.Id, quantity);
+            if (!stock.Success || stock.Data is null)
+            {
+                _snackbar.Add(stock.Message ?? "Không kiểm tra được tồn kho", Severity.Error);
+                return;
+            }
+
+            if (!stock.Data.IsAvailable)
+            {
+                _snackbar.Add(stock.Data.Message ?? "Không đủ số lượng trong kho", Severity.Warning);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(new OfflinePosLineItem
+            {
+                ProductVariantId = item.Id,
+                Quantity = quantity,
+                Sku = item.SKU,
+                ProductName = item.ProductName,
+                VariantName = item.VariantName,
+                UnitPrice = stock.Data.UnitPrice > 0 ? stock.Data.UnitPrice : item.Price,
+                StockQuantity = stock.Data.StockQuantity,
+                ImageUrl = item.MainImageUrl
+            }));
+        }
+        finally
+        {
+            _addingId = null;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

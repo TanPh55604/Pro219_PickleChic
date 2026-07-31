@@ -1,15 +1,182 @@
 ﻿@attribute [Route(RouterConfig.Admin.OfflineSales)]
 @layout AdminLayout
 
-<PageTitle>@Constant.metaDataAdmin Offline</PageTitle>
+<PageTitle>@Constant.metaDataAdmin Offline Sales</PageTitle>
 
-<div class="!space-y-5">
-    <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Bán hàng tại quầy</h1>
+@if (!_ready)
+{
+    <div class="flex h-[calc(100dvh-8rem)] items-center justify-center">
+        <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+    </div>
+}
+else
+{
+    <div class="flex h-[calc(100dvh-8rem)] min-h-0 flex-col overflow-hidden !rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
+        <div class="flex shrink-0 items-center !gap-1 overflow-x-auto !border-b !border-slate-200 !bg-slate-50 !px-2 !py-1.5">
+            @foreach (var tab in _tabs)
+            {
+                var isActive = tab.Id == _activeTabId;
+
+                <div @key="tab.Id" class="@GetTabClass(isActive)">
+                    <button type="button"
+                            @onclick="() => SelectTabAsync(tab.Id)"
+                            class="flex min-w-0 flex-1 items-center !gap-2 !px-2.5 !py-1.5 text-left">
+                        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong"
+                                 Size="Size.Small"
+                                 Class="@(isActive ? "text-[#A05AFF]" : "text-slate-400")" />
+                        <span class="truncate text-sm font-semibold">
+                            @tab.Title
+                        </span>
+                    </button>
+
+                    @if (_tabs.Count > 1)
+                    {
+                        <button type="button"
+                                @onclick="() => CloseTabAsync(tab.Id)"
+                                title="Đóng hóa đơn"
+                                class="mr-1 inline-flex !h-7 !w-7 shrink-0 items-center justify-center !rounded-lg text-slate-400 transition hover:!bg-slate-200 hover:!text-slate-700">
+                            <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
+                        </button>
+                    }
+                </div>
+            }
+
+            <button type="button"
+                    @onclick="AddTabAsync"
+                    title="Thêm hóa đơn"
+                    disabled="@(_tabs.Count >= IOfflinePosDraftService.MaxTabs)"
+                    class="ml-1 inline-flex !h-8 !w-8 shrink-0 items-center justify-center !rounded-xl !border !border-dashed !border-slate-300 text-slate-500 transition hover:!border-[#A05AFF] hover:!text-[#A05AFF] disabled:opacity-40">
+                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+            </button>
+        </div>
+
+        <div class="min-h-0 flex-1 overflow-hidden !p-3 md:!p-4">
+            @if (ActiveTab is not null)
+            {
+                <OfflineOrderPanel @key="ActiveTab.Id"
+                                   Tab="ActiveTab"
+                                   OnChanged="PersistAsync"
+                                   OnCheckoutCompleted="HandleCheckoutCompletedAsync" />
+            }
         </div>
     </div>
-</div>
+}
 
 @code {
+    private readonly List<OfflinePosTab> _tabs = new();
+    private Guid _activeTabId;
+    private int _tabSequence = 1;
+    private bool _ready;
+
+    private OfflinePosTab? ActiveTab =>
+        _tabs.FirstOrDefault(t => t.Id == _activeTabId);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var store = await _offlinePosDraftService.EnsureInitializedAsync();
+        _tabs.Clear();
+        _tabs.AddRange(store.Tabs);
+        _activeTabId = store.ActiveTabId;
+        _tabSequence = store.TabSequence;
+        _ready = true;
+        StateHasChanged();
+    }
+
+    private async Task AddTabAsync()
+    {
+        if (_tabs.Count >= IOfflinePosDraftService.MaxTabs)
+        {
+            _snackbar.Add($"Tối đa {IOfflinePosDraftService.MaxTabs} hóa đơn cùng lúc", Severity.Warning);
+            return;
+        }
+
+        var tab = OfflinePosDraftService.CreateBlankTab(_tabSequence++);
+        _tabs.Add(tab);
+        _activeTabId = tab.Id;
+        await PersistAsync();
+    }
+
+    private async Task SelectTabAsync(Guid tabId)
+    {
+        if (_tabs.Any(t => t.Id == tabId))
+        {
+            _activeTabId = tabId;
+            await PersistAsync();
+        }
+    }
+
+    private async Task CloseTabAsync(Guid tabId)
+    {
+        if (_tabs.Count <= 1)
+        {
+            _snackbar.Add("Phải giữ ít nhất một hóa đơn", Severity.Warning);
+            return;
+        }
+
+        var index = _tabs.FindIndex(t => t.Id == tabId);
+        if (index < 0)
+        {
+            return;
+        }
+
+        var wasActive = _activeTabId == tabId;
+        _tabs.RemoveAt(index);
+
+        if (wasActive)
+        {
+            var next = _tabs.ElementAtOrDefault(Math.Min(index, _tabs.Count - 1));
+            _activeTabId = next?.Id ?? _tabs[0].Id;
+        }
+
+        await PersistAsync();
+    }
+
+    private async Task HandleCheckoutCompletedAsync()
+    {
+        if (ActiveTab is null)
+        {
+            return;
+        }
+
+        if (_tabs.Count > 1)
+        {
+            await CloseTabAsync(ActiveTab.Id);
+            return;
+        }
+
+        var blank = OfflinePosDraftService.CreateBlankTab(_tabSequence++);
+        var index = _tabs.FindIndex(t => t.Id == ActiveTab.Id);
+        if (index >= 0)
+        {
+            _tabs[index] = blank;
+        }
+        else
+        {
+            _tabs.Clear();
+            _tabs.Add(blank);
+        }
+
+        _activeTabId = blank.Id;
+        await PersistAsync();
+    }
+
+    private async Task PersistAsync()
+    {
+        await _offlinePosDraftService.PersistTabsAsync(_tabs, _activeTabId, _tabSequence);
+    }
+
+    private static string GetTabClass(bool isActive)
+    {
+        var baseClass =
+            "flex max-w-[200px] min-w-[120px] items-center !rounded-xl transition";
+
+        return isActive
+            ? $"{baseClass} !bg-white !text-slate-900 shadow-sm ring-1 ring-slate-200"
+            : $"{baseClass} !text-slate-500 hover:!bg-white/70 hover:!text-slate-800";
+    }
 }

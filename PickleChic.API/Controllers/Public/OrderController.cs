@@ -383,13 +383,27 @@ public class OrderController : ControllerBase
         decimal shippingFee = 0;
         string? phoneNumber = null;
 
-        if (request.AddressId.HasValue && request.AddressId.Value > 0)
+        if (request.CustomerId.HasValue && request.CustomerId.Value > 0)
+        {
+            var customer = await _customerRepository.GetByIdAsync(request.CustomerId.Value);
+            if (customer is null || customer.Status <= 0)
+            {
+                return BadRequest("Khách hàng không hợp lệ");
+            }
+
+            customerId = customer.Id;
+        }
+
+        if (request.IsShipping && request.AddressId.HasValue && request.AddressId.Value > 0)
         {
             var address = await _addressRepository.GetByIdAsync(request.AddressId.Value);
             if (address != null)
             {
                 phoneNumber = address.PhoneNumber;
-                customerId = address.CustomerId;
+                if (customerId <= 0)
+                {
+                    customerId = address.CustomerId;
+                }
 
                 var toDistrictCode = address.Ward?.District?.Code;
                 var toWardCode = address.Ward?.Code;
@@ -414,45 +428,42 @@ public class OrderController : ControllerBase
                 return BadRequest("Địa chỉ nhận hàng không hợp lệ");
             }
         }
-        else
+        else if (request.IsShipping && request.AddressDTO != null)
         {
-            if (request.AddressDTO != null)
+            phoneNumber = request.AddressDTO.PhoneNumber;
+            if (customerId <= 0 && !string.IsNullOrEmpty(phoneNumber))
             {
-                phoneNumber = request.AddressDTO.PhoneNumber;
-                if (!string.IsNullOrEmpty(phoneNumber))
+                var customer = await _customerRepository.FindUserExistByKeyWord(phoneNumber);
+                if (customer != null)
                 {
-                    var customer = await _customerRepository.FindUserExistByKeyWord(phoneNumber);
-                    if (customer != null)
-                    {
-                        customerId = customer.Id;
-                    }
+                    customerId = customer.Id;
+                }
+            }
+
+            if (request.AddressDTO.WardId > 0)
+            {
+                var ward = await _wardRepository.GetByIdAsync(request.AddressDTO.WardId);
+                if (ward == null)
+                {
+                    return BadRequest("Phường xã giao hàng không hợp lệ");
                 }
 
-                if (request.AddressDTO.WardId > 0)
+                var toDistrictCode = ward.District?.Code;
+                var toWardCode = ward.Code;
+
+                if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
                 {
-                    var ward = await _wardRepository.GetByIdAsync(request.AddressDTO.WardId);
-                    if (ward == null)
+                    var feeItems = itemResults.Select(i => new FeeItemDTO
                     {
-                        return BadRequest("Phường xã giao hàng không hợp lệ");
-                    }
+                        Name = i.ProductName,
+                        Quantity = i.Quantity,
+                        Length = 30,
+                        Width = 40,
+                        Height = 5,
+                        Weight = 400
+                    }).ToList();
 
-                    var toDistrictCode = ward.District?.Code;
-                    var toWardCode = ward.Code;
-
-                    if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
-                    {
-                        var feeItems = itemResults.Select(i => new FeeItemDTO
-                        {
-                            Name = i.ProductName,
-                            Quantity = i.Quantity,
-                            Length = 30,
-                            Width = 40,
-                            Height = 5,
-                            Weight = 400
-                        }).ToList();
-
-                        shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
-                    }
+                    shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
                 }
             }
         }
@@ -1003,7 +1014,18 @@ public class OrderController : ControllerBase
         int addressId = 0;
         decimal shippingFee = 0;
 
-        if (dto.AddressId.HasValue && dto.AddressId.Value > 0)
+        if (dto.CustomerId.HasValue && dto.CustomerId.Value > 0)
+        {
+            var customer = await _customerRepository.GetByIdAsync(dto.CustomerId.Value);
+            if (customer is null || customer.Status <= 0)
+            {
+                return BadRequest("Khách hàng không hợp lệ");
+            }
+
+            customerId = customer.Id;
+        }
+
+        if (dto.IsShipping && dto.AddressId.HasValue && dto.AddressId.Value > 0)
         {
             address = await _addressRepository.GetByIdAsync(dto.AddressId.Value);
             if (address == null)
@@ -1011,7 +1033,52 @@ public class OrderController : ControllerBase
                 return BadRequest("Địa chỉ giao hàng không tồn tại");
             }
             addressId = address.Id;
-            customerId = address.CustomerId;
+            if (customerId <= 0)
+            {
+                customerId = address.CustomerId;
+            }
+
+            var toDistrictCode = address.Ward?.District?.Code;
+            var toWardCode = address.Ward?.Code;
+
+            if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
+            {
+                var feeItems = orderItemDetails.Select(i => new FeeItemDTO
+                {
+                    Name = i.Variant.VariantName ?? i.Variant.Product?.ProductName ?? "Sản phẩm",
+                    Quantity = i.Quantity,
+                    Length = 30,
+                    Width = 40,
+                    Height = 5,
+                    Weight = 400
+                }).ToList();
+
+                shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
+            }
+        }
+        else if (dto.IsShipping && dto.AddressDTO != null)
+        {
+            var newAddress = new Address
+            {
+                CustomerId = customerId > 0 ? customerId : -1,
+                FullName = dto.AddressDTO.FullName,
+                PhoneNumber = dto.AddressDTO.PhoneNumber,
+                WardId = dto.AddressDTO.WardId,
+                DetailInfo = dto.AddressDTO.DetailInfo,
+                IsDefault = false,
+                Status = 1,
+                InsertedAt = DateTime.Now,
+                Delete = false
+            };
+
+            var savedAddress = await _addressRepository.AddAsync(newAddress);
+            if (savedAddress == null)
+            {
+                return BadRequest("Không thể tạo địa chỉ giao hàng cho khách vãng lai");
+            }
+
+            address = await _addressRepository.GetByIdAsync(savedAddress.Id) ?? savedAddress;
+            addressId = address.Id;
 
             var toDistrictCode = address.Ward?.District?.Code;
             var toWardCode = address.Ward?.Code;
@@ -1033,74 +1100,27 @@ public class OrderController : ControllerBase
         }
         else
         {
-            customerId = -1;
-
-            if (dto.AddressDTO != null)
+            shippingFee = 0;
+            var existingAddresses = await _addressRepository.GetByCustomerIdAsync(customerId > 0 ? customerId : -1);
+            var dummyAddress = existingAddresses.FirstOrDefault(a => a.DetailInfo == "Mua tại quầy" && !a.Delete);
+            if (dummyAddress == null)
             {
-                var newAddress = new Address
+                dummyAddress = new Address
                 {
-                    CustomerId = -1,
-                    FullName = dto.AddressDTO.FullName,
-                    PhoneNumber = dto.AddressDTO.PhoneNumber,
-                    WardId = dto.AddressDTO.WardId,
-                    DetailInfo = dto.AddressDTO.DetailInfo,
-                    IsDefault = false,
+                    CustomerId = customerId > 0 ? customerId : -1,
+                    FullName = customerId > 0 ? "Nhận tại quầy" : "Khách vãng lai",
+                    PhoneNumber = "0000000000",
+                    WardId = 1,
+                    DetailInfo = "Mua tại quầy",
+                    IsDefault = true,
                     Status = 1,
                     InsertedAt = DateTime.Now,
                     Delete = false
                 };
-
-                var savedAddress = await _addressRepository.AddAsync(newAddress);
-                if (savedAddress == null)
-                {
-                    return BadRequest("Không thể tạo địa chỉ giao hàng cho khách vãng lai");
-                }
-
-                address = await _addressRepository.GetByIdAsync(savedAddress.Id) ?? savedAddress;
-                addressId = address.Id;
-
-                var toDistrictCode = address.Ward?.District?.Code;
-                var toWardCode = address.Ward?.Code;
-
-                if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
-                {
-                    var feeItems = orderItemDetails.Select(i => new FeeItemDTO
-                    {
-                        Name = i.Variant.VariantName ?? i.Variant.Product?.ProductName ?? "Sản phẩm",
-                        Quantity = i.Quantity,
-                        Length = 30,
-                        Width = 40,
-                        Height = 5,
-                        Weight = 400
-                    }).ToList();
-
-                    shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
-                }
+                dummyAddress = await _addressRepository.AddAsync(dummyAddress);
             }
-            else
-            {
-                shippingFee = 0;
-                var existingAddresses = await _addressRepository.GetByCustomerIdAsync(-1);
-                var dummyAddress = existingAddresses.FirstOrDefault(a => a.DetailInfo == "Mua tại quầy" && !a.Delete);
-                if (dummyAddress == null)
-                {
-                    dummyAddress = new Address
-                    {
-                        CustomerId = -1,
-                        FullName = "Khách vãng lai",
-                        PhoneNumber = "0000000000",
-                        WardId = 1,
-                        DetailInfo = "Mua tại quầy",
-                        IsDefault = true,
-                        Status = 1,
-                        InsertedAt = DateTime.Now,
-                        Delete = false
-                    };
-                    dummyAddress = await _addressRepository.AddAsync(dummyAddress);
-                }
-                address = dummyAddress;
-                addressId = dummyAddress.Id;
-            }
+            address = dummyAddress;
+            addressId = dummyAddress.Id;
         }
 
         decimal discountAmount = 0;

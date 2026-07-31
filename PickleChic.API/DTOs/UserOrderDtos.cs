@@ -13,8 +13,8 @@ public class UserOrderDetailDto
     public string PurchaseChannel { get; set; } = null!;
     public string PaymentStatus { get; set; } = null!;
     public string OrderStatus { get; set; } = null!;
-    public int? Status { get; set; }
     public string? PaymentLink { get; set; }
+    public int? Status { get; set; } = 0!;
     
     public string ReceiverName { get; set; } = null!;
     public string ReceiverPhone { get; set; } = null!;

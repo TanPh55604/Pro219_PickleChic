@@ -274,6 +274,71 @@ public class ProductVariantRepository
         return await query.ToListAsync();
     }
 
+    public async Task<PagedResult<ProductVariant>> SearchForPosAsync(
+        string? keyword,
+        int? brandId,
+        int? categoryId,
+        int pageNumber = 1,
+        int pageSize = 20)
+    {
+        if (pageNumber < 1) pageNumber = 1;
+        if (pageSize < 1) pageSize = 20;
+        if (pageSize > 100) pageSize = 100;
+
+        var query = _context.ProductVariants
+            .Include(pv => pv.ProductVariantImages)
+            .Include(pv => pv.ProductVariantAttributes!)
+                .ThenInclude(pva => pva.AttributeValue)
+                    .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
+            .Where(pv =>
+                pv.Product != null
+                && !pv.Product.IsDeleted
+                && pv.Product.Status > 0
+                && pv.Status > 0
+                && pv.StockQuantity > 0);
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var lowerKeyword = keyword.Trim().ToLower();
+            query = query.Where(pv =>
+                (pv.VariantName != null && pv.VariantName.ToLower().Contains(lowerKeyword))
+                || pv.SKU.ToLower().Contains(lowerKeyword));
+        }
+
+        if (brandId.HasValue && brandId.Value > 0)
+        {
+            query = query.Where(pv => pv.Product!.BrandId == brandId.Value);
+        }
+
+        if (categoryId.HasValue && categoryId.Value > 0)
+        {
+            query = query.Where(pv => pv.Product!.CategoryId == categoryId.Value);
+        }
+
+        query = query
+            .OrderBy(pv => pv.Product!.ProductName)
+            .ThenBy(pv => pv.VariantName)
+            .ThenBy(pv => pv.SKU);
+
+        var totalCount = await query.CountAsync();
+        var items = await query
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return new PagedResult<ProductVariant>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+    }
+
     public async Task<List<ProductVariant>> GetVariantsByBrandIdAsync(int brandId, decimal? startingPrice = null, decimal? toPrice = null, string? sortBy = null)
     {
         var query = _context.ProductVariants

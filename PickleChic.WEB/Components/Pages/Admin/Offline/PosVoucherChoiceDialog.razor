@@ -1,0 +1,94 @@
+@using PickleChic.WEB.DTO.Admin
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Chọn mã giảm giá</MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (_loading)
+        {
+            <div class="flex justify-center !py-10">
+                <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+            </div>
+        }
+        else
+        {
+            <MudTable Items="_items" Dense="true" Hover="true" FixedHeader="true" Height="360px">
+                <HeaderContent>
+                    <MudTh>Mã</MudTh>
+                    <MudTh>Giảm</MudTh>
+                    <MudTh>Đơn tối thiểu</MudTh>
+                    <MudTh>HSD</MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Mã">@context.VoucherCode</MudTd>
+                    <MudTd DataLabel="Giảm">
+                        @(context.IsPercentDiscount
+                            ? $"{context.DiscountValue:0}%"
+                            : $"{context.DiscountValue:N0} đ")
+                    </MudTd>
+                    <MudTd DataLabel="Đơn tối thiểu">@context.MinOrderValue.ToString("N0") đ</MudTd>
+                    <MudTd DataLabel="HSD">@context.EndDate.ToString("dd/MM/yyyy")</MudTd>
+                    <MudTd>
+                        <MudButton Size="Size.Small"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   OnClick="@(() => Select(context))"
+                                   Class="!normal-case">
+                            Chọn
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+                <NoRecordsContent>
+                    <MudText>Không có voucher khả dụng cho khách này.</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="ClearVoucher" Color="Color.Warning" Class="!normal-case">Bỏ mã</MudButton>
+        <MudButton OnClick="Cancel" Class="!normal-case">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter]
+    public int CustomerId { get; set; }
+
+    private List<VoucherResponse> _items = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CustomerId <= 0)
+        {
+            _loading = false;
+            return;
+        }
+
+        var result = await _posService.GetVouchersByCustomerAsync(CustomerId);
+        if (!result.Success || result.Data is null)
+        {
+            _snackbar.Add(result.Message ?? "Không tải được voucher", Severity.Error);
+            _items = new();
+        }
+        else
+        {
+            _items = result.Data;
+        }
+
+        _loading = false;
+    }
+
+    private void Select(VoucherResponse voucher) =>
+        MudDialog.Close(DialogResult.Ok(voucher));
+
+    private void ClearVoucher() =>
+        MudDialog.Close(DialogResult.Ok<VoucherResponse?>(null));
+
+    private void Cancel() => MudDialog.Cancel();
+}
