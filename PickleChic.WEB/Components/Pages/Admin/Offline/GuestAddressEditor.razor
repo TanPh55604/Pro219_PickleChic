@@ -1,0 +1,184 @@
+@using PickleChic.WEB.DTO.Customer
+@using PickleChic.WEB.Model
+
+<div class="!space-y-2">
+    <div class="grid !gap-2 sm:grid-cols-2">
+        <MudTextField Value="Address.FullName"
+                      ValueChanged="@(async (string v) => await OnFullNameChanged(v))"
+                      Label="Họ tên"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Immediate="true" />
+
+        <MudTextField Value="Address.PhoneNumber"
+                      ValueChanged="@(async (string v) => await OnPhoneChanged(v))"
+                      Label="Số điện thoại"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Immediate="true" />
+    </div>
+
+    <MudTextField Value="Address.DetailInfo"
+                  ValueChanged="@(async (string v) => await OnDetailChanged(v))"
+                  Label="Địa chỉ chi tiết"
+                  Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
+                  Immediate="true" />
+
+    <div class="grid !gap-2 md:grid-cols-3">
+        <MudSelect T="int?"
+                   Value="_provinceId"
+                   ValueChanged="OnProvinceChangedAsync"
+                   Label="Tỉnh/TP"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense">
+            @foreach (var p in _provinces)
+            {
+                <MudSelectItem T="int?" Value="@p.Id">@p.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect T="int?"
+                   Value="_districtId"
+                   ValueChanged="OnDistrictChangedAsync"
+                   Label="Quận/Huyện"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Disabled="@(!_districts.Any())">
+            @foreach (var d in _districts)
+            {
+                <MudSelectItem T="int?" Value="@d.Id">@d.Name</MudSelectItem>
+            }
+        </MudSelect>
+
+        <MudSelect T="int"
+                   Value="Address.WardId"
+                   ValueChanged="OnWardChangedAsync"
+                   Label="Phường/Xã"
+                   Variant="Variant.Outlined"
+                   Margin="Margin.Dense"
+                   Disabled="@(!_wards.Any())">
+            @foreach (var w in _wards)
+            {
+                <MudSelectItem Value="@w.Id">@w.Name</MudSelectItem>
+            }
+        </MudSelect>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public OfflinePosGuestAddress Address { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
+    private List<ProvinceResponse> _provinces = new();
+    private List<DistrictResponse> _districts = new();
+    private List<WardResponse> _wards = new();
+    private int? _provinceId;
+    private int? _districtId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var provinces = await _addressService.GetProvincesAsync();
+        if (provinces.Success && provinces.Data is not null)
+        {
+            _provinces = provinces.Data;
+        }
+
+        _provinceId = Address.ProvinceId;
+        _districtId = Address.DistrictId;
+
+        if (_provinceId is > 0)
+        {
+            await LoadDistrictsAsync(_provinceId.Value);
+        }
+
+        if (_districtId is > 0)
+        {
+            await LoadWardsAsync(_districtId.Value);
+        }
+    }
+
+    private async Task NotifyAsync()
+    {
+        if (OnChanged.HasDelegate)
+        {
+            await OnChanged.InvokeAsync();
+        }
+    }
+
+    private async Task OnFullNameChanged(string value)
+    {
+        Address.FullName = value ?? string.Empty;
+        await NotifyAsync();
+    }
+
+    private async Task OnPhoneChanged(string value)
+    {
+        Address.PhoneNumber = value ?? string.Empty;
+        await NotifyAsync();
+    }
+
+    private async Task OnDetailChanged(string value)
+    {
+        Address.DetailInfo = value ?? string.Empty;
+        await NotifyAsync();
+    }
+
+    private async Task OnProvinceChangedAsync(int? provinceId)
+    {
+        _provinceId = provinceId;
+        Address.ProvinceId = provinceId;
+        _districtId = null;
+        Address.DistrictId = null;
+        Address.WardId = 0;
+        _districts = new();
+        _wards = new();
+
+        if (provinceId is > 0)
+        {
+            await LoadDistrictsAsync(provinceId.Value);
+        }
+
+        await NotifyAsync();
+    }
+
+    private async Task OnDistrictChangedAsync(int? districtId)
+    {
+        _districtId = districtId;
+        Address.DistrictId = districtId;
+        Address.WardId = 0;
+        _wards = new();
+
+        if (districtId is > 0)
+        {
+            await LoadWardsAsync(districtId.Value);
+        }
+
+        await NotifyAsync();
+    }
+
+    private async Task OnWardChangedAsync(int wardId)
+    {
+        Address.WardId = wardId;
+        await NotifyAsync();
+    }
+
+    private async Task LoadDistrictsAsync(int provinceId)
+    {
+        var result = await _addressService.GetDistrictsByProvinceAsync(provinceId);
+        _districts = result.Success && result.Data is not null
+            ? result.Data
+            : new List<DistrictResponse>();
+    }
+
+    private async Task LoadWardsAsync(int districtId)
+    {
+        var result = await _addressService.GetWardsByDistrictAsync(districtId);
+        _wards = result.Success && result.Data is not null
+            ? result.Data
+            : new List<WardResponse>();
+    }
+}

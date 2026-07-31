@@ -14,12 +14,13 @@ public class UserOrderDetailDto
     public string PaymentStatus { get; set; } = null!;
     public string OrderStatus { get; set; } = null!;
     public string? PaymentLink { get; set; }
+    public int? Status { get; set; } = 0!;
     
     // Receiver Info
     public string ReceiverName { get; set; } = null!;
     public string ReceiverPhone { get; set; } = null!;
     public string FullAddress { get; set; } = null!;
-    
+
     // Financial Info
     public decimal TotalPrice { get; set; }
     public decimal DiscountAmount { get; set; }

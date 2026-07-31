@@ -1,0 +1,920 @@
+﻿@using PickleChic.WEB.DTO.Admin
+@using PickleChic.WEB.DTO.Customer
+@using PickleChic.WEB.Model
+@using PickleChic.WEB.Components.Pages.Customer.Profile
+
+<div class="grid h-full min-h-0 !gap-3 xl:grid-cols-12">
+    <section class="flex min-h-0 flex-col !gap-3 xl:col-span-8">
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden !rounded-2xl !border !border-slate-200">
+            <div class="flex shrink-0 items-center justify-between !border-b !border-slate-100 !bg-slate-50 !px-3 !py-2">
+                <div class="flex items-center !gap-2">
+                    <h2 class="text-sm font-bold text-slate-800">Sản phẩm</h2>
+                    <span class="text-xs font-semibold text-slate-400">@Tab.Items.Sum(i => i.Quantity) món</span>
+                </div>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="OpenProductDialogAsync"
+                           Class="!rounded-xl !normal-case">
+                    Chọn SP
+                </MudButton>
+            </div>
+
+            <div class="min-h-0 flex-1 overflow-y-auto">
+                @if (Tab.Items.Count == 0)
+                {
+                    <div class="flex h-full min-h-[160px] flex-col items-center justify-center !gap-2 !px-6 !py-10 text-center">
+                        <div class="flex !h-12 !w-12 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
+                            <MudIcon Icon="@Icons.Material.Outlined.Inventory2" Size="Size.Medium" />
+                        </div>
+                        <p class="text-sm font-bold text-slate-800">Chưa có sản phẩm</p>
+                        <p class="max-w-sm text-xs text-slate-500">
+                            Nhấn “Chọn SP” để thêm hàng vào hóa đơn.
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <div class="divide-y divide-slate-100">
+                        @foreach (var item in Tab.Items)
+                        {
+                            var overStock = item.StockQuantity > 0 && item.Quantity > item.StockQuantity;
+                            <div @key="item.ProductVariantId" class="!px-3 !py-2.5">
+                                <div class="flex flex-col !gap-2 sm:flex-row sm:items-center">
+                                    <div class="flex min-w-0 flex-1 items-center !gap-3">
+                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        {
+                                            <MudImage Src="@item.ImageUrl" Width="40" Height="40" ObjectFit="ObjectFit.Cover" Class="!rounded-lg" />
+                                        }
+                                        <div class="min-w-0">
+                                            <p class="truncate text-sm font-semibold text-slate-800">@item.DisplayName</p>
+                                            <p class="text-xs text-slate-500">SKU: @(item.Sku ?? "—") · Tồn @item.StockQuantity</p>
+                                            <p class="text-sm font-bold text-[#A05AFF]">@item.UnitPrice.ToString("N0") đ</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="flex items-center !gap-1">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Remove"
+                                                       Size="Size.Small"
+                                                       Disabled="@(item.Quantity <= 1 || _busy)"
+                                                       OnClick="@(() => ChangeQtyAsync(item, item.Quantity - 1))" />
+                                        <span class="min-w-8 text-center text-sm font-semibold @(overStock ? "text-red-500" : null)">@item.Quantity</span>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                       Size="Size.Small"
+                                                       Disabled="@(_busy || item.Quantity >= item.StockQuantity)"
+                                                       OnClick="@(() => ChangeQtyAsync(item, item.Quantity + 1))" />
+                                        <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                                       Size="Size.Small"
+                                                       Color="Color.Error"
+                                                       OnClick="@(() => RemoveItemAsync(item.ProductVariantId))" />
+                                    </div>
+                                </div>
+
+                                @if (overStock)
+                                {
+                                    <div class="!mt-2 flex flex-wrap items-center justify-between !gap-2 !rounded-lg !bg-amber-50 !px-3 !py-2 text-xs text-amber-800">
+                                        <span>Chỉ còn <strong>@item.StockQuantity</strong> sản phẩm trong kho. Số lượng hiện tại đang vượt tồn.</span>
+                                        <MudButton Size="Size.Small"
+                                                   Variant="Variant.Text"
+                                                   Color="Color.Warning"
+                                                   Disabled="_busy"
+                                                   OnClick="@(() => ChangeQtyAsync(item, item.StockQuantity))"
+                                                   Class="!normal-case !min-w-0 !px-2">
+                                            Giảm về @item.StockQuantity
+                                        </MudButton>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="shrink-0 !rounded-2xl !border !border-slate-200 !bg-white !p-3">
+            <div class="flex flex-col !gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div class="min-w-0">
+                    <h2 class="text-sm font-bold text-slate-800">Khách hàng</h2>
+                    @if (Tab.IsGuest)
+                    {
+                        <p class="truncate text-xs text-slate-500">Khách vãng lai · chưa gắn tài khoản</p>
+                    }
+                    else
+                    {
+                        <p class="truncate text-xs text-slate-500">
+                            @Tab.CustomerName · @(Tab.CustomerPhone ?? "—")
+                        </p>
+                    }
+                </div>
+
+                <div class="flex flex-wrap !gap-2">
+                    <MudButton Variant="@(Tab.IsGuest ? Variant.Filled : Variant.Outlined)"
+                               Color="@(Tab.IsGuest ? Color.Primary : Color.Default)"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.PersonOff"
+                               OnClick="SetGuestAsync"
+                               Class="!rounded-xl !normal-case">
+                        Vãng lai
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.PersonAdd"
+                               OnClick="OpenCustomerDialogAsync"
+                               Class="!rounded-xl !normal-case">
+                        Chọn KH
+                    </MudButton>
+                </div>
+            </div>
+
+            @if (Tab.IsShipping)
+            {
+                <div class="!mt-3 max-h-[28vh] !space-y-2 overflow-y-auto !border-t !border-slate-100 !px-2 !pt-3">
+                    <p class="text-xs font-bold text-slate-500 uppercase">Địa chỉ giao hàng</p>
+
+                    @if (!Tab.IsGuest && Tab.CustomerId is > 0)
+                    {
+                        @if (_customerAddresses.Count == 0)
+                        {
+                            <div class="!rounded-xl !border !border-dashed !border-slate-300 !bg-slate-50 !px-3 !py-2 text-xs text-slate-500">
+                                Khách hàng chưa có địa chỉ đã lưu.
+                            </div>
+                        }
+                        else
+                        {
+                            <MudSelect T="int?"
+                                       Value="Tab.AddressId"
+                                       ValueChanged="OnAddressSelectedAsync"
+                                       Label="Chọn địa chỉ đã lưu"
+                                       Variant="Variant.Outlined"
+                                       Margin="Margin.Dense"
+                                       Clearable="true">
+                                @foreach (var address in _customerAddresses)
+                                {
+                                    <MudSelectItem T="int?" Value="@address.Id">
+                                        @address.FullName — @address.DisplayLocation
+                                    </MudSelectItem>
+                                }
+                            </MudSelect>
+                        }
+
+                        <MudButton Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.AddLocationAlt"
+                                   OnClick="OpenAddAddressDialogAsync"
+                                   Class="!rounded-xl !normal-case">
+                            Thêm địa chỉ mới
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <GuestAddressEditor Address="EnsureGuestAddress()"
+                                            OnChanged="PersistGuestAddressAsync" />
+                    }
+                </div>
+            }
+        </div>
+    </section>
+
+    <aside class="flex min-h-0 flex-col xl:col-span-4">
+        <div class="flex h-full min-h-0 flex-col overflow-hidden !rounded-2xl !border !border-slate-200 !bg-slate-50/80">
+            <div class="shrink-0 !border-b !border-slate-200 !px-3 !py-2">
+                <h2 class="text-sm font-bold text-slate-800">Thanh toán</h2>
+            </div>
+
+            <div class="min-h-0 flex-1 !space-y-2.5 overflow-y-auto !p-3">
+                <div>
+                    <p class="!mb-2 text-xs font-bold text-slate-500 uppercase">Phương thức</p>
+                    <MudRadioGroup T="string" Value="Tab.PaymentMethod" ValueChanged="OnPaymentChangedAsync">
+                        <div class="flex flex-wrap !gap-4">
+                            <MudRadio T="string" Value="@("cash")" Color="Color.Primary">Tiền mặt</MudRadio>
+                            <MudRadio T="string" Value="@("transfer")" Color="Color.Primary">Chuyển khoản</MudRadio>
+                        </div>
+                    </MudRadioGroup>
+                </div>
+
+                @if (!Tab.IsGuest && Tab.CustomerId is > 0)
+                {
+                    <div class="flex items-center justify-between !gap-3">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-600">Mã giảm giá</p>
+                            <p class="text-xs text-slate-400">
+                                @(string.IsNullOrWhiteSpace(Tab.VoucherCode) ? "Chưa chọn" : Tab.VoucherCode)
+                            </p>
+                        </div>
+                        <MudButton Variant="Variant.Outlined"
+                                   Size="Size.Small"
+                                   OnClick="OpenVoucherDialogAsync"
+                                   Class="!rounded-lg !normal-case">
+                            Chọn mã
+                        </MudButton>
+                    </div>
+                }
+
+                <div class="flex items-center justify-between !gap-3">
+                    <p class="text-sm font-semibold text-slate-600">Giao hàng</p>
+                    <MudSwitch T="bool"
+                               Value="Tab.IsShipping"
+                               ValueChanged="OnShippingChangedAsync"
+                               Color="Color.Primary" />
+                </div>
+
+                <MudTextField Value="Tab.Note"
+                              ValueChanged="@(async (string v) => await OnNoteChangedAsync(v))"
+                              Label="Ghi chú"
+                              Placeholder="Ghi chú đơn hàng..."
+                              Variant="Variant.Outlined"
+                              Margin="Margin.Dense"
+                              Lines="2"
+                              Immediate="true" />
+
+                <div class="!space-y-2 !border-t !border-slate-200 !pt-3 text-sm">
+                    <div class="flex justify-between text-slate-600">
+                        <span>Tổng sản phẩm</span>
+                        <span class="font-semibold">@_displaySubtotal.ToString("N0") đ</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Giảm giá</span>
+                        <span class="font-semibold">@_displayDiscount.ToString("N0") đ</span>
+                    </div>
+                    <div class="flex justify-between text-slate-600">
+                        <span>Phí giao hàng</span>
+                        <span class="font-semibold">@_displayShipping.ToString("N0") đ</span>
+                    </div>
+                    <div class="flex justify-between !pt-1 text-base font-bold text-slate-900">
+                        <span>Tạm tính</span>
+                        <span class="text-[#A05AFF]">@_displayFinal.ToString("N0") đ</span>
+                    </div>
+                </div>
+
+                @if (Tab.PaymentMethod == "cash")
+                {
+                    <div class="!space-y-2 !rounded-xl !border !border-slate-200 !bg-white !p-3">
+                        <MudNumericField T="decimal?"
+                                         Value="Tab.CashReceived"
+                                         ValueChanged="OnCashReceivedChangedAsync"
+                                         Label="Tiền khách đưa"
+                                         Variant="Variant.Outlined"
+                                         Min="0"
+                                         Format="N0"
+                                         Adornment="Adornment.End"
+                                         AdornmentText="đ"
+                                         HideSpinButtons="true"
+                                         Immediate="true"
+                                         Margin="Margin.Dense" />
+
+                        <div class="flex justify-between text-sm">
+                            <span class="font-semibold text-slate-600">Tiền trả lại</span>
+                            <span class="@(_changeAmount < 0 ? "font-bold text-red-500" : "font-bold text-emerald-600")">
+                                @_changeAmount.ToString("N0") đ
+                            </span>
+                        </div>
+                        @if (_changeAmount < 0)
+                        {
+                            <p class="text-xs text-red-500">Tiền khách đưa chưa đủ tạm tính.</p>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="shrink-0 !border-t !border-slate-200 !bg-white/70 !p-3">
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           Disabled="@(_checkingOut || Tab.Items.Count == 0)"
+                           OnClick="CheckoutAsync"
+                           Class="!rounded-xl !py-2.5 !text-base !normal-case"
+                           StartIcon="@Icons.Material.Filled.Payments">
+                    @(_checkingOut ? "Đang xử lý..." : "Thanh toán")
+                </MudButton>
+            </div>
+        </div>
+    </aside>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public OfflinePosTab Tab { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnCheckoutCompleted { get; set; }
+
+    private List<AddressResponse> _customerAddresses = new();
+    private bool _busy;
+    private bool _checkingOut;
+    private bool _calculating;
+    private readonly HashSet<int> _overStockWarnedIds = new();
+    private bool _stockSynced;
+    private OrderCalculationResult? _calculation;
+
+    private decimal _localSubtotal =>
+        Tab.Items.Sum(i => i.UnitPrice * i.Quantity);
+
+    private decimal _displaySubtotal =>
+        _calculation?.TotalAmount ?? _localSubtotal;
+
+    private decimal _displayDiscount =>
+        _calculation?.DiscountPrice ?? 0;
+
+    private decimal _displayShipping =>
+        _calculation?.ShippingFee ?? 0;
+
+    private decimal _displayFinal =>
+        _calculation?.FinalAmount ?? Math.Max(0, _localSubtotal);
+
+    private decimal _changeAmount =>
+        (Tab.CashReceived ?? 0) - _displayFinal;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!Tab.IsGuest && Tab.CustomerId is > 0 && Tab.IsShipping)
+        {
+            await LoadCustomerAddressesAsync(Tab.CustomerId.Value);
+        }
+
+        if (!_stockSynced && Tab.Items.Count > 0)
+        {
+            _stockSynced = true;
+            await SyncStockWarningsAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RecalculateTotalsAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task SyncStockWarningsAsync()
+    {
+        foreach (var item in Tab.Items.ToList())
+        {
+            var stock = await _posService.CheckStockAsync(item.ProductVariantId, 1);
+            if (!stock.Success || stock.Data is null)
+            {
+                continue;
+            }
+
+            item.StockQuantity = stock.Data.StockQuantity;
+            if (item.Quantity > item.StockQuantity && !_overStockWarnedIds.Contains(item.ProductVariantId))
+            {
+                _overStockWarnedIds.Add(item.ProductVariantId);
+                _snackbar.Add(
+                    $"{item.DisplayName}: chỉ còn {item.StockQuantity} trong kho (đang chọn {item.Quantity}).",
+                    Severity.Warning);
+            }
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task NotifyChangedAsync(bool recalculate = true)
+    {
+        if (OnChanged.HasDelegate)
+        {
+            await OnChanged.InvokeAsync();
+        }
+
+        if (recalculate)
+        {
+            await RecalculateTotalsAsync();
+        }
+    }
+
+    private async Task RecalculateTotalsAsync()
+    {
+        if (Tab.Items.Count == 0)
+        {
+            _calculation = null;
+            return;
+        }
+
+        if (_calculating)
+        {
+            return;
+        }
+
+        _calculating = true;
+        try
+        {
+            var request = BuildCalculationRequest();
+            if (request is null)
+            {
+                _calculation = null;
+                return;
+            }
+
+            var result = await _posService.CalculateTotalAsync(request);
+            _calculation = result.Success ? result.Data : null;
+        }
+        finally
+        {
+            _calculating = false;
+        }
+    }
+
+    private PosOrderCalculationRequest? BuildCalculationRequest()
+    {
+        if (Tab.Items.Count == 0)
+        {
+            return null;
+        }
+
+        var request = new PosOrderCalculationRequest
+        {
+            Items = Tab.Items.Select(i => new OrderItemCalculationRequest
+            {
+                ProductVariantId = i.ProductVariantId,
+                Quantity = i.Quantity
+            }).ToList(),
+            CustomerId = !Tab.IsGuest && Tab.CustomerId is > 0 ? Tab.CustomerId : null,
+            DiscountCode = !Tab.IsGuest && !string.IsNullOrWhiteSpace(Tab.VoucherCode) ? Tab.VoucherCode : null,
+            IsShipping = Tab.IsShipping,
+            UsePoints = false
+        };
+
+        if (Tab.IsShipping)
+        {
+            if (!Tab.IsGuest && Tab.AddressId is > 0)
+            {
+                request.AddressId = Tab.AddressId;
+            }
+            else if (Tab.IsGuest && IsGuestAddressComplete(Tab.GuestAddress))
+            {
+                request.AddressDTO = MapGuestAddress(Tab.GuestAddress!);
+            }
+        }
+
+        return request;
+    }
+
+    private PosCheckoutRequest BuildCheckoutRequest()
+    {
+        var request = new PosCheckoutRequest
+        {
+            ListItemCheckout = Tab.Items.Select(i => new CartItemCheckoutRequest
+            {
+                ProductVariantId = i.ProductVariantId,
+                Quantity = i.Quantity,
+                ProductName = i.DisplayName
+            }).ToList(),
+            CustomerId = !Tab.IsGuest && Tab.CustomerId is > 0 ? Tab.CustomerId : null,
+            VoucherId = !Tab.IsGuest ? Tab.VoucherId : null,
+            Note = Tab.Note,
+            UsePoints = false,
+            IsShipping = Tab.IsShipping,
+            PaymentMethodTypeId = Tab.PaymentMethod == "transfer"
+                ? Constant.PaymentMethodType.BankTransfer
+                : Constant.PaymentMethodType.Cash
+        };
+
+        if (Tab.IsShipping)
+        {
+            if (!Tab.IsGuest && Tab.AddressId is > 0)
+            {
+                request.AddressId = Tab.AddressId;
+            }
+            else if (Tab.IsGuest && Tab.GuestAddress is not null)
+            {
+                request.AddressDTO = MapGuestAddress(Tab.GuestAddress);
+            }
+        }
+
+        return request;
+    }
+
+    private static PosAddressCreateRequest MapGuestAddress(OfflinePosGuestAddress address) => new()
+    {
+        FullName = address.FullName.Trim(),
+        PhoneNumber = address.PhoneNumber.Trim(),
+        DetailInfo = address.DetailInfo.Trim(),
+        WardId = address.WardId
+    };
+
+    private static bool IsGuestAddressComplete(OfflinePosGuestAddress? address) =>
+        address is not null
+        && !string.IsNullOrWhiteSpace(address.FullName)
+        && !string.IsNullOrWhiteSpace(address.PhoneNumber)
+        && !string.IsNullOrWhiteSpace(address.DetailInfo)
+        && address.WardId > 0;
+
+    private string? ValidateBeforeCheckout()
+    {
+        if (Tab.Items.Count == 0)
+        {
+            return "Vui lòng chọn ít nhất một sản phẩm";
+        }
+
+        var overStock = Tab.Items.FirstOrDefault(i => i.Quantity > i.StockQuantity);
+        if (overStock is not null)
+        {
+            return $"{overStock.DisplayName}: chỉ còn {overStock.StockQuantity} trong kho";
+        }
+
+        if (Tab.IsShipping)
+        {
+            if (!Tab.IsGuest)
+            {
+                if (Tab.CustomerId is null or <= 0)
+                {
+                    return "Vui lòng chọn khách hàng";
+                }
+
+                if (Tab.AddressId is null or <= 0)
+                {
+                    return "Vui lòng chọn hoặc thêm địa chỉ giao hàng";
+                }
+            }
+            else if (!IsGuestAddressComplete(Tab.GuestAddress))
+            {
+                return "Vui lòng nhập đầy đủ địa chỉ giao hàng";
+            }
+        }
+
+        if (Tab.PaymentMethod == "cash" && (Tab.CashReceived ?? 0) < _displayFinal)
+        {
+            return "Tiền khách đưa chưa đủ tạm tính";
+        }
+
+        if (Tab.IsGuest)
+        {
+            Tab.VoucherId = null;
+            Tab.VoucherCode = null;
+        }
+
+        return null;
+    }
+
+    private async Task CheckoutAsync()
+    {
+        if (_checkingOut)
+        {
+            return;
+        }
+
+        var error = ValidateBeforeCheckout();
+        if (error is not null)
+        {
+            _snackbar.Add(error, Severity.Warning);
+            return;
+        }
+
+        _checkingOut = true;
+        try
+        {
+            await RecalculateTotalsAsync();
+
+            var result = await _posService.CheckoutAsync(BuildCheckoutRequest());
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(result.Message ?? "Thanh toán thất bại", Severity.Error);
+                return;
+            }
+
+            _snackbar.Add($"Thanh toán thành công · {result.Data.OrderCode}", Severity.Success);
+
+            if (OnCheckoutCompleted.HasDelegate)
+            {
+                await OnCheckoutCompleted.InvokeAsync();
+            }
+        }
+        finally
+        {
+            _checkingOut = false;
+        }
+    }
+
+    private async Task OpenProductDialogAsync()
+    {
+        var dialog = await _dialogService.ShowAsync<PosProductChoiceDialog>(
+            "Chọn sản phẩm",
+            new DialogOptions { MaxWidth = MaxWidth.Large, FullWidth = true });
+
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not OfflinePosLineItem selected)
+        {
+            return;
+        }
+
+        var existing = Tab.Items.FirstOrDefault(i => i.ProductVariantId == selected.ProductVariantId);
+        var targetQty = (existing?.Quantity ?? 0) + selected.Quantity;
+
+        var stock = await _posService.CheckStockAsync(selected.ProductVariantId, targetQty);
+        if (!stock.Success || stock.Data is null || !stock.Data.IsAvailable)
+        {
+            _snackbar.Add(stock.Data?.Message ?? stock.Message ?? "Không đủ tồn kho", Severity.Warning);
+            return;
+        }
+
+        if (existing is null)
+        {
+            selected.StockQuantity = stock.Data.StockQuantity;
+            Tab.Items.Add(selected);
+        }
+        else
+        {
+            existing.Quantity = targetQty;
+            existing.StockQuantity = stock.Data.StockQuantity;
+            existing.UnitPrice = stock.Data.UnitPrice > 0 ? stock.Data.UnitPrice : existing.UnitPrice;
+        }
+
+        _snackbar.Add("Đã thêm sản phẩm", Severity.Success);
+        await NotifyChangedAsync();
+    }
+
+    private async Task ChangeQtyAsync(OfflinePosLineItem item, int quantity)
+    {
+        if (quantity < 1)
+        {
+            return;
+        }
+
+        var isDecrease = quantity < item.Quantity;
+        _busy = true;
+        try
+        {
+            if (isDecrease)
+            {
+                item.Quantity = quantity;
+
+                var stockRefresh = await _posService.CheckStockAsync(item.ProductVariantId, 1);
+                if (stockRefresh.Success && stockRefresh.Data is not null)
+                {
+                    item.StockQuantity = stockRefresh.Data.StockQuantity;
+                    if (item.Quantity > item.StockQuantity && !_overStockWarnedIds.Contains(item.ProductVariantId))
+                    {
+                        _overStockWarnedIds.Add(item.ProductVariantId);
+                        _snackbar.Add(
+                            $"Chỉ còn {item.StockQuantity} sản phẩm trong kho. Vui lòng giảm số lượng.",
+                            Severity.Warning);
+                    }
+                    else if (item.Quantity <= item.StockQuantity)
+                    {
+                        _overStockWarnedIds.Remove(item.ProductVariantId);
+                    }
+                }
+
+                await NotifyChangedAsync();
+                return;
+            }
+
+            var stock = await _posService.CheckStockAsync(item.ProductVariantId, quantity);
+            if (!stock.Success || stock.Data is null)
+            {
+                _snackbar.Add(stock.Message ?? "Không kiểm tra được tồn kho", Severity.Error);
+                return;
+            }
+
+            item.StockQuantity = stock.Data.StockQuantity;
+
+            if (!stock.Data.IsAvailable)
+            {
+                _snackbar.Add(stock.Data.Message ?? "Không đủ tồn kho", Severity.Warning);
+                await NotifyChangedAsync();
+                return;
+            }
+
+            item.Quantity = quantity;
+            item.UnitPrice = stock.Data.UnitPrice > 0 ? stock.Data.UnitPrice : item.UnitPrice;
+            await NotifyChangedAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RemoveItemAsync(int productVariantId)
+    {
+        Tab.Items.RemoveAll(i => i.ProductVariantId == productVariantId);
+        await NotifyChangedAsync();
+    }
+
+    private async Task SetGuestAsync()
+    {
+        Tab.IsGuest = true;
+        Tab.CustomerId = null;
+        Tab.CustomerName = null;
+        Tab.CustomerPhone = null;
+        Tab.CustomerEmail = null;
+        Tab.AddressId = null;
+        Tab.AddressLabel = null;
+        Tab.VoucherId = null;
+        Tab.VoucherCode = null;
+        _customerAddresses = new();
+        await NotifyChangedAsync();
+    }
+
+    private async Task OpenCustomerDialogAsync()
+    {
+        var dialog = await _dialogService.ShowAsync<PosCustomerChoiceDialog>(
+            "Chọn khách hàng",
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+
+        var result = await dialog.Result;
+        if (result is null || result.Canceled || result.Data is not CustomerSearchResultResponse customer)
+        {
+            return;
+        }
+
+        Tab.IsGuest = false;
+        Tab.CustomerId = customer.Id;
+        Tab.CustomerName = customer.FullName;
+        Tab.CustomerPhone = customer.PhoneNumber;
+        Tab.CustomerEmail = customer.Email;
+        Tab.AddressId = null;
+        Tab.AddressLabel = null;
+        Tab.GuestAddress = null;
+        Tab.VoucherId = null;
+        Tab.VoucherCode = null;
+
+        if (Tab.IsShipping)
+        {
+            await LoadCustomerAddressesAsync(customer.Id);
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task OpenVoucherDialogAsync()
+    {
+        if (Tab.IsGuest || Tab.CustomerId is null or <= 0)
+        {
+            _snackbar.Add("Chỉ khách thành viên mới dùng voucher", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<PosVoucherChoiceDialog>
+        {
+            { x => x.CustomerId, Tab.CustomerId.Value }
+        };
+
+        var dialog = await _dialogService.ShowAsync<PosVoucherChoiceDialog>(
+            "Chọn mã giảm giá",
+            parameters,
+            new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true });
+
+        var result = await dialog.Result;
+        if (result is null || result.Canceled)
+        {
+            return;
+        }
+
+        if (result.Data is VoucherResponse voucher)
+        {
+            Tab.VoucherId = voucher.Id;
+            Tab.VoucherCode = voucher.VoucherCode;
+        }
+        else
+        {
+            Tab.VoucherId = null;
+            Tab.VoucherCode = null;
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task OnShippingChangedAsync(bool value)
+    {
+        Tab.IsShipping = value;
+
+        if (!value)
+        {
+            Tab.AddressId = null;
+            Tab.AddressLabel = null;
+        }
+        else if (!Tab.IsGuest && Tab.CustomerId is > 0)
+        {
+            await LoadCustomerAddressesAsync(Tab.CustomerId.Value);
+        }
+        else if (Tab.IsGuest)
+        {
+            EnsureGuestAddress();
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task OnPaymentChangedAsync(string value)
+    {
+        Tab.PaymentMethod = value;
+        if (value != "cash")
+        {
+            Tab.CashReceived = null;
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task OnCashReceivedChangedAsync(decimal? value)
+    {
+        Tab.CashReceived = value is < 0 ? 0 : value;
+        await NotifyChangedAsync();
+    }
+
+    private async Task OnNoteChangedAsync(string? value)
+    {
+        Tab.Note = string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        await NotifyChangedAsync();
+    }
+
+    private async Task OnAddressSelectedAsync(int? addressId)
+    {
+        Tab.AddressId = addressId;
+        var selected = _customerAddresses.FirstOrDefault(a => a.Id == addressId);
+        Tab.AddressLabel = selected?.DisplayLocation;
+        await NotifyChangedAsync();
+    }
+
+    private async Task OpenAddAddressDialogAsync()
+    {
+        if (Tab.CustomerId is null or <= 0)
+        {
+            _snackbar.Add("Vui lòng chọn khách hàng trước", Severity.Warning);
+            return;
+        }
+
+        var previousIds = _customerAddresses.Select(x => x.Id).ToHashSet();
+
+        var parameters = new DialogParameters<AddressFormDialog>
+        {
+            { x => x.CustomerId, Tab.CustomerId.Value },
+            { x => x.EditItem, null }
+        };
+
+        var dialog = await _dialogService.ShowAsync<AddressFormDialog>(
+            null,
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true,
+                CloseButton = true,
+                CloseOnEscapeKey = true
+            });
+
+        var result = await dialog.Result;
+        if (result is null || result.Canceled)
+        {
+            return;
+        }
+
+        await LoadCustomerAddressesAsync(Tab.CustomerId.Value);
+
+        var created = _customerAddresses
+            .Where(a => !previousIds.Contains(a.Id))
+            .OrderByDescending(a => a.Id)
+            .FirstOrDefault()
+            ?? _customerAddresses.OrderByDescending(a => a.IsDefault).ThenByDescending(a => a.Id).FirstOrDefault();
+
+        if (created is not null)
+        {
+            Tab.AddressId = created.Id;
+            Tab.AddressLabel = created.DisplayLocation;
+        }
+
+        await NotifyChangedAsync();
+    }
+
+    private async Task LoadCustomerAddressesAsync(int customerId)
+    {
+        var result = await _addressService.GetByCustomerIdAsync(customerId);
+        _customerAddresses = result.Success && result.Data is not null
+            ? result.Data
+            : new List<AddressResponse>();
+
+        if (Tab.AddressId is > 0 && _customerAddresses.All(a => a.Id != Tab.AddressId))
+        {
+            Tab.AddressId = null;
+            Tab.AddressLabel = null;
+        }
+    }
+
+    private OfflinePosGuestAddress EnsureGuestAddress()
+    {
+        Tab.GuestAddress ??= new OfflinePosGuestAddress();
+        return Tab.GuestAddress;
+    }
+
+    private async Task PersistGuestAddressAsync()
+    {
+        if (Tab.GuestAddress is not null
+            && string.IsNullOrWhiteSpace(Tab.GuestAddress.FullName)
+            && string.IsNullOrWhiteSpace(Tab.GuestAddress.PhoneNumber)
+            && string.IsNullOrWhiteSpace(Tab.GuestAddress.DetailInfo)
+            && Tab.GuestAddress.WardId <= 0)
+        {
+            Tab.GuestAddress = null;
+        }
+
+        await NotifyChangedAsync();
+    }
+}
