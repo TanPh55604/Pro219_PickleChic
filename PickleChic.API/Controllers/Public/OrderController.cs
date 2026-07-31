@@ -1135,12 +1135,15 @@ public class OrderController : ControllerBase
         Order order = new Order();
         try
         {
+            bool isShipping = (dto.AddressId.HasValue && dto.AddressId.Value > 0) || dto.AddressDTO != null;
+            string initialStatus = isShipping ? Constant.OrderStatus.Shiping : Constant.OrderStatus.Done;
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             statusHistory.Add(new StatusHistoryEntry
             {
                 Index = statusHistory.Count + 1,
-                Status = Constant.OrderStatus.Done,
-                OrderStatus = Constant.OrderStatus.Done,
+                Status = initialStatus,
+                OrderStatus = initialStatus,
                 PaymentStatus = Constant.PaymentStatus.Completed,
                 DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
             });
@@ -1152,7 +1155,7 @@ public class OrderController : ControllerBase
             order.ShippingFee = shippingFee;
             order.OrderDate = DateTime.Now;
             order.PaymentStatus = Constant.PaymentStatus.Completed;
-            order.OrderStatus = Constant.OrderStatus.Done;
+            order.OrderStatus = initialStatus;
             order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
             order.VoucherId = dto.VoucherId;
             order.InsertedAt = DateTime.Now;
