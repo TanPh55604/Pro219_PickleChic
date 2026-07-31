@@ -106,12 +106,14 @@ public class OrderCalculationItemResultDto
 public class PosCheckoutDto
 {
     public List<CartItemCheckoutDTO> ListItemCheckout { get; set; } = null!;
+    public int? CustomerId { get; set; }
     public int? AddressId { get; set; }
     public PosAddressCreateDto? AddressDTO { get; set; } = null;
     public int? PaymentMethodTypeId { get; set; }
     public int? VoucherId { get; set; } = null;
     public string? Note { get; set; } = null;
     public bool? UsePoints { get; set; } = false;
+    public bool IsShipping { get; set; }
 }
 
 public class PosAddressCreateDto
@@ -125,8 +127,10 @@ public class PosAddressCreateDto
 public class PosOrderCalculationRequestDto
 {
     public List<OrderItemCalculationDto> Items { get; set; } = null!;
+    public int? CustomerId { get; set; }
     public string? DiscountCode { get; set; }
     public int? AddressId { get; set; }
     public bool? UsePoints { get; set; }
     public PosAddressCreateDto? AddressDTO { get; set; } = null;
+    public bool IsShipping { get; set; }
 }

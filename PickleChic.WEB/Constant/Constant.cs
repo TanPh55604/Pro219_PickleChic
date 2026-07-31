@@ -65,5 +65,12 @@
             public const int Cash = 1;
             public const int BankTransfer = 2;
         }
+
+        public static class OfflinePos
+        {
+            public const string DraftStorageKey = "picklechic_offline_pos_drafts";
+
+            public const int MaxTabs = 15;
+        }
     }
 }

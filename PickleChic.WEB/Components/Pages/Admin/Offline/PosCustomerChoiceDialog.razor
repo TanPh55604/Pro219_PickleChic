@@ -1,0 +1,111 @@
+﻿@using PickleChic.WEB.DTO.Admin
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Chọn khách hàng</MudText>
+    </TitleContent>
+    <DialogContent>
+        <div class="!mb-4 flex flex-col !gap-3 sm:flex-row sm:items-center">
+            <MudTextField T="string"
+                          @bind-Value="_keyword"
+                          Label="Tên / email / SĐT"
+                          Variant="Variant.Outlined"
+                          Immediate="true"
+                          Class="flex-1"
+                          OnKeyUp="OnKeywordKeyUp" />
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="SearchAsync"
+                       Disabled="_loading"
+                       Class="!h-14 !normal-case">
+                Tìm kiếm
+            </MudButton>
+        </div>
+
+        <MudTable Items="_items"
+                  Dense="true"
+                  Hover="true"
+                  Loading="_loading"
+                  FixedHeader="true"
+                  Height="360px">
+            <HeaderContent>
+                <MudTh>Họ tên</MudTh>
+                <MudTh>SĐT</MudTh>
+                <MudTh>Email</MudTh>
+                <MudTh>Điểm</MudTh>
+                <MudTh>Hạng</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Họ tên">@context.FullName</MudTd>
+                <MudTd DataLabel="SĐT">@(context.PhoneNumber ?? "—")</MudTd>
+                <MudTd DataLabel="Email">@context.Email</MudTd>
+                <MudTd DataLabel="Điểm">@context.TotalPoints</MudTd>
+                <MudTd DataLabel="Hạng">@(context.RankName ?? "—")</MudTd>
+                <MudTd>
+                    <MudButton Size="Size.Small"
+                               Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@(() => Select(context))"
+                               Class="!normal-case">
+                        Chọn
+                    </MudButton>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>Không tìm thấy khách hàng.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Class="!normal-case">Đóng</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = null!;
+
+    private List<CustomerSearchResultResponse> _items = new();
+    private string? _keyword;
+    private bool _loading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SearchAsync();
+    }
+
+    private async Task OnKeywordKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchAsync();
+        }
+    }
+
+    private async Task SearchAsync()
+    {
+        _loading = true;
+        try
+        {
+            var result = await _posService.SearchCustomersAsync(_keyword, 1, 50);
+            if (!result.Success || result.Data is null)
+            {
+                _items = new();
+                _snackbar.Add(result.Message ?? "Không tải được khách hàng", Severity.Error);
+                return;
+            }
+
+            _items = result.Data.Items;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void Select(CustomerSearchResultResponse customer) =>
+        MudDialog.Close(DialogResult.Ok(customer));
+
+    private void Cancel() => MudDialog.Cancel();
+}
