@@ -14,13 +14,17 @@ namespace PickleChic.WEB.Services.Customer
             int paymentMethodTypeId,
             int addressId,
             int? voucherId = null,
-            string? note = null);
+            string? note = null,
+            bool usePoints = false,
+            bool bopis = false);
 
         Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentSuccessAsync(int orderId, bool pos = false);
 
         Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentCanceledAsync(int orderId);
 
         Task<ApiResult<UserOrderDetailResponse>> GetUserOrderDetailAsync(int orderId);
+
+        Task<ApiResult<UserOrderDetailResponse>> CancelUserOrderAsync(int orderId);
 
         Task<ApiResult<List<UserOrderDetailResponse>>> GetUserOrdersAsync();
 

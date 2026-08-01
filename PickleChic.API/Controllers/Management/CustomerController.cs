@@ -10,10 +10,12 @@ namespace PickleChic.API.Controllers.Management;
 public class CustomerController : ControllerBase
 {
     private readonly CustomerRepository _repository;
+    private readonly AddressRepository _addressRepository;
 
-    public CustomerController(CustomerRepository repository)
+    public CustomerController(CustomerRepository repository, AddressRepository addressRepository)
     {
         _repository = repository;
+        _addressRepository = addressRepository;
     }
 
     [HttpGet("get-all")]
@@ -76,6 +78,11 @@ public class CustomerController : ControllerBase
             };
 
             var created = await _repository.AddAsync(entity);
+            if (created != null)
+            {
+                await _addressRepository.EnsureSystemPickupAsync(created.Id);
+            }
+
             return Ok(created);
         }
         catch (Exception ex)

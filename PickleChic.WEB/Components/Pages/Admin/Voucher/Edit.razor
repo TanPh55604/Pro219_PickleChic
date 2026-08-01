@@ -158,13 +158,6 @@ else
                                          Label="Đã sử dụng"
                                          Variant="Variant.Outlined"
                                          Disabled="true" />
-
-                        <div class="md:col-span-2">
-                            <MudSwitch @bind-Value="_model.IsActive"
-                                       For="@(() => _model.IsActive)"
-                                       Label="Đang hoạt động"
-                                       Color="Color.Success" />
-                        </div>
                     </div>
 
                     <div class="flex justify-end !border-t !border-slate-200 !pt-6">
@@ -260,11 +253,23 @@ else
 
             _model = MapToModel(result.Data);
             SyncDateTimePartsFromModel();
+            SyncIsActiveFromDates();
+
+            if (!CanModifyVoucher(_model))
+            {
+                _snackbar.Add("Không thể sửa voucher đang diễn ra hoặc đã kết thúc", Severity.Warning);
+                _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.VoucherDetail, Id), replace: true);
+            }
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private static bool CanModifyVoucher(VoucherModel model)
+    {
+        return model.StartDate.HasValue && model.StartDate.Value > DateTime.Now;
     }
 
     private static VoucherModel MapToModel(VoucherResponse response)
@@ -317,6 +322,7 @@ else
     private void OnStartDateTimeChanged()
     {
         UpdateStartDate();
+        SyncIsActiveFromDates();
         _startDateError = null;
         _endDateError = null;
     }
@@ -324,6 +330,7 @@ else
     private void OnEndDateTimeChanged()
     {
         UpdateEndDate();
+        SyncIsActiveFromDates();
         _endDateError = null;
     }
 
@@ -375,6 +382,40 @@ else
             : "Giá trị giảm (đ)";
     }
 
+    private void SyncIsActiveFromDates()
+    {
+        if (!_model.StartDate.HasValue || !_model.EndDate.HasValue)
+        {
+            _model.IsActive = false;
+            return;
+        }
+
+        var now = DateTime.Now;
+        _model.IsActive = _model.StartDate.Value <= now && _model.EndDate.Value > now;
+    }
+
+    private string GetScheduleStatusText()
+    {
+        if (!_model.StartDate.HasValue || !_model.EndDate.HasValue)
+        {
+            return "Chưa đủ thời gian — chưa kích hoạt";
+        }
+
+        var now = DateTime.Now;
+
+        if (_model.StartDate.Value > now)
+        {
+            return "Chưa diễn ra — chưa kích hoạt";
+        }
+
+        if (_model.EndDate.Value <= now)
+        {
+            return "Đã hết hạn — không hoạt động";
+        }
+
+        return "Đang diễn ra — đang hoạt động";
+    }
+
     private async Task SubmitAsync()
     {
         if (_form is null || _isSubmitting)
@@ -384,6 +425,13 @@ else
 
         UpdateStartDate();
         UpdateEndDate();
+        SyncIsActiveFromDates();
+
+        if (!CanModifyVoucher(_model))
+        {
+            _snackbar.Add("Không thể sửa voucher đang diễn ra hoặc đã kết thúc", Severity.Warning);
+            return;
+        }
 
         await _form.ValidateAsync();
         await ValidateDateFieldsAsync();

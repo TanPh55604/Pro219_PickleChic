@@ -28,7 +28,9 @@ namespace PickleChic.WEB.Services.Customer
             int paymentMethodTypeId,
             int addressId,
             int? voucherId = null,
-            string? note = null)
+            string? note = null,
+            bool usePoints = false,
+            bool bopis = false)
         {
             var url = EndPointConfig.Order.Checkout(
                 discountAmount,
@@ -36,7 +38,9 @@ namespace PickleChic.WEB.Services.Customer
                 paymentMethodTypeId,
                 addressId,
                 voucherId,
-                note);
+                note,
+                usePoints,
+                bopis);
 
             return await _apiProvider.PostAsync<CheckoutRequest, CheckoutResponse>(
                 url,
@@ -62,6 +66,14 @@ namespace PickleChic.WEB.Services.Customer
         {
             return await _apiProvider.GetAsync<UserOrderDetailResponse>(
                 EndPointConfig.Order.UserDetail(orderId),
+                requireAuth: true);
+        }
+
+        public async Task<ApiResult<UserOrderDetailResponse>> CancelUserOrderAsync(int orderId)
+        {
+            return await _apiProvider.PostAsync<object, UserOrderDetailResponse>(
+                EndPointConfig.Order.UserCancel(orderId),
+                new { },
                 requireAuth: true);
         }
 

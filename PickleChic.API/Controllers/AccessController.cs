@@ -22,15 +22,21 @@ namespace PickleChic.API.Controllers
     {
         CustomerRepository _customerRepository;
         StaffRepository _staffRepository;
+        AddressRepository _addressRepository;
 
         private readonly IConfiguration _configuration;
         private readonly TimeZoneInfo _gmtPlus7 = TimeZoneInfo.CreateCustomTimeZone("GMT+7", TimeSpan.FromHours(7), "GMT+7", "GMT+7");
 
-        public AccessController(IConfiguration configuration, CustomerRepository customerRepository, StaffRepository staffRepository)
+        public AccessController(
+            IConfiguration configuration,
+            CustomerRepository customerRepository,
+            StaffRepository staffRepository,
+            AddressRepository addressRepository)
         {
             _configuration = configuration;
             _customerRepository = customerRepository;
             _staffRepository = staffRepository;
+            _addressRepository = addressRepository;
         }
 
         [HttpPost("LoginCustomer")]
@@ -224,7 +230,9 @@ namespace PickleChic.API.Controllers
             if (customerResult == null)
             {
                 return StatusCode(500, "DatabaseError");
-            }         
+            }
+
+            await _addressRepository.EnsureSystemPickupAsync(customerResult.Id);
 
             return Ok(true);
         }

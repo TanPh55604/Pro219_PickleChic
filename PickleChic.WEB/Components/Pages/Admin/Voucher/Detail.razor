@@ -24,19 +24,22 @@ else
                     Quay lại
                 </a>
 
-                <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditVoucher, Id)"
-                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-[#A05AFF] !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-[#8B3FE6]">
-                    <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
-                    Cập nhật
-                </a>
+                @if (CanModify)
+                {
+                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditVoucher, Id)"
+                       class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-[#A05AFF] !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-[#8B3FE6]">
+                        <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                        Cập nhật
+                    </a>
 
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Error"
-                           StartIcon="@Icons.Material.Filled.Delete"
-                           OnClick="OpenDeleteDialog"
-                           Class="!rounded-xl !px-5 !py-2.5 !normal-case">
-                    Xóa
-                </MudButton>
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Error"
+                               StartIcon="@Icons.Material.Filled.Delete"
+                               OnClick="OpenDeleteDialog"
+                               Class="!rounded-xl !px-5 !py-2.5 !normal-case">
+                        Xóa
+                    </MudButton>
+                }
             </div>
         </div>
 
@@ -53,18 +56,18 @@ else
                         </p>
                     </div>
 
-                    @if (_model.IsActive)
-                    {
-                        <span class="inline-flex items-center !rounded-full !bg-green-50 !px-4 !py-2 text-sm font-bold !text-green-700">
-                            Đang hoạt động
-                        </span>
+                    @{
+                        var statusLabel = GetScheduleStatusLabel(_model);
+                        var statusClass = statusLabel switch
+                        {
+                            "Đang diễn ra" => "!bg-green-50 !text-green-700",
+                            "Chưa diễn ra" => "!bg-sky-50 !text-sky-700",
+                            _ => "!bg-slate-100 !text-slate-700"
+                        };
                     }
-                    else
-                    {
-                        <span class="inline-flex items-center !rounded-full !bg-slate-100 !px-4 !py-2 text-sm font-bold !text-slate-700">
-                            Tạm ẩn
-                        </span>
-                    }
+                    <span class="inline-flex items-center !rounded-full !px-4 !py-2 text-sm font-bold @statusClass">
+                        @statusLabel
+                    </span>
                 </div>
             </div>
 
@@ -151,6 +154,8 @@ else
 
     private bool _isLoading = true;
 
+    private bool CanModify => _model.StartDate > DateTime.Now;
+
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(LoadRanksAsync(), LoadVoucherAsync());
@@ -191,6 +196,12 @@ else
 
     private async Task OpenDeleteDialog()
     {
+        if (!CanModify)
+        {
+            _snackbar.Add("Không thể xóa voucher đang diễn ra hoặc đã kết thúc", Severity.Warning);
+            return;
+        }
+
         var parameters = new DialogParameters<VoucherDeleteDialog>
         {
             { x => x.Voucher, _model }
@@ -230,17 +241,31 @@ else
 
     private static string GetDiscountTypeLabel(string discountType)
     {
-        return discountType switch
+        if (string.IsNullOrWhiteSpace(discountType))
         {
-            VoucherDiscountType.Percent => "Phần trăm",
-            VoucherDiscountType.Fixed => "Giá cố định",
-            _ => discountType
-        };
+            return "—";
+        }
+
+        if (discountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Phần trăm";
+        }
+
+        if (discountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Giá cố định";
+        }
+
+        return discountType;
     }
+
+    private static bool IsPercentDiscount(string discountType)
+        => !string.IsNullOrWhiteSpace(discountType)
+           && discountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase);
 
     private static string FormatDiscountValue(VoucherResponse voucher)
     {
-        if (voucher.DiscountType == VoucherDiscountType.Percent)
+        if (IsPercentDiscount(voucher.DiscountType))
         {
             var maxText = voucher.MaxDiscountAmount.HasValue
                 ? $" (tối đa {voucher.MaxDiscountAmount.Value:N0}đ)"
@@ -255,6 +280,23 @@ else
     private static string FormatDiscountSummary(VoucherResponse voucher)
     {
         return $"Đơn tối thiểu {voucher.MinOrderValue:N0}đ · {FormatDiscountValue(voucher)}";
+    }
+
+    private static string GetScheduleStatusLabel(VoucherResponse voucher)
+    {
+        var now = DateTime.Now;
+
+        if (now < voucher.StartDate)
+        {
+            return "Chưa diễn ra";
+        }
+
+        if (now > voucher.EndDate)
+        {
+            return "Kết thúc";
+        }
+
+        return voucher.IsActive ? "Đang diễn ra" : "Chưa diễn ra";
     }
 
     private string GetRankName(decimal? minimumSpend)

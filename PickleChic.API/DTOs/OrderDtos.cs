@@ -70,6 +70,7 @@ public class OrderCalculationRequestDto
     public string? DiscountCode { get; set; }
     public int? AddressId { get; set; }
     public bool? UsePoints { get; set; }
+    public bool? Bopis { get; set; }
 }
 
 public class OrderItemCalculationDto

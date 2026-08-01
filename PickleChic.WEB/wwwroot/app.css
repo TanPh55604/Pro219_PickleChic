@@ -623,6 +623,9 @@
   .me-auto {
     margin-inline-end: auto;
   }
+  .\!mt-0\.5 {
+    margin-top: calc(var(--spacing) * 0.5) !important;
+  }
   .\!mt-1 {
     margin-top: var(--spacing) !important;
   }
@@ -1124,6 +1127,9 @@
   .max-w-\[220px\] {
     max-width: 220px;
   }
+  .max-w-\[260px\] {
+    max-width: 260px;
+  }
   .max-w-full {
     max-width: 100%;
   }
@@ -1156,9 +1162,6 @@
   }
   .min-w-\[120px\] {
     min-width: 120px;
-  }
-  .min-w-\[140px\] {
-    min-width: 140px;
   }
   .min-w-\[640px\] {
     min-width: 640px;
@@ -1416,9 +1419,6 @@
   }
   :where(.divide-slate-200 > :not(:last-child)) {
     border-color: var(--color-slate-200);
-  }
-  .\!self-end {
-    align-self: flex-end !important;
   }
   .truncate {
     overflow: hidden;
@@ -2010,9 +2010,6 @@
   .px-1 {
     padding-inline: var(--spacing);
   }
-  .px-1\.5 {
-    padding-inline: calc(var(--spacing) * 1.5);
-  }
   .px-2 {
     padding-inline: calc(var(--spacing) * 2);
   }
@@ -2454,6 +2451,9 @@
   }
   .\!text-red-700 {
     color: var(--color-red-700) !important;
+  }
+  .\!text-sky-700 {
+    color: var(--color-sky-700) !important;
   }
   .\!text-slate-500 {
     color: var(--color-slate-500) !important;
@@ -3320,12 +3320,6 @@
     }
     .xl\:col-span-4 {
       grid-column: span 4 / span 4;
-    }
-    .xl\:col-span-5 {
-      grid-column: span 5 / span 5;
-    }
-    .xl\:col-span-7 {
-      grid-column: span 7 / span 7;
     }
     .xl\:col-span-8 {
       grid-column: span 8 / span 8;

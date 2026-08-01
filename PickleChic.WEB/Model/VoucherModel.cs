@@ -26,7 +26,7 @@ namespace PickleChic.WEB.Model
 
         public int UsedCount { get; set; }
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = false;
 
         public DateTime? OriginalStartDate { get; set; }
 

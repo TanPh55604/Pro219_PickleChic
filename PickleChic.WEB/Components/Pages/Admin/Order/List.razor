@@ -53,10 +53,11 @@
                 <MudTh>STT</MudTh>
                 <MudTh>Mã đơn</MudTh>
                 <MudTh>Khách hàng</MudTh>
+                <MudTh>Kênh</MudTh>
+                <MudTh>Nhận hàng</MudTh>
                 <MudTh>Ngày đặt</MudTh>
                 <MudTh>Thanh toán</MudTh>
                 <MudTh>Trạng thái đơn</MudTh>
-                <MudTh>Phí ship</MudTh>
                 <MudTh Class="text-right">Chi tiết</MudTh>
             </HeaderContent>
 
@@ -75,13 +76,42 @@
                 </MudTd>
 
                 <MudTd DataLabel="Khách hàng">
-                    <div class="text-sm text-slate-700">
-                        <p class="font-medium">@(context.Customer?.FullName ?? "—")</p>
-                        @if (!string.IsNullOrWhiteSpace(context.Customer?.PhoneNumber))
+                    <div class="max-w-[260px] text-sm text-slate-700">
+                        <p class="font-medium">
+                            @GetCustomerDisplayName(context)
+                        </p>
+                        @if (IsInStorePickup(context))
                         {
-                            <p class="text-slate-400">@context.Customer.PhoneNumber</p>
+                            var phone = GetCustomerPhone(context);
+                            @if (!string.IsNullOrWhiteSpace(phone))
+                            {
+                                <p class="!mt-0.5 text-slate-400">
+                                    @phone
+                                </p>
+                            }
+                        }
+                        else
+                        {
+                            <p class="!mt-0.5 text-slate-400">
+                                @FormatAddress(context.Address)
+                            </p>
                         }
                     </div>
+                </MudTd>
+
+                <MudTd DataLabel="Kênh">
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Color="@(context.IsOrderPOS ? Color.Secondary : Color.Info)"
+                             Variant="Variant.Text">
+                        @(context.IsOrderPOS ? "POS" : "Online")
+                    </MudChip>
+                </MudTd>
+
+                <MudTd DataLabel="Nhận hàng">
+                    <span class="text-sm font-medium text-slate-700">
+                        @GetFulfillmentLabel(context)
+                    </span>
                 </MudTd>
 
                 <MudTd DataLabel="Ngày đặt">
@@ -106,12 +136,6 @@
                              Variant="Variant.Text">
                         @context.OrderStatus
                     </MudChip>
-                </MudTd>
-
-                <MudTd DataLabel="Phí ship">
-                    <span class="text-sm font-medium text-slate-700">
-                        @context.ShippingFee.ToString("N0")đ
-                    </span>
                 </MudTd>
 
                 <MudTd DataLabel="Chi tiết" Class="text-right">
@@ -188,6 +212,77 @@
         {
             await SearchAsync();
         }
+    }
+
+    private static string GetCustomerDisplayName(OrderResponse order)
+    {
+        if (IsGuestOrder(order))
+        {
+            return "Vãng lai";
+        }
+
+        return order.Customer?.FullName
+            ?? order.Address?.FullName
+            ?? "—";
+    }
+
+    private static string? GetCustomerPhone(OrderResponse order)
+    {
+        var phone = order.Customer?.PhoneNumber ?? order.Address?.PhoneNumber;
+        if (string.IsNullOrWhiteSpace(phone) || phone is "0000000000")
+        {
+            return null;
+        }
+
+        return phone;
+    }
+
+    private static bool IsGuestOrder(OrderResponse order)
+    {
+        if (string.Equals(order.CustomerType, "Guest", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return order.CustomerId <= 0;
+    }
+
+    private static bool IsInStorePickup(OrderResponse order)
+    {
+        if (order.BOPIS == true)
+        {
+            return true;
+        }
+
+        return order.IsOrderPOS && order.ShippingFee <= 0;
+    }
+
+    private static string GetFulfillmentLabel(OrderResponse order)
+    {
+        if (order.IsOrderPOS)
+        {
+            return order.ShippingFee > 0 ? "Ship đi" : "Mua trực tiếp";
+        }
+
+        return order.BOPIS == true ? "Lấy tại quầy" : "Ship đi";
+    }
+
+    private static string FormatAddress(OrderAddressResponse? address)
+    {
+        if (address is null)
+        {
+            return "—";
+        }
+
+        var ward = address.Ward?.Name;
+        var district = address.Ward?.District?.Name;
+        var province = address.Ward?.District?.Province?.Name;
+
+        var parts = new[] { address.DetailInfo, ward, district, province }
+            .Where(p => !string.IsNullOrWhiteSpace(p));
+
+        var formatted = string.Join(", ", parts);
+        return string.IsNullOrWhiteSpace(formatted) ? "—" : formatted;
     }
 
     private static Color GetOrderStatusColor(string status)

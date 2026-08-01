@@ -191,8 +191,13 @@ public class OrderController : ControllerBase
 
         decimal shippingFee = 0;
         string? phoneNumber = null;
+        bool isBopis = request.Bopis == true;
 
-        if (request.AddressId.HasValue)
+        if (isBopis)
+        {
+            shippingFee = 0;
+        }
+        else if (request.AddressId.HasValue)
         {
             var address = await _addressRepository.GetByIdAsync(request.AddressId.Value);
             if (address != null)
@@ -634,6 +639,12 @@ public class OrderController : ControllerBase
             customerId = parsedId;
         }
 
+        bool isBopis = bopis == true;
+        if (isBopis)
+        {
+            shippingFee = 0;
+        }
+
         string? phoneNumber = null;
         if (checkoutParam.AddressDTO != null)
         {
@@ -671,7 +682,17 @@ public class OrderController : ControllerBase
             }
         }
 
-        if (checkoutParam.AddressDTO != null && addressId == -99)
+        if (isBopis)
+        {
+            var pickup = await GetOrCreatePickupAddressAsync(customerId);
+            if (pickup == null)
+            {
+                return BadRequest("Không thể tạo địa chỉ nhận tại cửa hàng");
+            }
+            address = pickup;
+            addressId = pickup.Id;
+        }
+        else if (checkoutParam.AddressDTO != null && addressId == -99)
         {
             address = new Address
             {
@@ -1101,23 +1122,10 @@ public class OrderController : ControllerBase
         else
         {
             shippingFee = 0;
-            var existingAddresses = await _addressRepository.GetByCustomerIdAsync(customerId > 0 ? customerId : -1);
-            var dummyAddress = existingAddresses.FirstOrDefault(a => a.DetailInfo == "Mua tại quầy" && !a.Delete);
+            var dummyAddress = await GetOrCreatePickupAddressAsync(customerId > 0 ? customerId : -1);
             if (dummyAddress == null)
             {
-                dummyAddress = new Address
-                {
-                    CustomerId = customerId > 0 ? customerId : -1,
-                    FullName = customerId > 0 ? "Nhận tại quầy" : "Khách vãng lai",
-                    PhoneNumber = "0000000000",
-                    WardId = 1,
-                    DetailInfo = "Mua tại quầy",
-                    IsDefault = true,
-                    Status = 1,
-                    InsertedAt = DateTime.Now,
-                    Delete = false
-                };
-                dummyAddress = await _addressRepository.AddAsync(dummyAddress);
+                return BadRequest("Không thể tạo địa chỉ mua tại quầy");
             }
             address = dummyAddress;
             addressId = dummyAddress.Id;
@@ -1578,6 +1586,105 @@ public class OrderController : ControllerBase
         }
     }
 
+    [HttpPost("user/cancel/{orderId}")]
+    [Authorize]
+    public async Task<ActionResult<UserOrderDetailDto>> CancelUserOrder(int orderId)
+    {
+        try
+        {
+            var claimVal = User.FindFirst(ClaimTypes.SerialNumber)?.Value;
+            if (string.IsNullOrEmpty(claimVal) || !int.TryParse(claimVal, out var customerId))
+            {
+                return Unauthorized("Không thể xác định thông tin người dùng từ token.");
+            }
+
+            var order = await _orderRepository.GetByIdAsync(orderId);
+            if (order == null || order.Delete || order.CustomerId != customerId)
+            {
+                return NotFound("Đơn hàng không tồn tại hoặc bạn không có quyền truy cập.");
+            }
+
+            if (order.OrderStatus == Constant.OrderStatus.Cancelled
+                || order.Status == Constant.OrderStatus.GetStatusInt(Constant.OrderStatus.Cancelled))
+            {
+                return Ok(MapToUserOrderDetailDto(order));
+            }
+
+            if (!CanCustomerCancelOrder(order))
+            {
+                return BadRequest("Chỉ có thể hủy đơn khi chưa được xác nhận");
+            }
+
+            var statusHistory = ParseStatusHistory(order.StatusHistory);
+            statusHistory.Add(new StatusHistoryEntry
+            {
+                Index = statusHistory.Count + 1,
+                Status = Constant.OrderStatus.Cancelled,
+                OrderStatus = Constant.OrderStatus.Cancelled,
+                PaymentStatus = Constant.PaymentStatus.Cancelled,
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+            });
+
+            order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
+            order.PaymentStatus = Constant.PaymentStatus.Cancelled;
+            order.OrderStatus = Constant.OrderStatus.Cancelled;
+            order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
+            order.LastUpdate = DateTime.Now;
+            order.UpdateBy = "Customer";
+
+            var result = await _orderRepository.UpdateAsync(order);
+            if (result == null)
+            {
+                return BadRequest("Không thể hủy đơn hàng");
+            }
+
+            if (order.OrderItems != null && order.OrderItems.Any())
+            {
+                foreach (var orderItem in order.OrderItems)
+                {
+                    await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
+                }
+            }
+
+            if (order.VoucherId != null)
+            {
+                var voucher = await _voucherRepository.GetByIdAsync(order.VoucherId.Value);
+                if (voucher != null && voucher.UsedCount > 0)
+                {
+                    voucher.UsedCount--;
+                    await _voucherRepository.UpdateAsync(voucher);
+                }
+            }
+
+            await _pointHistoryRepository.RefundPointsForOrderAsync(order.Id);
+
+            var refreshed = await _orderRepository.GetOrderDetailForUserAsync(orderId, customerId)
+                ?? result;
+
+            return Ok(MapToUserOrderDetailDto(refreshed));
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, Constant.ErrorCode.OtherError);
+        }
+    }
+
+    private static bool CanCustomerCancelOrder(Order order)
+    {
+        var statusCode = order.Status ?? Constant.OrderStatus.GetStatusInt(order.OrderStatus);
+        if (statusCode is 1 or 2 or 3)
+        {
+            return true;
+        }
+
+        return order.OrderStatus is Constant.OrderStatus.Pending
+            or Constant.OrderStatus.Processing
+            or Constant.OrderStatus.WaitingForPayment
+            or "Pending"
+            or "Processing"
+            or "WaitingForPayment";
+    }
+
     [HttpGet("user/list")]
     [Authorize]
     public async Task<ActionResult<List<UserOrderDetailDto>>> GetUserOrders()
@@ -1734,6 +1841,11 @@ public class OrderController : ControllerBase
                     .ToList() ?? new List<string>()
             }).ToList() ?? new List<UserOrderItemDetailDto>()
         };
+    }
+
+    private async Task<Address?> GetOrCreatePickupAddressAsync(int customerId)
+    {
+        return await _addressRepository.EnsureSystemPickupAsync(customerId);
     }
 
     private async Task<decimal> CalculateShippingFeeAsync(string toDistrictCode, string toWardCode, List<FeeItemDTO> items)

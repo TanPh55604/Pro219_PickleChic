@@ -42,6 +42,12 @@ public static class Constant
         public const string RegisteredOrder = "Registered";
     }
 
+    public static class AddressStatus
+    {
+        public const int SystemPickup = 0;
+        public const int Active = 1;
+    }
+
     public static class ErrorCode
     {
         public const string OtherError = "OtherError";

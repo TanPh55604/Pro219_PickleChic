@@ -303,6 +303,8 @@
 
             public static string UserDetail(int orderId) => $"order/user/detail/{orderId}";
 
+            public static string UserCancel(int orderId) => $"order/user/cancel/{orderId}";
+
             public const string UserList = "order/user/list";
 
             public static string Lookup(
@@ -342,10 +344,12 @@
                 int paymentMethodTypeId,
                 int addressId,
                 int? voucherId = null,
-                string? note = null)
+                string? note = null,
+                bool usePoints = false,
+                bool bopis = false)
             {
                 var url =
-                    $"order/Checkout?discountAmount={discountAmount}&shippingFee={shippingFee}&PaymentMethodTypeId={paymentMethodTypeId}&addressId={addressId}";
+                    $"order/Checkout?discountAmount={discountAmount}&shippingFee={shippingFee}&PaymentMethodTypeId={paymentMethodTypeId}&addressId={addressId}&usePoints={usePoints}&bopis={bopis}";
 
                 if (voucherId.HasValue)
                 {

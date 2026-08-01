@@ -27,91 +27,81 @@ else
                     Quay lại
                 </a>
 
-                @if (ShouldShowPosPaymentButtons())
-                {
-                    <MudButton Variant="Variant.Filled"
-                               Disabled="@_isUpdateStatus"
-                               Color="Color.Primary"
-                               OnClick="ChangePaymentToCashAsync"
-                               Class="!rounded-xl !normal-case">
-                        Chuyển đổi thanh toán thành tiền mặt
-                    </MudButton>
-
-                    @if (!string.IsNullOrWhiteSpace(_model.PaymentLink))
-                    {
-                        <MudButton Variant="Variant.Filled"
-                                   Disabled="@_isUpdateStatus"
-                                   Color="Color.Success"
-                                   OnClick="OpenPaymentLink"
-                                   Class="!rounded-xl !normal-case">
-                            Thanh toán
-                        </MudButton>
-                    }
-                }
-
-                @if (ShouldShowOnlineCashPaymentButton())
-                {
-                    <MudButton Variant="Variant.Filled"
-                               Disabled="@_isUpdateStatus"
-                               Color="Color.Primary"
-                               OnClick="MarkPaidByCashAsync"
-                               Class="!rounded-xl !normal-case">
-                        Trả tiền mặt
-                    </MudButton>
-                }
-
                 @if (ShouldShowButtons())
                 {
-                    @if (IsPendingStatus(_model.OrderStatus))
+                    @if (IsPendingGroup(CurrentStatus))
                     {
                         <MudButton Variant="Variant.Filled"
                                    Disabled="@_isUpdateStatus"
                                    Color="Color.Error"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusPending, "failed"))"
+                                   OnClick="@(() => HandleStatusUpdateAsync(CurrentStatus, "failed"))"
                                    Class="!rounded-xl !normal-case">
                             Hủy
                         </MudButton>
                         <MudButton Variant="Variant.Filled"
                                    Disabled="@_isUpdateStatus"
                                    Color="Color.Primary"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusPending, "success"))"
+                                   OnClick="@(() => HandleStatusUpdateAsync(CurrentStatus, "success"))"
                                    Class="!rounded-xl !normal-case">
                             Xác nhận
                         </MudButton>
                     }
-                    else if (_model.OrderStatus == Constant.OrderStatus.StatusConfirm)
+                    else if (CurrentStatus == Constant.OrderStatus.Code.Confirmed)
                     {
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   Disabled="@_isUpdateStatus"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusConfirm))"
-                                   Class="!rounded-xl !normal-case">
-                            Giao cho đơn vị vận chuyển
-                        </MudButton>
+                        @if (_model.BOPIS == true)
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Disabled="@_isUpdateStatus"
+                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                       Class="!rounded-xl !normal-case">
+                                Chờ khách tới lấy
+                            </MudButton>
+                        }
+                        else if (_model.IsOrderPOS && _model.ShippingFee <= 0)
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Success"
+                                       Disabled="@_isUpdateStatus"
+                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                       Class="!rounded-xl !normal-case">
+                                Hoàn thành
+                            </MudButton>
+                        }
+                        else
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       Disabled="@_isUpdateStatus"
+                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                       Class="!rounded-xl !normal-case">
+                                Giao cho đơn vị vận chuyển
+                            </MudButton>
+                        }
                     }
-                    else if (_model.OrderStatus == Constant.OrderStatus.StatusShipping)
+                    else if (CurrentStatus == Constant.OrderStatus.Code.Shipping)
                     {
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Success"
                                    Disabled="@_isUpdateStatus"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusShipping, "success"))"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Shipping, "success"))"
                                    Class="!rounded-xl !normal-case">
                             Giao thành công
                         </MudButton>
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Error"
                                    Disabled="@_isUpdateStatus"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusShipping, "failed"))"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Shipping, "failed"))"
                                    Class="!rounded-xl !normal-case">
                             Giao thất bại
                         </MudButton>
                     }
-                    else if (_model.OrderStatus == Constant.OrderStatus.StatusShippingDone)
+                    else if (CurrentStatus == Constant.OrderStatus.Code.AwaitingPickup)
                     {
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Success"
                                    Disabled="@_isUpdateStatus"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.StatusShippingDone))"
+                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.AwaitingPickup))"
                                    Class="!rounded-xl !normal-case">
                             Hoàn thành
                         </MudButton>
@@ -135,9 +125,9 @@ else
                             <div class="flex flex-wrap !gap-2">
                                 <MudChip T="string"
                                          Size="Size.Small"
-                                         Color="@GetOrderStatusColor(_model.OrderStatus)"
+                                         Color="@GetOrderStatusColor(CurrentStatus)"
                                          Variant="Variant.Filled">
-                                    @_model.OrderStatus
+                                    @Constant.OrderStatus.GetLabel(CurrentStatus)
                                 </MudChip>
                                 <MudChip T="string"
                                          Size="Size.Small"
@@ -257,21 +247,45 @@ else
                 </div>
 
                 <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
-                    <h3 class="text-lg font-bold text-slate-900">Giao hàng</h3>
+                    <h3 class="text-lg font-bold text-slate-900">
+                        @(IsInStoreFulfillment ? "Nhận hàng" : "Giao hàng")
+                    </h3>
 
                     <div class="!mt-4 !space-y-3 text-sm">
-                        <div>
-                            <p class="text-slate-500">Người nhận</p>
-                            <p class="font-semibold text-slate-900">@(_model.Address?.FullName ?? "—")</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-500">Số điện thoại</p>
-                            <p class="font-semibold text-slate-900">@(_model.Address?.PhoneNumber ?? "—")</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-500">Địa chỉ</p>
-                            <p class="font-semibold text-slate-900">@FormatAddress(_model.Address)</p>
-                        </div>
+                        @if (IsInStoreFulfillment)
+                        {
+                            <div>
+                                <p class="text-slate-500">Hình thức</p>
+                                <p class="font-semibold text-slate-900">
+                                    @(_model.BOPIS == true ? "Đặt online — đến lấy tại cửa hàng" : "Mua trực tiếp tại quầy")
+                                </p>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(_model.Customer?.PhoneNumber)
+                                 || !string.IsNullOrWhiteSpace(_model.Address?.PhoneNumber))
+                            {
+                                <div>
+                                    <p class="text-slate-500">Số điện thoại liên hệ</p>
+                                    <p class="font-semibold text-slate-900">
+                                        @(_model.Customer?.PhoneNumber ?? _model.Address?.PhoneNumber)
+                                    </p>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div>
+                                <p class="text-slate-500">Người nhận</p>
+                                <p class="font-semibold text-slate-900">@(_model.Address?.FullName ?? "—")</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Số điện thoại</p>
+                                <p class="font-semibold text-slate-900">@(_model.Address?.PhoneNumber ?? "—")</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Địa chỉ</p>
+                                <p class="font-semibold text-slate-900">@FormatAddress(_model.Address)</p>
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -333,6 +347,15 @@ else
 
     private bool _isUpdateStatus;
 
+    private int CurrentStatus =>
+        _model.Status
+        ?? Constant.OrderStatus.ToCode(_model.OrderStatus)
+        ?? 0;
+
+    private bool IsInStoreFulfillment =>
+        _model.BOPIS == true
+        || (_model.IsOrderPOS && _model.ShippingFee <= 0);
+
     protected override async Task OnInitializedAsync()
     {
         await LoadOrderAsync();
@@ -364,36 +387,10 @@ else
 
     private bool ShouldShowButtons()
     {
-        return !Constant.OrderStatus.TerminalStatuses.Contains(_model.OrderStatus);
+        return !Constant.OrderStatus.TerminalCodes.Contains(CurrentStatus);
     }
 
-    private bool ShouldShowPosPaymentButtons()
-    {
-        return _model.IsOrderPOS
-               && _model.PaymentStatus == Constant.PaymentStatus.Pending
-               && IsPendingStatus(_model.OrderStatus);
-    }
-
-    private bool ShouldShowOnlineCashPaymentButton()
-    {
-        return !_model.IsOrderPOS
-               && IsBankTransferOrder(_model)
-               && _model.PaymentStatus == Constant.PaymentStatus.Pending
-               && ShouldShowButtons();
-    }
-
-    private static bool IsBankTransferOrder(OrderResponse order)
-    {
-        if (order.PaymentMethodId == Constant.PaymentMethodType.BankTransfer)
-        {
-            return true;
-        }
-
-        var methodName = order.PaymentMethod?.Name;
-
-        return !string.IsNullOrWhiteSpace(methodName)
-               && methodName.Contains("chuyển khoản", StringComparison.OrdinalIgnoreCase);
-    }
+    private static bool IsPendingGroup(int status) => Constant.OrderStatus.IsPendingGroup(status);
 
     private static bool IsCashOrder(OrderResponse order)
     {
@@ -410,85 +407,76 @@ else
                    || methodName.Contains("khi nhận hàng", StringComparison.OrdinalIgnoreCase));
     }
 
-    private static bool IsPendingStatus(string status)
+    private async Task HandleStatusUpdateAsync(int expectedStatus, string? outcome = null)
     {
-        return status is Constant.OrderStatus.Pending
-            or Constant.OrderStatus.Processing
-            or Constant.OrderStatus.WaitingForPayment;
-    }
-
-    private void OpenPaymentLink()
-    {
-        if (!string.IsNullOrWhiteSpace(_model.PaymentLink))
-        {
-            _navigation.NavigateTo(_model.PaymentLink, forceLoad: true);
-        }
-    }
-
-    private async Task ChangePaymentToCashAsync()
-    {
-        await MarkPaidByCashAsync();
-    }
-
-    private async Task MarkPaidByCashAsync()
-    {
-        var nextOrderStatus = _model.OrderStatus == Constant.OrderStatus.WaitingForPayment
-            || IsPendingStatus(_model.OrderStatus)
-            ? Constant.OrderStatus.Confirmed
-            : _model.OrderStatus;
-
-        await SubmitStatusUpdateAsync(nextOrderStatus, Constant.PaymentStatus.Completed);
-    }
-
-    private async Task HandleStatusUpdateAsync(string currentStatus, string? outcome = null)
-    {
-        if (_model.OrderStatus != currentStatus)
+        if (CurrentStatus != expectedStatus)
         {
             _snackbar.Add("Trạng thái đơn đã thay đổi, vui lòng tải lại trang", Severity.Warning);
             return;
         }
 
-        var (nextOrderStatus, nextPaymentStatus) = ResolveNextStatus(currentStatus, outcome);
-        await SubmitStatusUpdateAsync(nextOrderStatus, nextPaymentStatus);
+        var (nextStatus, nextPaymentStatus) = ResolveNextStatus(expectedStatus, outcome);
+        await SubmitStatusUpdateAsync(nextStatus, nextPaymentStatus);
     }
 
-    private (string OrderStatus, string PaymentStatus) ResolveNextStatus(string currentStatus, string? outcome)
+    private (int Status, string PaymentStatus) ResolveNextStatus(int currentStatus, string? outcome)
     {
-        if (IsPendingStatus(currentStatus))
+        if (IsPendingGroup(currentStatus))
         {
             if (outcome == "failed")
             {
-                return (Constant.OrderStatus.Cancelled, Constant.PaymentStatus.Cancelled);
+                return (Constant.OrderStatus.Code.Cancelled, Constant.PaymentStatus.Cancelled);
             }
 
             var paymentStatus = IsCashOrder(_model)
                 ? Constant.PaymentStatus.Pending
                 : Constant.PaymentStatus.Completed;
 
-            return (Constant.OrderStatus.Confirmed, paymentStatus);
+            return (Constant.OrderStatus.Code.Confirmed, paymentStatus);
         }
 
-        return currentStatus switch
+        if (currentStatus == Constant.OrderStatus.Code.Confirmed)
         {
-            var status when status == Constant.OrderStatus.StatusConfirm
-                => (Constant.OrderStatus.Shipping, _model.PaymentStatus),
+            if (_model.BOPIS == true)
+            {
+                return (Constant.OrderStatus.Code.AwaitingPickup, _model.PaymentStatus);
+            }
 
-            var status when status == Constant.OrderStatus.StatusShipping
-                => outcome == "failed"
-                    ? (Constant.OrderStatus.DeliveryFailed, _model.PaymentStatus)
-                    : (Constant.OrderStatus.ShippingDone,
-                        IsCashOrder(_model) ? Constant.PaymentStatus.Completed : _model.PaymentStatus),
+            if (_model.IsOrderPOS && _model.ShippingFee <= 0)
+            {
+                return (Constant.OrderStatus.Code.Done, Constant.PaymentStatus.Completed);
+            }
 
-            var status when status == Constant.OrderStatus.StatusShippingDone
-                => (Constant.OrderStatus.Done, Constant.PaymentStatus.Completed),
+            return (Constant.OrderStatus.Code.Shipping, _model.PaymentStatus);
+        }
 
-            _ => (_model.OrderStatus, _model.PaymentStatus)
-        };
+        if (currentStatus == Constant.OrderStatus.Code.Shipping)
+        {
+            if (outcome == "failed")
+            {
+                return (Constant.OrderStatus.Code.Cancelled, _model.PaymentStatus);
+            }
+
+            var paymentStatus = IsCashOrder(_model)
+                ? Constant.PaymentStatus.Completed
+                : _model.PaymentStatus;
+
+            return (Constant.OrderStatus.Code.Done, paymentStatus);
+        }
+
+        if (currentStatus == Constant.OrderStatus.Code.AwaitingPickup)
+        {
+            return (Constant.OrderStatus.Code.Done, Constant.PaymentStatus.Completed);
+        }
+
+        return (CurrentStatus, _model.PaymentStatus);
     }
 
-    private async Task SubmitStatusUpdateAsync(string orderStatus, string paymentStatus)
+    private async Task SubmitStatusUpdateAsync(int nextStatus, string paymentStatus)
     {
-        if (orderStatus == _model.OrderStatus && paymentStatus == _model.PaymentStatus)
+        var nextOrderStatusLabel = Constant.OrderStatus.GetLabel(nextStatus);
+
+        if (nextStatus == CurrentStatus && paymentStatus == _model.PaymentStatus)
         {
             _snackbar.Add("Trạng thái không thay đổi", Severity.Info);
             return;
@@ -505,7 +493,7 @@ else
 
             var request = new OrderStatusUpdateRequest
             {
-                OrderStatus = orderStatus,
+                OrderStatus = nextOrderStatusLabel,
                 PaymentStatus = paymentStatus,
                 UpdateBy = updateBy
             };
@@ -564,20 +552,19 @@ else
         return string.Join(", ", parts);
     }
 
-    private static Color GetOrderStatusColor(string status)
+    private static Color GetOrderStatusColor(int status)
     {
         return status switch
         {
-            Constant.OrderStatus.Done => Color.Success,
-            Constant.OrderStatus.ShippingDone => Color.Success,
-            Constant.OrderStatus.Confirmed => Color.Info,
-            Constant.OrderStatus.Shipping => Color.Info,
-            Constant.OrderStatus.WaitingForPayment => Color.Warning,
-            Constant.OrderStatus.Pending => Color.Warning,
-            Constant.OrderStatus.Processing => Color.Warning,
-            Constant.OrderStatus.Cancelled => Color.Error,
-            Constant.OrderStatus.DeliveryFailed => Color.Error,
-            Constant.OrderStatus.Expired => Color.Default,
+            Constant.OrderStatus.Code.Done => Color.Success,
+            Constant.OrderStatus.Code.Confirmed => Color.Info,
+            Constant.OrderStatus.Code.Shipping => Color.Info,
+            Constant.OrderStatus.Code.AwaitingPickup => Color.Info,
+            Constant.OrderStatus.Code.WaitingForPayment => Color.Warning,
+            Constant.OrderStatus.Code.Pending => Color.Warning,
+            Constant.OrderStatus.Code.Processing => Color.Warning,
+            Constant.OrderStatus.Code.Cancelled => Color.Error,
+            Constant.OrderStatus.Code.Expired => Color.Default,
             _ => Color.Default
         };
     }

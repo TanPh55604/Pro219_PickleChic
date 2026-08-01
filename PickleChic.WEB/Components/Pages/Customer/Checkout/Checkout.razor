@@ -97,7 +97,7 @@
         }
         else
         {
-            <div class="!mt-8 grid items-start !gap-6 lg:grid-cols-12 @(IsBusy ? "pointer-events-none opacity-60" : string.Empty)">
+            <div class="!mt-8 grid items-start !gap-6 lg:grid-cols-12">
                 <section class="lg:col-span-8">
                     <div class="!space-y-6">
                         <div class="overflow-hidden !rounded-3xl !border !border-slate-200 !bg-white shadow-sm">
@@ -152,7 +152,7 @@
                                                 <button type="button"
                                                         disabled="@IsBusy"
                                                         @onclick="() => RemoveItemAsync(item)"
-                                                        class="!mt-3 inline-flex items-center !gap-1 text-sm font-bold text-slate-500 transition hover:!text-[#d71920] disabled:opacity-50">
+                                                        class="!mt-3 inline-flex items-center !gap-1 text-sm font-bold text-slate-500 transition hover:!text-[#d71920]">
                                                     <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" />
                                                     Xóa sản phẩm
                                                 </button>
@@ -178,7 +178,7 @@
                                                 <button type="button"
                                                         disabled="@(IsBusy || item.Quantity <= 1)"
                                                         @onclick="() => DecreaseQuantityAsync(item)"
-                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
+                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed">
                                                     <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
                                                 </button>
 
@@ -189,7 +189,7 @@
                                                 <button type="button"
                                                         disabled="@(IsBusy || !item.CanIncrease)"
                                                         @onclick="() => IncreaseQuantityAsync(item)"
-                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed disabled:opacity-50">
+                                                        class="flex !h-9 !w-9 items-center justify-center !rounded-full !border !border-slate-300 !bg-white text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:!cursor-not-allowed">
                                                     <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
                                                 </button>
                                             </div>
@@ -210,52 +210,100 @@
                         </div>
 
                         <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
-                            <div class="flex flex-col !gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <h2 class="text-lg font-black text-slate-950">
-                                    Địa chỉ giao hàng
-                                </h2>
+                            <h2 class="text-lg font-black text-slate-950">
+                                Hình thức nhận hàng
+                            </h2>
 
-                                <button type="button"
-                                        disabled="@IsBusy"
-                                        @onclick="OpenCreateAddressDialogAsync"
-                                        class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-4 !py-2 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
-                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
-                                    Thêm địa chỉ
-                                </button>
-                            </div>
+                            <MudRadioGroup T="bool"
+                                           Value="_isBopis"
+                                           ValueChanged="OnDeliveryMethodChangedAsync"
+                                           Class="!mt-5">
+                                <div class="grid !gap-4 md:grid-cols-2">
+                                    <label class="@GetDeliveryMethodClass(false)">
+                                        <MudRadio T="bool"
+                                                  Value="false"
+                                                  Color="Color.Primary"
+                                                  Disabled="@IsBusy" />
 
-                            @if (!_addresses.Any())
-                            {
-                                <div class="!mt-5 !rounded-2xl !border !border-dashed !border-slate-300 !bg-slate-50 !p-6 text-center">
-                                    <p class="text-sm font-semibold text-slate-500">
-                                        Bạn chưa có địa chỉ giao hàng. Hãy thêm địa chỉ để tính phí vận chuyển.
-                                    </p>
+                                        <div>
+                                            <p class="font-black text-slate-950">
+                                                Giao tận nơi
+                                            </p>
+                                            <p class="!mt-1 text-sm leading-6 text-slate-500">
+                                                Ship đến địa chỉ của bạn.
+                                            </p>
+                                        </div>
+                                    </label>
+
+                                    <label class="@GetDeliveryMethodClass(true)">
+                                        <MudRadio T="bool"
+                                                  Value="true"
+                                                  Color="Color.Primary"
+                                                  Disabled="@IsBusy" />
+
+                                        <div>
+                                            <p class="font-black text-slate-950">
+                                                Đặt online — đến lấy
+                                            </p>
+                                            <p class="!mt-1 text-sm leading-6 text-slate-500">
+                                                Nhận tại cửa hàng, không tính phí ship.
+                                            </p>
+                                        </div>
+                                    </label>
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="!mt-5 max-h-[360px] overflow-y-auto !pr-1">
-                                    <MudRadioGroup T="int"
-                                                   Value="_selectedAddressId"
-                                                   ValueChanged="OnAddressChangedAsync">
-                                        <div class="w-full !space-y-3">
-                                            @foreach (var address in _addresses)
-                                            {
-                                                <label class="@GetAddressCardClass(address.Id) flex! w-full items-center!">
-                                                    <MudRadio T="int"
-                                                              Value="address.Id"
-                                                              Color="Color.Primary"
-                                                              Class="!mt-1" />
+                            </MudRadioGroup>
+                        </div>
 
-                                                    <div class="min-w-0 flex-1">
-                                                        <div class="flex flex-wrap items-center !gap-2">
-                                                            <p class="font-black text-slate-950">
-                                                                @address.FullName
-                                                            </p>
+                        @if (!_isBopis)
+                        {
+                            <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                                <div class="flex flex-col !gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <h2 class="text-lg font-black text-slate-950">
+                                        Địa chỉ giao hàng
+                                    </h2>
 
-                                                            <span class="text-sm font-semibold text-slate-500">
-                                                                @address.PhoneNumber
-                                                            </span>
+                                    <button type="button"
+                                            disabled="@IsBusy"
+                                            @onclick="OpenCreateAddressDialogAsync"
+                                            class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-4 !py-2 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
+                                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                        Thêm địa chỉ
+                                    </button>
+                                </div>
+
+                                @if (!_addresses.Any())
+                                {
+                                    <div class="!mt-5 !rounded-2xl !border !border-dashed !border-slate-300 !bg-slate-50 !p-6 text-center">
+                                        <p class="text-sm font-semibold text-slate-500">
+                                            Bạn chưa có địa chỉ giao hàng. Hãy thêm địa chỉ để tính phí vận chuyển.
+                                        </p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="!mt-5 max-h-[360px] overflow-y-auto !pr-1">
+                                        <MudRadioGroup T="int"
+                                                       Value="_selectedAddressId"
+                                                       ValueChanged="OnAddressChangedAsync">
+                                            <div class="w-full !space-y-3">
+                                                @foreach (var address in _addresses)
+                                                {
+                                                    <label class="@GetAddressCardClass(address.Id) flex! w-full items-center!">
+                                                        <MudRadio T="int"
+                                                                  Value="address.Id"
+                                                                  Color="Color.Primary"
+                                                                  Class="!mt-1"
+                                                                  Disabled="@IsBusy" />
+
+                                                        <div class="min-w-0 flex-1">
+                                                            <div class="flex flex-wrap items-center !gap-2">
+                                                                <p class="font-black text-slate-950">
+                                                                    @address.FullName
+                                                                </p>
+
+                                                                <span class="text-sm font-semibold text-slate-500">
+                                                                    @address.PhoneNumber
+                                                                </span>
 
                                                             @if (address.IsDefault)
                                                             {
@@ -265,17 +313,18 @@
                                                             }
                                                         </div>
 
-                                                        <p class="!mt-1 text-sm leading-6 text-slate-500">
-                                                            @address.DisplayLocation
-                                                        </p>
-                                                    </div>
-                                                </label>
-                                            }
-                                        </div>
-                                    </MudRadioGroup>
-                                </div>
-                            }
-                        </div>
+                                                            <p class="!mt-1 text-sm leading-6 text-slate-500">
+                                                                @address.DisplayLocation
+                                                            </p>
+                                                        </div>
+                                                    </label>
+                                                }
+                                            </div>
+                                        </MudRadioGroup>
+                                    </div>
+                                }
+                            </div>
+                        }
 
                         <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
                             <h2 class="text-lg font-black text-slate-950">
@@ -289,15 +338,18 @@
                                     <label class="@GetPaymentMethodClass(Constant.PaymentMethodType.Cash)">
                                         <MudRadio T="int"
                                                   Value="Constant.PaymentMethodType.Cash"
-                                                  Color="Color.Primary" />
+                                                  Color="Color.Primary"
+                                                  Disabled="@IsBusy" />
 
                                         <div>
                                             <p class="font-black text-slate-950">
-                                                Thanh toán khi nhận hàng
+                                                @(_isBopis ? "Thanh toán tại cửa hàng" : "Thanh toán khi nhận hàng")
                                             </p>
 
                                             <p class="!mt-1 text-sm leading-6 text-slate-500">
-                                                Thanh toán tiền mặt khi nhận hàng.
+                                                @(_isBopis
+                                                    ? "Thanh toán tiền mặt khi đến lấy hàng."
+                                                    : "Thanh toán tiền mặt khi nhận hàng.")
                                             </p>
                                         </div>
                                     </label>
@@ -305,7 +357,8 @@
                                     <label class="@GetPaymentMethodClass(Constant.PaymentMethodType.BankTransfer)">
                                         <MudRadio T="int"
                                                   Value="Constant.PaymentMethodType.BankTransfer"
-                                                  Color="Color.Primary" />
+                                                  Color="Color.Primary"
+                                                  Disabled="@IsBusy" />
 
                                         <div>
                                             <p class="font-black text-slate-950">
@@ -348,14 +401,13 @@
                                     <MudTextField @bind-Value="_couponCode"
                                                   Placeholder="Nhập mã giảm giá"
                                                   Variant="Variant.Outlined"
-                                                  Margin="Margin.Dense"
                                                   Class="flex-1"
                                                   Disabled="@IsBusy" />
 
                                     <button type="button"
                                             disabled="@IsBusy"
                                             @onclick="ApplyCouponAsync"
-                                            class="inline-flex items-center justify-center !rounded-full !border !border-black !bg-black !px-5 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920] disabled:opacity-50">
+                                            class="inline-flex items-center justify-center !rounded-full !border !border-black !bg-black !px-5 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920]">
                                         Áp dụng
                                     </button>
                                 </div>
@@ -379,7 +431,7 @@
                                             <button type="button"
                                                     disabled="@IsBusy"
                                                     @onclick="() => QuickApplyVoucherAsync(voucher)"
-                                                    class="flex w-full items-center justify-between !rounded-2xl !border !border-slate-200 !bg-slate-50 !px-3 !py-2 text-left transition hover:!border-[#d71920] disabled:opacity-50">
+                                                    class="flex w-full items-center justify-between !rounded-2xl !border !border-slate-200 !bg-slate-50 !px-3 !py-2 text-left transition hover:!border-[#d71920]">
                                                 <span class="text-sm font-black text-slate-950">
                                                     @voucher.VoucherCode
                                                 </span>
@@ -409,7 +461,7 @@
                                     <button type="button"
                                             disabled="@IsBusy"
                                             @onclick="RemoveCouponAsync"
-                                            class="flex !h-9 !w-9 items-center justify-center !rounded-full !bg-white text-slate-500 transition hover:!text-[#d71920] disabled:opacity-50">
+                                            class="flex !h-9 !w-9 items-center justify-center !rounded-full !bg-white text-slate-500 transition hover:!text-[#d71920]">
                                         <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
                                     </button>
                                 </div>
@@ -417,6 +469,19 @@
                         </div>
 
                         <div class="!mt-6 !space-y-4">
+                            @if (_totalPoints > 0)
+                            {
+                                <div class="flex w-full items-center justify-between !gap-3 !rounded-2xl !border !border-slate-200 !bg-slate-50 !p-4">
+                                    <p class="min-w-0 flex-1 text-sm font-semibold text-slate-500">
+                                        Bạn đang có @_totalPoints.ToString("N0") điểm
+                                    </p>
+                                    <MudSwitch T="bool"
+                                               Value="_usePoints"
+                                               ValueChanged="OnUsePointsChangedAsync"
+                                               Color="Color.Primary" />
+                                </div>
+                            }
+
                             <div class="flex items-center justify-between text-sm">
                                 <span class="font-semibold text-slate-500">Số lượng sản phẩm</span>
                                 <span class="font-black text-slate-950">@TotalQuantity</span>
@@ -430,13 +495,13 @@
                             <div class="flex items-center justify-between text-sm">
                                 <span class="font-semibold text-slate-500">Phí vận chuyển</span>
                                 <span class="font-black text-slate-950">
-                                    @if (_selectedAddressId <= 0)
+                                    @if (_isBopis)
+                                    {
+                                        <span>Miễn phí</span>
+                                    }
+                                    else if (_selectedAddressId <= 0)
                                     {
                                         <span class="text-slate-400">Chọn địa chỉ</span>
-                                    }
-                                    else if (_isCalculating)
-                                    {
-                                        <span class="text-slate-400">Đang tính...</span>
                                     }
                                     else
                                     {
@@ -449,6 +514,14 @@
                                 <span class="font-semibold text-slate-500">Giảm giá</span>
                                 <span class="font-black text-[#d71920]">-@FormatMoney(Discount)</span>
                             </div>
+
+                            @if (_usePoints && PointsDiscount > 0)
+                            {
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="font-semibold text-slate-500">Giảm từ điểm</span>
+                                    <span class="font-black text-[#d71920]">-@FormatMoney(PointsDiscount)</span>
+                                </div>
+                            }
 
                             <div class="flex items-center justify-between text-sm">
                                 <span class="font-semibold text-slate-500">Thanh toán</span>
@@ -468,7 +541,7 @@
                         <button type="button"
                                 disabled="@(IsBusy || !CanPlaceOrder)"
                                 @onclick="PlaceOrderAsync"
-                                class="!mt-6 inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white shadow-sm transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white disabled:!cursor-not-allowed disabled:opacity-50">
+                                class="!mt-6 inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white shadow-sm transition hover:!border-[#d71920] hover:!bg-[#d71920] hover:!text-white disabled:!cursor-not-allowed">
                             @if (_isPlacingOrder)
                             {
                                 <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="!text-white" />
@@ -497,6 +570,7 @@
     private int _selectedAddressId;
     private int _paymentMethodTypeId = Constant.PaymentMethodType.Cash;
     private int? _appliedVoucherId;
+    private int _totalPoints;
 
     private string _couponCode = string.Empty;
     private string _appliedCoupon = string.Empty;
@@ -507,6 +581,7 @@
     private decimal _subTotal;
     private decimal _shippingFee;
     private decimal _discount;
+    private decimal _pointsDiscount;
     private decimal _finalAmount;
 
     private bool _hasLoaded;
@@ -515,30 +590,43 @@
     private bool _isUpdating;
     private bool _isCalculating;
     private bool _isPlacingOrder;
+    private bool _isBopis;
+    private bool _usePoints;
 
     private bool IsBusy => _isLoading || _isUpdating || _isCalculating || _isPlacingOrder;
 
     private bool CanPlaceOrder =>
         _cartItems.Any()
-        && _selectedAddressId > 0
+        && (_isBopis || _selectedAddressId > 0)
         && !_isCalculating
         && !_isPlacingOrder;
 
     private int TotalQuantity => _cartItems.Sum(x => x.Quantity);
 
-    private decimal SubTotal => _selectedAddressId > 0 ? _subTotal : _cartItems.Sum(x => x.LineTotal);
+    private decimal SubTotal => (_isBopis || _selectedAddressId > 0) ? _subTotal : _cartItems.Sum(x => x.LineTotal);
 
-    private decimal ShippingFee => _shippingFee;
+    private decimal ShippingFee => _isBopis ? 0 : _shippingFee;
 
     private decimal Discount => _discount;
 
-    private decimal Total => _selectedAddressId > 0
-        ? _finalAmount
-        : Math.Max(0, SubTotal - Discount);
+    private decimal PointsDiscount => _pointsDiscount;
+
+    private decimal Total
+    {
+        get
+        {
+            if (!_isBopis && _selectedAddressId <= 0)
+            {
+                return Math.Max(0, SubTotal - Discount - PointsDiscount);
+            }
+
+            return _finalAmount;
+        }
+    }
 
     private string PaymentMethodText => _paymentMethodTypeId == Constant.PaymentMethodType.BankTransfer
         ? "Chuyển khoản"
-        : "Tiền mặt";
+        : (_isBopis ? "Tiền mặt tại cửa hàng" : "Tiền mặt");
 
     protected override async Task OnInitializedAsync()
     {
@@ -576,9 +664,10 @@
         await Task.WhenAll(
             LoadCartInternalAsync(),
             LoadAddressesInternalAsync(),
-            LoadVouchersInternalAsync());
+            LoadVouchersInternalAsync(),
+            LoadCustomerPointsInternalAsync());
 
-        if (_selectedAddressId > 0 && _cartItems.Any())
+        if (_cartItems.Any() && (_isBopis || _selectedAddressId > 0))
         {
             await RecalculateTotalsAsync();
         }
@@ -586,6 +675,19 @@
         _hasLoaded = true;
         _isLoading = false;
         StateHasChanged();
+    }
+
+    private async Task LoadCustomerPointsInternalAsync()
+    {
+        var result = await _currentUserService.CheckCurrentUserAsync();
+        _totalPoints = result.Success && result.Data is not null
+            ? Math.Max(0, result.Data.TotalPoints)
+            : 0;
+
+        if (_totalPoints <= 0)
+        {
+            _usePoints = false;
+        }
     }
 
     private async Task LoadCartInternalAsync()
@@ -651,6 +753,51 @@
     private async Task OnAddressChangedAsync(int addressId)
     {
         _selectedAddressId = addressId;
+        await RecalculateTotalsAsync();
+    }
+
+    private async Task OnDeliveryMethodChangedAsync(bool isBopis)
+    {
+        if (_isBopis == isBopis)
+        {
+            return;
+        }
+
+        _isBopis = isBopis;
+        if (!_isBopis)
+        {
+            EnsureAddressSelected();
+        }
+
+        await RecalculateTotalsAsync();
+    }
+
+    private void EnsureAddressSelected()
+    {
+        if (_selectedAddressId > 0 && _addresses.Any(x => x.Id == _selectedAddressId))
+        {
+            return;
+        }
+
+        _selectedAddressId = _addresses.FirstOrDefault(x => x.IsDefault)?.Id
+            ?? _addresses.FirstOrDefault()?.Id
+            ?? 0;
+    }
+
+    private async Task OnUsePointsChangedAsync(bool usePoints)
+    {
+        if (IsBusy)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        if (_usePoints == usePoints)
+        {
+            return;
+        }
+
+        _usePoints = usePoints;
         await RecalculateTotalsAsync();
     }
 
@@ -817,7 +964,7 @@
 
     private async Task<bool> RecalculateTotalsAsync(string? discountCodeOverride = null, bool treatAsApply = false)
     {
-        if (!_cartItems.Any() || _selectedAddressId <= 0)
+        if (!_cartItems.Any() || (!_isBopis && _selectedAddressId <= 0))
         {
             ResetTotals();
             return false;
@@ -831,8 +978,10 @@
 
         var request = new OrderCalculationRequest
         {
-            AddressId = _selectedAddressId,
+            AddressId = _isBopis ? null : _selectedAddressId,
             DiscountCode = discountCode,
+            UsePoints = _usePoints,
+            Bopis = _isBopis,
             Items = _cartItems.Select(x => new OrderItemCalculationRequest
             {
                 ProductVariantId = x.ProductVariantId,
@@ -903,8 +1052,22 @@
     {
         _subTotal = data.TotalAmount;
         _discount = data.DiscountPrice;
-        _shippingFee = data.ShippingFee;
-        _finalAmount = data.FinalAmount;
+
+        if (_isBopis)
+        {
+            _shippingFee = 0;
+            var amountBeforePoints = Math.Max(0, data.TotalAmount - data.DiscountPrice);
+            _pointsDiscount = _usePoints
+                ? Math.Min(data.PointsDiscountPrice, amountBeforePoints)
+                : 0;
+            _finalAmount = Math.Max(0, amountBeforePoints - _pointsDiscount);
+        }
+        else
+        {
+            _shippingFee = data.ShippingFee;
+            _pointsDiscount = _usePoints ? data.PointsDiscountPrice : 0;
+            _finalAmount = data.FinalAmount;
+        }
 
         _unitPriceByVariant = data.Items
             .GroupBy(x => x.ProductVariantId)
@@ -923,7 +1086,8 @@
         _subTotal = _cartItems.Sum(x => x.LineTotal);
         _shippingFee = 0;
         _discount = 0;
-        _finalAmount = _subTotal;
+        _pointsDiscount = 0;
+        _finalAmount = Math.Max(0, _subTotal);
         _unitPriceByVariant = new Dictionary<int, decimal>();
     }
 
@@ -934,7 +1098,7 @@
             return;
         }
 
-        if (_selectedAddressId <= 0)
+        if (!_isBopis && _selectedAddressId <= 0)
         {
             _snackbar.Add("Vui lòng chọn địa chỉ giao hàng", Severity.Warning);
             return;
@@ -943,7 +1107,7 @@
         // Ensure latest totals before checkout
         var calculated = await RecalculateTotalsAsync();
 
-        if (!calculated || _selectedAddressId <= 0 || !_cartItems.Any())
+        if (!calculated || (!_isBopis && _selectedAddressId <= 0) || !_cartItems.Any())
         {
             return;
         }
@@ -967,9 +1131,11 @@
             discountAmount: Discount,
             shippingFee: ShippingFee,
             paymentMethodTypeId: _paymentMethodTypeId,
-            addressId: _selectedAddressId,
+            addressId: _isBopis ? -99 : _selectedAddressId,
             voucherId: _appliedVoucherId,
-            note: string.IsNullOrWhiteSpace(_note) ? null : _note.Trim());
+            note: string.IsNullOrWhiteSpace(_note) ? null : _note.Trim(),
+            usePoints: _usePoints,
+            bopis: _isBopis);
 
         _isPlacingOrder = false;
 
@@ -1009,6 +1175,15 @@
     private string GetAddressCardClass(int addressId)
     {
         var active = _selectedAddressId == addressId
+            ? "!border-[#d71920] !bg-red-50"
+            : "!border-slate-200 !bg-white hover:!border-[#d71920]";
+
+        return $"flex cursor-pointer items-start !gap-3 !rounded-2xl !border !p-4 transition {active}";
+    }
+
+    private string GetDeliveryMethodClass(bool isBopis)
+    {
+        var active = _isBopis == isBopis
             ? "!border-[#d71920] !bg-red-50"
             : "!border-slate-200 !bg-white hover:!border-[#d71920]";
 

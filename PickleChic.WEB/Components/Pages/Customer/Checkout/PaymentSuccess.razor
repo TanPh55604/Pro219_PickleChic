@@ -26,10 +26,22 @@
                     @(_errorMessage ?? "Đã có lỗi xảy ra khi xác nhận thanh toán.")
                 </p>
 
-                <a href="@RouterConfig.Customer.Products"
-                   class="!mt-6 inline-flex items-center justify-center !rounded-full !bg-black !px-7 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
-                    Tiếp tục mua sắm
-                </a>
+                <div class="!mt-6 flex flex-col items-center justify-center !gap-3 sm:flex-row">
+                    <a href="@RouterConfig.Customer.Products"
+                       class="inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-6 !py-3 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] sm:w-auto">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Size="Size.Small" />
+                        Tiếp tục mua sắm
+                    </a>
+
+                    @if (!string.IsNullOrWhiteSpace(_orderDetailUrl))
+                    {
+                        <a href="@_orderDetailUrl"
+                           class="inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920] sm:w-auto">
+                            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" />
+                            Xem đơn hàng
+                        </a>
+                    }
+                </div>
             </div>
         }
         else
@@ -60,11 +72,14 @@
                         Tiếp tục mua sắm
                     </a>
 
-                    <a href="@_invoiceUrl"
-                       class="inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920] sm:w-auto">
-                        <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" />
-                        Xem hóa đơn
-                    </a>
+                    @if (!string.IsNullOrWhiteSpace(_orderDetailUrl))
+                    {
+                        <a href="@_orderDetailUrl"
+                           class="inline-flex w-full items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920] sm:w-auto">
+                            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" />
+                            Xem đơn hàng
+                        </a>
+                    }
                 </div>
             </div>
         }
@@ -78,7 +93,7 @@
     private bool _isLoading = true;
     private bool _isSuccess;
     private string _orderCode = string.Empty;
-    private string _invoiceUrl = RouterConfig.Customer.Orders;
+    private string? _orderDetailUrl;
     private string? _errorMessage;
 
     protected override async Task OnInitializedAsync()
@@ -90,6 +105,8 @@
             _errorMessage = "Không tìm thấy mã đơn hàng thanh toán.";
             return;
         }
+
+        _orderDetailUrl = RouterConfig.BuildRoute(RouterConfig.Customer.OrderDetail, OrderId.Value);
 
         var result = await _customerOrderService.ConfirmPaymentSuccessAsync(OrderId.Value);
 
@@ -104,7 +121,7 @@
         {
             _isSuccess = true;
             _orderCode = result.Data.OrderCode;
-            _invoiceUrl = RouterConfig.BuildRoute(RouterConfig.Customer.OrderDetail, result.Data.Id);
+            _orderDetailUrl = RouterConfig.BuildRoute(RouterConfig.Customer.OrderDetail, result.Data.Id);
             _cartService.NotifyCartChanged();
         }
 

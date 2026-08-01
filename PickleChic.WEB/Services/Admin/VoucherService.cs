@@ -80,7 +80,7 @@ namespace PickleChic.WEB.Services.Admin
                 UsageLimit = model.UsageLimit,
                 CustomerUsageLimit = model.CustomerUsageLimit,
                 UsedCount = model.UsedCount,
-                IsActive = model.IsActive
+                IsActive = IsWithinActivePeriod(model.StartDate!.Value, model.EndDate!.Value)
             };
         }
 
@@ -104,6 +104,12 @@ namespace PickleChic.WEB.Services.Admin
                 UsedCount = model.UsedCount,
                 IsActive = request.IsActive
             };
+        }
+
+        private static bool IsWithinActivePeriod(DateTime startDate, DateTime endDate)
+        {
+            var now = DateTime.Now;
+            return startDate <= now && endDate > now;
         }
     }
 }

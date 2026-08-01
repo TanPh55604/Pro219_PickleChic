@@ -118,6 +118,12 @@ builder.Services.AddHangfireServer();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var addressRepository = scope.ServiceProvider.GetRequiredService<AddressRepository>();
+    await addressRepository.EnsureSystemPickupAsync(-1);
+}
+
 var webRootPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot");
 Directory.CreateDirectory(Path.Combine(webRootPath, "uploads", "products"));
 Directory.CreateDirectory(Path.Combine(webRootPath, "uploads", "categories"));

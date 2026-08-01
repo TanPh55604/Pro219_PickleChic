@@ -20,6 +20,8 @@ namespace PickleChic.WEB.DTO.Admin
 
         public string OrderStatus { get; set; } = string.Empty;
 
+        public int? Status { get; set; }
+
         public string? Notes { get; set; }
 
         public DateTime? LastUpdate { get; set; }
@@ -27,6 +29,8 @@ namespace PickleChic.WEB.DTO.Admin
         public string? CustomerType { get; set; }
 
         public bool IsOrderPOS { get; set; }
+
+        public bool? BOPIS { get; set; }
 
         public string? PaymentLink { get; set; }
 

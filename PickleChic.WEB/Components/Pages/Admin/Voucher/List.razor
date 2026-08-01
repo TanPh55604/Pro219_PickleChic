@@ -108,18 +108,12 @@
                 </MudTd>
 
                 <MudTd DataLabel="Trạng thái">
-                    @if (context.IsActive)
-                    {
-                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Text">
-                            Đang hoạt động
-                        </MudChip>
-                    }
-                    else
-                    {
-                        <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Text">
-                            Tạm ẩn
-                        </MudChip>
-                    }
+                    <MudChip T="string"
+                             Size="Size.Small"
+                             Color="@GetScheduleStatusColor(context)"
+                             Variant="Variant.Text">
+                        @GetScheduleStatusLabel(context)
+                    </MudChip>
                 </MudTd>
 
                 <MudTd DataLabel="Chi tiết" Class="text-right">
@@ -198,17 +192,31 @@
 
     private static string GetDiscountTypeLabel(string discountType)
     {
-        return discountType switch
+        if (string.IsNullOrWhiteSpace(discountType))
         {
-            VoucherDiscountType.Percent => "Phần trăm",
-            VoucherDiscountType.Fixed => "Giá cố định",
-            _ => discountType
-        };
+            return "—";
+        }
+
+        if (discountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Phần trăm";
+        }
+
+        if (discountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Giá cố định";
+        }
+
+        return discountType;
     }
+
+    private static bool IsPercentDiscount(string discountType)
+        => !string.IsNullOrWhiteSpace(discountType)
+           && discountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase);
 
     private static string FormatDiscountValue(VoucherResponse voucher)
     {
-        if (voucher.DiscountType == VoucherDiscountType.Percent)
+        if (IsPercentDiscount(voucher.DiscountType))
         {
             var maxText = voucher.MaxDiscountAmount.HasValue
                 ? $" (tối đa {voucher.MaxDiscountAmount.Value:N0}đ)"
@@ -218,6 +226,33 @@
         }
 
         return $"{voucher.DiscountValue:N0}đ";
+    }
+
+    private static string GetScheduleStatusLabel(VoucherResponse voucher)
+    {
+        var now = DateTime.Now;
+
+        if (now < voucher.StartDate)
+        {
+            return "Chưa diễn ra";
+        }
+
+        if (now > voucher.EndDate)
+        {
+            return "Kết thúc";
+        }
+
+        return voucher.IsActive ? "Đang diễn ra" : "Chưa diễn ra";
+    }
+
+    private static Color GetScheduleStatusColor(VoucherResponse voucher)
+    {
+        return GetScheduleStatusLabel(voucher) switch
+        {
+            "Đang diễn ra" => Color.Success,
+            "Chưa diễn ra" => Color.Info,
+            _ => Color.Default
+        };
     }
 
     private static string ConvertVoucherErrorMessage(string message)

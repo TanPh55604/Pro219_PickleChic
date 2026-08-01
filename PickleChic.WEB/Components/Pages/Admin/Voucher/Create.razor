@@ -146,13 +146,6 @@
                                      Variant="Variant.Outlined"
                                      Min="1"
                                      Immediate="true" />
-
-                    <div class="md:col-span-2">
-                        <MudSwitch @bind-Value="_model.IsActive"
-                                   For="@(() => _model.IsActive)"
-                                   Label="Đang hoạt động"
-                                   Color="Color.Success" />
-                    </div>
                 </div>
 
                 <div class="flex justify-end !border-t !border-slate-200 !pt-6">
@@ -179,7 +172,7 @@
         MaxDiscountAmount = 100000,
         UsageLimit = 100,
         CustomerUsageLimit = 1,
-        IsActive = true
+        IsActive = false
     };
 
     private readonly VoucherSchema.CreateUpdate _validator = new();
@@ -206,6 +199,7 @@
         _model.StartDate = defaultStart;
         _model.EndDate = defaultStart.AddDays(7);
         SyncDateTimePartsFromModel();
+        SyncIsActiveFromDates();
         await LoadRanksAsync();
     }
 
@@ -267,6 +261,7 @@
     private void OnStartDateTimeChanged()
     {
         UpdateStartDate();
+        SyncIsActiveFromDates();
         _startDateError = null;
         _endDateError = null;
     }
@@ -274,6 +269,7 @@
     private void OnEndDateTimeChanged()
     {
         UpdateEndDate();
+        SyncIsActiveFromDates();
         _endDateError = null;
     }
 
@@ -325,6 +321,40 @@
             : "Giá trị giảm (đ)";
     }
 
+    private void SyncIsActiveFromDates()
+    {
+        if (!_model.StartDate.HasValue || !_model.EndDate.HasValue)
+        {
+            _model.IsActive = false;
+            return;
+        }
+
+        var now = DateTime.Now;
+        _model.IsActive = _model.StartDate.Value <= now && _model.EndDate.Value > now;
+    }
+
+    private string GetScheduleStatusText()
+    {
+        if (!_model.StartDate.HasValue || !_model.EndDate.HasValue)
+        {
+            return "Chưa đủ thời gian — chưa kích hoạt";
+        }
+
+        var now = DateTime.Now;
+
+        if (_model.StartDate.Value > now)
+        {
+            return "Chưa diễn ra — chưa kích hoạt";
+        }
+
+        if (_model.EndDate.Value <= now)
+        {
+            return "Đã hết hạn — không hoạt động";
+        }
+
+        return "Đang diễn ra — đang hoạt động";
+    }
+
     private async Task SubmitAsync()
     {
         if (_form is null || _isSubmitting)
@@ -334,6 +364,7 @@
 
         UpdateStartDate();
         UpdateEndDate();
+        SyncIsActiveFromDates();
 
         await _form.ValidateAsync();
         await ValidateDateFieldsAsync();

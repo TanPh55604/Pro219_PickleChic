@@ -86,17 +86,11 @@ public class VoucherController : ControllerBase
                 entity.StartDate = DateTime.MinValue;
                 entity.EndDate = DateTime.MaxValue;
                 entity.UsageLimit = int.MaxValue;
+                entity.IsActive = true;
             }
             else
             {
-                if (entity.StartDate > DateTime.Now)
-                {
-                    entity.IsActive = false;
-                }
-                else if (entity.EndDate <= DateTime.Now)
-                {
-                    entity.IsActive = false;
-                }
+                entity.IsActive = IsWithinActivePeriod(entity.StartDate, entity.EndDate);
             }
 
             var created = await _repository.AddAsync(entity);
@@ -135,6 +129,15 @@ public class VoucherController : ControllerBase
     {
         try
         {
+            var existing = await _repository.GetByIdAsync(dto.Id);
+            if (existing is null)
+                return NotFound();
+
+            if (!CanModifyVoucher(existing.StartDate))
+            {
+                return BadRequest("Không thể sửa voucher đang diễn ra hoặc đã kết thúc");
+            }
+
             var entity = new Voucher
             {
                 Id = dto.Id,
@@ -157,17 +160,11 @@ public class VoucherController : ControllerBase
                 entity.StartDate = DateTime.MinValue;
                 entity.EndDate = DateTime.MaxValue;
                 entity.UsageLimit = int.MaxValue;
+                entity.IsActive = true;
             }
             else
             {
-                if (entity.StartDate > DateTime.Now)
-                {
-                    entity.IsActive = false;
-                }
-                else if (entity.EndDate <= DateTime.Now)
-                {
-                    entity.IsActive = false;
-                }
+                entity.IsActive = IsWithinActivePeriod(entity.StartDate, entity.EndDate);
             }
 
             var updated = await _repository.UpdateAsync(entity);
@@ -207,6 +204,15 @@ public class VoucherController : ControllerBase
     {
         try
         {
+            var existing = await _repository.GetByIdAsync(id);
+            if (existing is null)
+                return NotFound();
+
+            if (!CanModifyVoucher(existing.StartDate))
+            {
+                return BadRequest("Không thể xóa voucher đang diễn ra hoặc đã kết thúc");
+            }
+
             var success = await _repository.DeleteAsync(id);
             if (!success)
                 return NotFound();
@@ -217,5 +223,16 @@ public class VoucherController : ControllerBase
         {
             return StatusCode(500, "Db Error");
         }
+    }
+
+    private static bool IsWithinActivePeriod(DateTime startDate, DateTime endDate)
+    {
+        var now = DateTime.Now;
+        return startDate <= now && endDate > now;
+    }
+
+    private static bool CanModifyVoucher(DateTime startDate)
+    {
+        return startDate > DateTime.Now;
     }
 }

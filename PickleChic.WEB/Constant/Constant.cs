@@ -12,29 +12,31 @@
             public const string WaitingForPayment = "Chờ thanh toán";
             public const string Confirmed = "Đã xác nhận";
             public const string Shipping = "Đang giao hàng";
+            public const string AwaitingPickup = "Chờ khách hàng tới lấy";
             public const string ShippingDone = "Giao thành công";
             public const string DeliveryFailed = "Giao thất bại";
             public const string Cancelled = "Đã hủy(KH)";
             public const string Expired = "Đã hết hạn";
             public const string Done = "Hoàn thành";
 
-            public const string StatusPending = Pending;
-            public const string StatusConfirm = Confirmed;
-            public const string StatusShipping = Shipping;
-            public const string StatusShippingDone = ShippingDone;
+            public static class Code
+            {
+                public const int Pending = 1;
+                public const int Processing = 2;
+                public const int WaitingForPayment = 3;
+                public const int Confirmed = 4;
+                public const int Shipping = 5;
+                public const int AwaitingPickup = 6;
+                public const int Done = 7;
+                public const int Cancelled = -1;
+                public const int Expired = -2;
+            }
 
-            public static readonly string[] All =
+            public static readonly int[] TerminalCodes =
             [
-                Pending,
-                Processing,
-                WaitingForPayment,
-                Confirmed,
-                Shipping,
-                ShippingDone,
-                DeliveryFailed,
-                Cancelled,
-                Expired,
-                Done
+                Code.Done,
+                Code.Cancelled,
+                Code.Expired
             ];
 
             public static readonly string[] TerminalStatuses =
@@ -44,6 +46,39 @@
                 Expired,
                 DeliveryFailed
             ];
+
+            public static string GetLabel(int code) => code switch
+            {
+                Code.Pending => Pending,
+                Code.Processing => Processing,
+                Code.WaitingForPayment => WaitingForPayment,
+                Code.Confirmed => Confirmed,
+                Code.Shipping => Shipping,
+                Code.AwaitingPickup => AwaitingPickup,
+                Code.Done => Done,
+                Code.Cancelled => Cancelled,
+                Code.Expired => Expired,
+                _ => $"Trạng thái {code}"
+            };
+
+            public static int? ToCode(string? orderStatus) => orderStatus switch
+            {
+                Pending or "Pending" => Code.Pending,
+                Processing or "Processing" => Code.Processing,
+                WaitingForPayment or "WaitingForPayment" => Code.WaitingForPayment,
+                Confirmed or "Confirmed" => Code.Confirmed,
+                Cancelled or "Cancelled" or "Đã hủy" => Code.Cancelled,
+                Expired or "Expired" or "Hết hạn thanh toán" => Code.Expired,
+                AwaitingPickup or "AwaitingPickup" => Code.AwaitingPickup,
+                Shipping or "Shiping" or "Shipping" => Code.Shipping,
+                ShippingDone => Code.Done,
+                DeliveryFailed => Code.Cancelled,
+                Done or "Done" => Code.Done,
+                _ => null
+            };
+
+            public static bool IsPendingGroup(int code) =>
+                code is Code.Pending or Code.Processing or Code.WaitingForPayment;
         }
 
         public static class PaymentStatus

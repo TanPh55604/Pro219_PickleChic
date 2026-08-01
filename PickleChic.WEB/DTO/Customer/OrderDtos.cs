@@ -7,6 +7,10 @@ namespace PickleChic.WEB.DTO.Customer
         public string? DiscountCode { get; set; }
 
         public int? AddressId { get; set; }
+
+        public bool? UsePoints { get; set; }
+
+        public bool? Bopis { get; set; }
     }
 
     public class OrderItemCalculationRequest
@@ -29,6 +33,10 @@ namespace PickleChic.WEB.DTO.Customer
         public int? VoucherId { get; set; }
 
         public List<OrderCalculationItemResult> Items { get; set; } = new();
+
+        public decimal PointsDiscountPrice { get; set; }
+
+        public int PointsDeducted { get; set; }
     }
 
     public class OrderCalculationItemResult
@@ -107,6 +115,8 @@ namespace PickleChic.WEB.DTO.Customer
         public string PaymentStatus { get; set; } = string.Empty;
 
         public string OrderStatus { get; set; } = string.Empty;
+
+        public int? Status { get; set; }
 
         public string? PaymentLink { get; set; }
 

@@ -38,8 +38,49 @@ public class AddressRepository
             .Include(a => a.Ward)
                 .ThenInclude(w => w.District)
                     .ThenInclude(d => d.Province)
-            .Where(a => a.CustomerId == customerId && !a.Delete)
+            .Where(a => a.CustomerId == customerId && !a.Delete && a.Status == 1)
             .ToListAsync();
+    }
+
+    public async Task<Address?> FindPickupAddressAsync(int customerId)
+    {
+        return await _context.Addresses
+            .FirstOrDefaultAsync(a =>
+                a.CustomerId == customerId
+                && !a.Delete
+                && (a.Status == 0 || a.DetailInfo == "Mua tại quầy"));
+    }
+
+    public async Task<Address> EnsureSystemPickupAsync(int customerId)
+    {
+        var dummy = await FindPickupAddressAsync(customerId);
+        if (dummy != null)
+        {
+            if (dummy.Status != 0 || dummy.IsDefault)
+            {
+                dummy.Status = 0;
+                dummy.IsDefault = false;
+                dummy.UpdatedAt = DateTime.Now;
+                await _context.SaveChangesAsync();
+            }
+
+            return dummy;
+        }
+
+        dummy = new Address
+        {
+            CustomerId = customerId,
+            FullName = customerId > 0 ? "Nhận tại quầy" : "Khách vãng lai",
+            PhoneNumber = "0000000000",
+            WardId = 1,
+            DetailInfo = "Mua tại quầy",
+            IsDefault = false,
+            Status = 0,
+            InsertedAt = DateTime.Now,
+            Delete = false
+        };
+
+        return await AddAsync(dummy);
     }
 
     public async Task<Address> AddAsync(Address entity)
@@ -57,6 +98,8 @@ public class AddressRepository
             if (existing is null)
                 return null;
             if (existing.Delete)
+                return null;
+            if (existing.Status == 0)
                 return null;
 
             existing.CustomerId = entity.CustomerId;
@@ -80,6 +123,8 @@ public class AddressRepository
     {
         var entity = await _context.Addresses.FirstOrDefaultAsync(a => a.Id == id);
         if (entity is null || entity.Delete)
+            return false;
+        if (entity.Status == 0)
             return false;
 
         entity.Delete = true;

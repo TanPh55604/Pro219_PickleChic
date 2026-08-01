@@ -23,6 +23,25 @@
                     Đơn hàng của tôi
                 </a>
 
+                @if (CanCancelOrder)
+                {
+                    <button type="button"
+                            disabled="@_isCancelling"
+                            @onclick="CancelOrderAsync"
+                            class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-[#d71920] !bg-white !px-5 !py-2.5 text-sm font-black text-[#d71920] transition hover:!bg-[#d71920] hover:!text-white disabled:opacity-50">
+                        @if (_isCancelling)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="!text-[#d71920]" />
+                            <span>Đang hủy...</span>
+                        }
+                        else
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" />
+                            <span>Hủy đơn hàng</span>
+                        }
+                    </button>
+                }
+
                 <a href="@RouterConfig.Customer.Products"
                    class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-5 !py-2.5 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920]">
                     <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Size="Size.Small" />
@@ -176,15 +195,32 @@
 
     private UserOrderDetailResponse? _order;
     private bool _isLoading = true;
+    private bool _isCancelling;
     private string? _errorMessage;
 
     private bool CanPayOnline =>
         _order is not null
         && !string.IsNullOrWhiteSpace(_order.PaymentLink)
         && _order.PaymentStatus == Constant.PaymentStatus.Pending
-        && _order.OrderStatus is Constant.OrderStatus.WaitingForPayment
-            or Constant.OrderStatus.Pending
-            or Constant.OrderStatus.Processing;
+        && IsCancellableStatus(_order);
+
+    private bool CanCancelOrder =>
+        _order is not null
+        && IsCancellableStatus(_order);
+
+    private static bool IsCancellableStatus(UserOrderDetailResponse order)
+    {
+        if (order.Status is Constant.OrderStatus.Code.Pending
+            or Constant.OrderStatus.Code.Processing
+            or Constant.OrderStatus.Code.WaitingForPayment)
+        {
+            return true;
+        }
+
+        return order.OrderStatus is Constant.OrderStatus.Pending
+            or Constant.OrderStatus.Processing
+            or Constant.OrderStatus.WaitingForPayment;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -193,6 +229,13 @@
             _navigation.NavigateTo(RouterConfig.Customer.Login);
             return;
         }
+
+        await LoadOrderAsync();
+    }
+
+    private async Task LoadOrderAsync()
+    {
+        _isLoading = true;
 
         var result = await _customerOrderService.GetUserOrderDetailAsync(Id);
 
@@ -206,9 +249,66 @@
         else
         {
             _order = result.Data;
+            _errorMessage = null;
         }
 
         _isLoading = false;
+    }
+
+    private async Task CancelOrderAsync()
+    {
+        if (_order is null || !CanCancelOrder || _isCancelling)
+        {
+            return;
+        }
+
+        var parameters = new DialogParameters<OrderCancelDialog>
+        {
+            { x => x.OrderCode, _order.OrderCode }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.ExtraSmall,
+            FullWidth = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<OrderCancelDialog>(
+            "Hủy đơn hàng",
+            parameters,
+            options);
+
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled)
+        {
+            return;
+        }
+
+        _isCancelling = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _customerOrderService.CancelUserOrderAsync(_order.Id);
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(
+                    string.IsNullOrWhiteSpace(result.Message)
+                        ? "Không thể hủy đơn hàng"
+                        : result.Message,
+                    Severity.Error);
+                return;
+            }
+
+            _order = result.Data;
+            _snackbar.Add($"Đã hủy đơn {_order.OrderCode}", Severity.Success);
+        }
+        finally
+        {
+            _isCancelling = false;
+        }
     }
 
     private void OpenPaymentLink()
