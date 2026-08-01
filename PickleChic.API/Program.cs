@@ -103,9 +103,9 @@ builder.Services.AddSingleton(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     return new Net.payOS.PayOS(
-        config["PayOS:ClientId"] ?? "09b8a42b-6105-4cd4-a4ee-8492e42e909c",
-        config["PayOS:ApiKey"] ?? "15cfbaf8-79a4-48a0-908f-248c30538001",
-        config["PayOS:ChecksumKey"] ?? "00b20c6b94e21bf27e6cb0ae2f26515637c93d70b2eeb832e7b51e299cba433d"
+        config["PayOS:ClientId"] ?? "467ba155-36d1-4e4f-b99e-a3dd39c8b12e",
+        config["PayOS:ApiKey"] ?? "305f881f-1747-402c-8e9b-131eb34160c3",
+        config["PayOS:ChecksumKey"] ?? "0040e95d9b9e1c6353630b697e10d0e7e4facb59e33aabe92490e244c6773f92"
     );
 });
 
