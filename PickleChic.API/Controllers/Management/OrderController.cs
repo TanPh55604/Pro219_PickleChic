@@ -3,6 +3,7 @@ using PickleChic.API.DTOs;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
 using PickleChic.API.Utilities;
+using System.Security.Claims;
 
 namespace PickleChic.API.Controllers.Management;
 
@@ -18,7 +19,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("get-all")]
-    public async Task<ActionResult<List<Order>>> GetAll(string? keyword)
+    public async Task<ActionResult<List<Order>>> GetAll(string? keyword, int? status = null)
     {
         try
         {
@@ -29,6 +30,12 @@ public class OrderController : ControllerBase
             {
                 result = result
                     .Where(o => o.OrderCode.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            if(status != null)
+            {
+                result = result
+                    .Where(o => o.Status == status)
                     .ToList();
             }
 
@@ -79,6 +86,28 @@ public class OrderController : ControllerBase
     {
         try
         {
+            var updatedBy = dto.UpdateBy;
+            if (string.IsNullOrEmpty(updatedBy))
+            {
+                updatedBy = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+            if (string.IsNullOrEmpty(updatedBy))
+            {
+                updatedBy = "System";
+            }
+
+            var statusHistory = ParseStatusHistory(dto.StatusHistory);
+            statusHistory.Add(new StatusHistoryEntry
+            {
+                Index = statusHistory.Count + 1,
+                Status = dto.OrderStatus,
+                OrderStatus = dto.OrderStatus,
+                PaymentStatus = dto.PaymentStatus,
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                UpdatedBy = updatedBy,
+                Reasons = "Tạo đơn"
+            });
+
             var entity = new Order
             {
                 CustomerId = dto.CustomerId,
@@ -96,8 +125,12 @@ public class OrderController : ControllerBase
                 PaymentLink = dto.PaymentLink,
                 PaymentExpiration = dto.PaymentExpiration,
                 ShippingFee = dto.ShippingFee,
-                StatusHistory = dto.StatusHistory,
-                UpdateBy = dto.UpdateBy,
+                StatusHistory = System.Text.Json.JsonSerializer.Serialize(statusHistory, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                    WriteIndented = false
+                }),
+                UpdateBy = updatedBy,
                 InsertedAt = DateTime.Now,
                 Delete = false,
             };
@@ -177,11 +210,21 @@ public class OrderController : ControllerBase
             if (existingOrder is null)
                 return NotFound("Đơn hàng không tồn tại");
 
+            var updatedBy = dto.UpdateBy;
+            if (string.IsNullOrEmpty(updatedBy))
+            {
+                updatedBy = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+            if (string.IsNullOrEmpty(updatedBy))
+            {
+                updatedBy = "System";
+            }
+
             existingOrder.PaymentStatus = dto.PaymentStatus;
             existingOrder.OrderStatus = dto.OrderStatus;
             existingOrder.Status = Constant.OrderStatus.GetStatusInt(dto.OrderStatus);
             existingOrder.LastUpdate = DateTime.Now;
-            existingOrder.UpdateBy = dto.UpdateBy ?? "Admin";
+            existingOrder.UpdateBy = updatedBy;
 
             var statusHistory = ParseStatusHistory(existingOrder.StatusHistory);
             statusHistory.Add(new StatusHistoryEntry
@@ -190,7 +233,9 @@ public class OrderController : ControllerBase
                 Status = dto.OrderStatus,
                 OrderStatus = dto.OrderStatus,
                 PaymentStatus = dto.PaymentStatus,
-                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                UpdatedBy = updatedBy,
+                Reasons = dto.Reasons
             });
             
             existingOrder.StatusHistory = System.Text.Json.JsonSerializer.Serialize(statusHistory, new System.Text.Json.JsonSerializerOptions

@@ -734,6 +734,16 @@ public class OrderController : ControllerBase
         Order order = new Order();
         try
         {
+            var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = User.FindFirst(ClaimTypes.Email)?.Value;
+            }
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = "Guest";
+            }
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             if (isZeroOrder)
             {
@@ -743,7 +753,9 @@ public class OrderController : ControllerBase
                     Status = Constant.OrderStatus.Confirmed,
                     OrderStatus = Constant.OrderStatus.Confirmed,
                     PaymentStatus = Constant.PaymentStatus.Completed,
-                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                    UpdatedBy = customerUserName,
+                    Reasons = "Thanh toán thành công (Đơn hàng 0đ)"
                 });
             }
             else if (PaymentMethodTypeId == 1)
@@ -754,7 +766,9 @@ public class OrderController : ControllerBase
                     Status = Constant.OrderStatus.Processing,
                     OrderStatus = Constant.OrderStatus.Pending,
                     PaymentStatus = Constant.PaymentStatus.Pending,
-                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                    UpdatedBy = customerUserName,
+                    Reasons = "Tạo đơn (COD)"
                 });
             }
             else
@@ -765,7 +779,9 @@ public class OrderController : ControllerBase
                     Status = Constant.OrderStatus.WaitingForPayment,
                     OrderStatus = Constant.OrderStatus.WaitingForPayment,
                     PaymentStatus = Constant.PaymentStatus.Pending,
-                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                    UpdatedBy = customerUserName,
+                    Reasons = "Tạo đơn (Chờ thanh toán)"
                 });
             }
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
@@ -789,7 +805,7 @@ public class OrderController : ControllerBase
             order.VoucherId = voucherId;
             order.InsertedAt = DateTime.Now;
             order.LastUpdate = DateTime.Now;
-            order.UpdateBy = "System";
+            order.UpdateBy = customerUserName;
             order.IsOrderPOS = false;
             order.Delete = false;
             order.BOPIS = bopis;
@@ -1166,6 +1182,16 @@ public class OrderController : ControllerBase
             bool isShipping = (dto.AddressId.HasValue && dto.AddressId.Value > 0) || dto.AddressDTO != null;
             string initialStatus = isShipping ? Constant.OrderStatus.Shiping : Constant.OrderStatus.Done;
 
+            var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = User.FindFirst(ClaimTypes.Email)?.Value;
+            }
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = "Guest";
+            }
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             statusHistory.Add(new StatusHistoryEntry
             {
@@ -1173,7 +1199,9 @@ public class OrderController : ControllerBase
                 Status = initialStatus,
                 OrderStatus = initialStatus,
                 PaymentStatus = Constant.PaymentStatus.Completed,
-                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                UpdatedBy = customerUserName,
+                Reasons = initialStatus == Constant.OrderStatus.Done ? "Mua tại quầy - Hoàn thành" : "Mua tại quầy - Chờ giao hàng"
             });
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
 
@@ -1188,7 +1216,7 @@ public class OrderController : ControllerBase
             order.VoucherId = dto.VoucherId;
             order.InsertedAt = DateTime.Now;
             order.LastUpdate = DateTime.Now;
-            order.UpdateBy = "System";
+            order.UpdateBy = customerUserName;
             order.IsOrderPOS = true;
             order.Delete = false;
 
@@ -1293,6 +1321,16 @@ public class OrderController : ControllerBase
 
             bool isNewPaymentSuccess = order.PaymentStatus != Constant.PaymentStatus.Completed;
 
+            var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = User.FindFirst(ClaimTypes.Email)?.Value;
+            }
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = "Guest";
+            }
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             if (pos)
             {
@@ -1302,7 +1340,9 @@ public class OrderController : ControllerBase
                     Status = Constant.OrderStatus.Done,
                     OrderStatus = Constant.OrderStatus.Done,
                     PaymentStatus = Constant.PaymentStatus.Completed,
-                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                    UpdatedBy = customerUserName,
+                    Reasons = "Thanh toán thành công (POS)"
                 });
 
                 order.PaymentStatus = Constant.PaymentStatus.Completed;
@@ -1316,7 +1356,9 @@ public class OrderController : ControllerBase
                     Status = Constant.OrderStatus.Confirmed,
                     OrderStatus = Constant.OrderStatus.Confirmed,
                     PaymentStatus = Constant.PaymentStatus.Completed,
-                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                    DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                    UpdatedBy = customerUserName,
+                    Reasons = "Thanh toán thành công"
                 });
 
                 order.PaymentStatus = Constant.PaymentStatus.Completed;
@@ -1326,7 +1368,7 @@ public class OrderController : ControllerBase
 
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
             order.LastUpdate = DateTime.Now;
-            order.UpdateBy = "System";
+            order.UpdateBy = customerUserName;
 
             var result = await _orderRepository.UpdateAsync(order);
             if (result == null)
@@ -1435,6 +1477,16 @@ public class OrderController : ControllerBase
                 return Ok(order);
             }
 
+            var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = User.FindFirst(ClaimTypes.Email)?.Value;
+            }
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = "Guest";
+            }
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             statusHistory.Add(new StatusHistoryEntry
             {
@@ -1442,7 +1494,9 @@ public class OrderController : ControllerBase
                 Status = Constant.OrderStatus.Cancelled,
                 OrderStatus = Constant.OrderStatus.Cancelled,
                 PaymentStatus = Constant.PaymentStatus.Cancelled,
-                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                UpdatedBy = customerUserName,
+                Reasons = "Hủy thanh toán"
             });
 
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
@@ -1450,7 +1504,7 @@ public class OrderController : ControllerBase
             order.OrderStatus = Constant.OrderStatus.Cancelled;
             order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
             order.LastUpdate = DateTime.Now;
-            order.UpdateBy = "System";
+            order.UpdateBy = customerUserName;
 
             var result = await _orderRepository.UpdateAsync(order);
             if (result == null)
@@ -1615,6 +1669,16 @@ public class OrderController : ControllerBase
                 return BadRequest("Chỉ có thể hủy đơn khi chưa được xác nhận");
             }
 
+            var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = User.FindFirst(ClaimTypes.Email)?.Value;
+            }
+            if (string.IsNullOrEmpty(customerUserName))
+            {
+                customerUserName = "Guest";
+            }
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             statusHistory.Add(new StatusHistoryEntry
             {
@@ -1622,7 +1686,9 @@ public class OrderController : ControllerBase
                 Status = Constant.OrderStatus.Cancelled,
                 OrderStatus = Constant.OrderStatus.Cancelled,
                 PaymentStatus = Constant.PaymentStatus.Cancelled,
-                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy")
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                UpdatedBy = customerUserName,
+                Reasons = "Khách hàng hủy đơn"
             });
 
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
@@ -1630,7 +1696,7 @@ public class OrderController : ControllerBase
             order.OrderStatus = Constant.OrderStatus.Cancelled;
             order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
             order.LastUpdate = DateTime.Now;
-            order.UpdateBy = "Customer";
+            order.UpdateBy = customerUserName;
 
             var result = await _orderRepository.UpdateAsync(order);
             if (result == null)

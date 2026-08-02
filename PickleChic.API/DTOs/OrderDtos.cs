@@ -55,6 +55,8 @@ public class StatusHistoryEntry
     public string OrderStatus { get; set; } = null!;
     public string PaymentStatus { get; set; } = null!;
     public string DateTime { get; set; } = null!;
+    public string? UpdatedBy { get; set; }
+    public string? Reasons { get; set; }
 }
 
 public class OrderStatusUpdateDto
@@ -62,6 +64,7 @@ public class OrderStatusUpdateDto
     public string PaymentStatus { get; set; } = null!;
     public string OrderStatus { get; set; } = null!;
     public string? UpdateBy { get; set; }
+    public string? Reasons { get; set; }
 }
 
 public class OrderCalculationRequestDto
