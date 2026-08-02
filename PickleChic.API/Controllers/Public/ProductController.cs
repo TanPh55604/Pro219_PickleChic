@@ -328,6 +328,10 @@ public class ProductController : ControllerBase
                 .Distinct()
                 .ToList();
 
+            var attributeValueGroups = attributeValueIds is { Count: > 0 }
+                ? await _repository.GroupAttributeValueIdsByAttributeAsync(attributeValueIds)
+                : new List<List<int>>();
+
             var products = await _repository.FilterProductsWithDetailsAsync(
                 request.Keyword,
                 request.BrandId,
@@ -374,12 +378,10 @@ public class ProductController : ControllerBase
                             && pva.AttributeValue.AttributeId == request.AttributeId.Value));
                 }
 
-                if (attributeValueIds is { Count: > 0 })
+                if (attributeValueGroups.Count > 0)
                 {
                     variants = variants.Where(pv =>
-                        pv.ProductVariantAttributes != null
-                        && pv.ProductVariantAttributes.Any(pva =>
-                            attributeValueIds.Contains(pva.AttributeValueId)));
+                        ProductRepository.VariantMatchesAttributeGroups(pv, attributeValueGroups));
                 }
 
                 if (!string.IsNullOrWhiteSpace(sortBy))

@@ -44,13 +44,6 @@
                     </MudSelect>
 
                     <div class="md:col-span-2">
-                        <CategoryImagePicker @ref="_imagePicker"
-                                             CategoryId="0"
-                                             PendingFile="_pendingFile"
-                                             PendingFileChanged="OnPendingFileChanged" />
-                    </div>
-
-                    <div class="md:col-span-2">
                         <MudTextField @bind-Value="_model.Description"
                                       For="@(() => _model.Description)"
                                       Label="Mô tả"
@@ -88,10 +81,6 @@
 
     private bool _isSubmitting;
 
-    private CategoryImagePicker? _imagePicker;
-
-    private IBrowserFile? _pendingFile;
-
     private async Task SubmitAsync()
     {
         if (_form is null || _isSubmitting)
@@ -118,11 +107,6 @@
                 return;
             }
 
-            if (_imagePicker is not null && _pendingFile is not null)
-            {
-                await _imagePicker.UploadPendingFileAsync(result.Data.Id);
-            }
-
             _snackbar.Add("Tạo thể loại thành công", Severity.Success);
 
             _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.CategoryDetail, result.Data.Id));
@@ -131,12 +115,6 @@
         {
             _isSubmitting = false;
         }
-    }
-
-    private Task OnPendingFileChanged(IBrowserFile? file)
-    {
-        _pendingFile = file;
-        return Task.CompletedTask;
     }
 
     private static string ConvertCategoryErrorMessage(string message)

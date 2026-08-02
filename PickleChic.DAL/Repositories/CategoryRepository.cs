@@ -44,7 +44,6 @@ public class CategoryRepository
                 return null;
 
             existing.Name = entity.Name;
-            existing.LinkImage = entity.LinkImage;
             existing.Description = entity.Description;
             existing.Status = entity.Status;
             existing.UpdatedAt = entity.UpdatedAt ?? DateTime.Now;

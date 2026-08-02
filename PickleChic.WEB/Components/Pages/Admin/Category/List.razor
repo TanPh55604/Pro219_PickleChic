@@ -56,7 +56,6 @@
                   RowsPerPage="10">
             <HeaderContent>
                 <MudTh>STT</MudTh>
-                <MudTh>Ảnh</MudTh>
                 <MudTh>Tên thể loại</MudTh>
                 <MudTh>Mô tả</MudTh>
                 <MudTh>Trạng thái</MudTh>
@@ -69,24 +68,6 @@
                     <span class="font-medium text-slate-700">
                         @(_categories.IndexOf(context) + 1)
                     </span>
-                </MudTd>
-
-                <MudTd DataLabel="Ảnh">
-                    <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.CategoryDetail, context.Id)"
-                       class="block">
-                        @if (!string.IsNullOrWhiteSpace(context.LinkImage))
-                        {
-                            <img src="@context.LinkImage"
-                                 alt="@context.Name"
-                                 class="!h-12 !w-12 !rounded-xl !border !border-slate-200 object-cover" />
-                        }
-                        else
-                        {
-                            <div class="flex !h-12 !w-12 items-center justify-center !rounded-xl !bg-slate-100 text-slate-400">
-                                <MudIcon Icon="@Icons.Material.Filled.Image" />
-                            </div>
-                        }
-                    </a>
                 </MudTd>
 
                 <MudTd DataLabel="Tên thể loại">

@@ -50,12 +50,6 @@ else
                         </MudSelect>
 
                         <div class="md:col-span-2">
-                            <CategoryImagePicker CategoryId="Id"
-                                                 LinkImage="_model.LinkImage"
-                                                 LinkImageChanged="OnLinkImageChanged" />
-                        </div>
-
-                        <div class="md:col-span-2">
                             <MudTextField @bind-Value="_model.Description"
                                           For="@(() => _model.Description)"
                                           Label="Mô tả"
@@ -133,12 +127,6 @@ else
             Description = response.Description,
             Status = response.Status
         };
-    }
-
-    private Task OnLinkImageChanged(string? linkImage)
-    {
-        _model.LinkImage = linkImage;
-        return Task.CompletedTask;
     }
 
     private async Task SubmitAsync()

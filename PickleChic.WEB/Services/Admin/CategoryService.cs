@@ -7,8 +7,6 @@ namespace PickleChic.WEB.Services.Admin
 {
     public class CategoryService : ICategoryService
     {
-        private const long MaxFileSizeBytes = 5 * 1024 * 1024;
-
         private readonly IApiProvider _apiProvider;
 
         public CategoryService(IApiProvider apiProvider)
@@ -76,28 +74,5 @@ namespace PickleChic.WEB.Services.Admin
                 EndPointConfig.Category.Delete(id),
                 requireAuth: true);
         }
-
-        public async Task<ApiResult<CategoryResponse>> UploadImageAsync(
-            int categoryId,
-            Stream fileStream,
-            string fileName)
-        {
-            using var content = new MultipartFormDataContent();
-            content.Add(new StreamContent(fileStream), "file", fileName);
-
-            return await _apiProvider.PostMultipartAsync<CategoryResponse>(
-                EndPointConfig.Category.UploadImage(categoryId),
-                content,
-                requireAuth: true);
-        }
-
-        public async Task<ApiResult<bool>> DeleteImageAsync(int categoryId)
-        {
-            return await _apiProvider.DeleteAsync<bool>(
-                EndPointConfig.Category.DeleteImage(categoryId),
-                requireAuth: true);
-        }
-
-        public static long GetMaxFileSizeBytes() => MaxFileSizeBytes;
     }
 }

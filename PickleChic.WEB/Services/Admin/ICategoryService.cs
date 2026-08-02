@@ -14,13 +14,6 @@ namespace PickleChic.WEB.Services.Admin
 
         Task<ApiResult<CategoryResponse>> UpdateAsync(CategoryModel model);
 
-        Task<ApiResult<CategoryResponse>> UploadImageAsync(
-            int categoryId,
-            Stream fileStream,
-            string fileName);
-
-        Task<ApiResult<bool>> DeleteImageAsync(int categoryId);
-
         Task<ApiResult<bool>> DeleteAsync(int id);
     }
 }
