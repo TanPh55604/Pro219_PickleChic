@@ -241,8 +241,13 @@ public class ProductRepository
             ));
         }
 
+        List<List<int>>? attributeValueGroups = null;
+
         if (attributeValueIds != null && attributeValueIds.Any())
         {
+            attributeValueGroups = await GroupAttributeValueIdsByAttributeAsync(attributeValueIds);
+
+            // Coarse SQL filter: keep products that match at least one selected value.
             query = query.Where(p => p.ProductVariants != null && p.ProductVariants.Any(pv =>
                 pv.ProductVariantAttributes != null && pv.ProductVariantAttributes.Any(pva =>
                     attributeValueIds.Contains(pva.AttributeValueId)
@@ -278,7 +283,58 @@ public class ProductRepository
             query = query.OrderBy(p => p.ProductName);
         }
 
-        return await query.ToListAsync();
+        var products = await query.ToListAsync();
+
+        if (attributeValueGroups is { Count: > 0 })
+        {
+            products = products
+                .Where(p => p.ProductVariants != null
+                    && p.ProductVariants.Any(pv => VariantMatchesAttributeGroups(pv, attributeValueGroups)))
+                .ToList();
+        }
+
+        return products;
+    }
+
+    public async Task<List<List<int>>> GroupAttributeValueIdsByAttributeAsync(IEnumerable<int> attributeValueIds)
+    {
+        var ids = attributeValueIds
+            .Where(id => id > 0)
+            .Distinct()
+            .ToList();
+
+        if (ids.Count == 0)
+        {
+            return new List<List<int>>();
+        }
+
+        return await _context.AttributeValues
+            .AsNoTracking()
+            .Where(av => ids.Contains(av.Id))
+            .GroupBy(av => av.AttributeId)
+            .Select(g => g.Select(av => av.Id).ToList())
+            .ToListAsync();
+    }
+
+    public static bool VariantMatchesAttributeGroups(
+        ProductVariant? variant,
+        IReadOnlyList<IReadOnlyList<int>> attributeValueGroups)
+    {
+        if (attributeValueGroups.Count == 0)
+        {
+            return true;
+        }
+
+        if (variant?.ProductVariantAttributes is null || variant.ProductVariantAttributes.Count == 0)
+        {
+            return false;
+        }
+
+        var valueIds = variant.ProductVariantAttributes
+            .Select(pva => pva.AttributeValueId)
+            .ToHashSet();
+
+        return attributeValueGroups.All(group => group.Any(id => valueIds.Contains(id)));
     }
 }
 

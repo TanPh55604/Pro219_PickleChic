@@ -53,10 +53,6 @@
             public static string GetById(int id) => $"management/category/get-by-id/{id}";
 
             public static string Delete(int id) => $"management/category/delete/{id}";
-
-            public static string UploadImage(int id) => $"management/category/upload-image/{id}";
-
-            public static string DeleteImage(int id) => $"management/category/delete-image/{id}";
         }
 
         public static class Brand

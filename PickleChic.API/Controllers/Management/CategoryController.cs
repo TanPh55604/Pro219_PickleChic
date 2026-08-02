@@ -35,6 +35,11 @@ public class CategoryController : ControllerBase
                     .ToList();
             }
 
+            foreach (var category in result)
+            {
+                category.LinkImage = _fileService.ToAbsolutePublicUrl(category.LinkImage);
+            }
+
             return Ok(result);
         }
         catch (Exception)
@@ -52,6 +57,7 @@ public class CategoryController : ControllerBase
             if (result is null)
                 return NotFound("Không tìm thấy");
 
+            result.LinkImage = _fileService.ToAbsolutePublicUrl(result.LinkImage);
             return Ok(result);
         }
         catch (Exception)
@@ -97,16 +103,18 @@ public class CategoryController : ControllerBase
                 return NotFound("Không tìm thấy thể loại");
             }
 
-            _fileService.DeleteByPublicUrl(category.LinkImage);
+            _fileService.DeleteCategoryImageByPublicUrl(category.LinkImage);
 
-            var (_, publicUrl) = await _fileService.SaveCategoryImageAsync(file, id);
-            var updated = await _repository.UpdateLinkImageAsync(id, publicUrl);
+            var (relativePath, _) = await _fileService.SaveCategoryImageAsync(file, id);
+            var linkImage = "/" + relativePath.TrimStart('/').Replace('\\', '/');
+            var updated = await _repository.UpdateLinkImageAsync(id, linkImage);
 
             if (updated is null)
             {
                 return NotFound("Không tìm thấy thể loại");
             }
 
+            updated.LinkImage = _fileService.ToAbsolutePublicUrl(updated.LinkImage);
             return Ok(updated);
         }
         catch (InvalidOperationException ex)
@@ -130,7 +138,7 @@ public class CategoryController : ControllerBase
                 return NotFound("Không tìm thấy thể loại");
             }
 
-            _fileService.DeleteByPublicUrl(category.LinkImage);
+            _fileService.DeleteCategoryImageByPublicUrl(category.LinkImage);
 
             var updated = await _repository.UpdateLinkImageAsync(id, null);
             if (updated is null)
@@ -178,6 +186,12 @@ public class CategoryController : ControllerBase
     {
         try
         {
+            var category = await _repository.GetByIdAsync(id);
+            if (category is null)
+                return NotFound();
+
+            _fileService.DeleteCategoryImageByPublicUrl(category.LinkImage);
+
             var success = await _repository.SoftDeleteAsync(id);
             if (!success)
                 return NotFound();

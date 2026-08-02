@@ -33,6 +33,11 @@ public class CategoryController : ControllerBase
                     .Where(c => c.Status==1 && c.Delete!=true)
                     .ToList();
 
+            foreach (var category in result)
+            {
+                category.LinkImage = _fileService.ToAbsolutePublicUrl(category.LinkImage);
+            }
+
             return Ok(result);
         }
         catch (Exception)
@@ -50,6 +55,7 @@ public class CategoryController : ControllerBase
             if (result is null || result.Status != 1 || result.Delete == true)
                 return NotFound("Không tìm thấy");
 
+            result.LinkImage = _fileService.ToAbsolutePublicUrl(result.LinkImage);
             return Ok(result);
         }
         catch (Exception)

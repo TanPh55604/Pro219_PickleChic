@@ -302,41 +302,44 @@
                 </div>
             </div>
 
-            <div>
-                <p class="text-sm font-black text-neutral-900">Thuộc tính</p>
-                @if (_isLoadingAttributes)
-                {
-                    <MudProgressLinear Indeterminate="true" Class="!mt-3" Color="Color.Error" />
-                }
-                else if (!_attributes.Any())
-                {
-                    <p class="!mt-2 text-xs text-neutral-500">Không có thuộc tính</p>
-                }
-                else
-                {
-                    <div class="!mt-2 max-h-64 space-y-4 overflow-y-auto">
-                        @foreach (var attr in _attributes)
-                        {
-                            <div>
-                                <p class="text-xs font-bold tracking-wide text-neutral-500 uppercase">
-                                    @attr.AttributeName
-                                </p>
-                                <div class="!mt-1 space-y-1">
-                                    @foreach (var value in attr.AttributeValues ?? new())
-                                    {
-                                        <label class="flex cursor-pointer items-center !gap-2 !rounded-xl !px-2 !py-1 text-sm hover:!bg-neutral-50">
-                                            <input type="checkbox"
-                                                   checked="@_selectedAttributeValueIds.Contains(value.Id)"
-                                                   @onchange="e => ToggleAttributeValue(value.Id, (bool)(e.Value ?? false))" />
-                                            <span class="truncate">@value.Value</span>
-                                        </label>
-                                    }
+            @if (_selectedCategoryId.HasValue)
+            {
+                <div>
+                    <p class="text-sm font-black text-neutral-900">Thuộc tính</p>
+                    @if (_isLoadingAttributes)
+                    {
+                        <MudProgressLinear Indeterminate="true" Class="!mt-3" Color="Color.Error" />
+                    }
+                    else if (!_attributes.Any())
+                    {
+                        <p class="!mt-2 text-xs text-neutral-500">Không có thuộc tính</p>
+                    }
+                    else
+                    {
+                        <div class="!mt-2 max-h-64 space-y-4 overflow-y-auto">
+                            @foreach (var attr in _attributes)
+                            {
+                                <div>
+                                    <p class="text-xs font-bold tracking-wide text-neutral-500 uppercase">
+                                        @attr.AttributeName
+                                    </p>
+                                    <div class="!mt-1 space-y-1">
+                                        @foreach (var value in attr.AttributeValues ?? new())
+                                        {
+                                            <label class="flex cursor-pointer items-center !gap-2 !rounded-xl !px-2 !py-1 text-sm hover:!bg-neutral-50">
+                                                <input type="checkbox"
+                                                       checked="@_selectedAttributeValueIds.Contains(value.Id)"
+                                                       @onchange="e => ToggleAttributeValue(value.Id, (bool)(e.Value ?? false))" />
+                                                <span class="truncate">@value.Value</span>
+                                            </label>
+                                        }
+                                    </div>
                                 </div>
-                            </div>
-                        }
-                    </div>
-                }
-            </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
 
             <div>
                 <p class="text-sm font-black text-neutral-900">Khoảng giá</p>
@@ -402,20 +405,19 @@
 
     private async Task LoadAttributesAsync()
     {
+        if (!_selectedCategoryId.HasValue)
+        {
+            _attributes = new();
+            _selectedAttributeValueIds.Clear();
+            _isLoadingAttributes = false;
+            return;
+        }
+
         _isLoadingAttributes = true;
 
         try
         {
-            ApiResult<List<CustomerAttributeResponse>> result;
-
-            if (_selectedCategoryId.HasValue)
-            {
-                result = await _customerAttributeService.GetAllByCategoryIdAsync(_selectedCategoryId.Value);
-            }
-            else
-            {
-                result = await _customerAttributeService.GetAllAsync();
-            }
+            var result = await _customerAttributeService.GetAllByCategoryIdAsync(_selectedCategoryId.Value);
 
             _attributes = result.Success
                 ? result.Data ?? new()
@@ -503,6 +505,7 @@
         }
 
         _selectedCategoryId = categoryId;
+        _selectedAttributeValueIds.Clear();
         _ = ReloadAttributesForCategoryAsync();
     }
 
@@ -514,6 +517,8 @@
         }
 
         _selectedCategoryId = null;
+        _attributes = new();
+        _selectedAttributeValueIds.Clear();
         _ = ReloadAttributesForCategoryAsync();
     }
 
