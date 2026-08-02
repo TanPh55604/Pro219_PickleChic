@@ -1,13 +1,17 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 
 <MudThemeProvider Theme="@ThemeConfig.AdminTheme" />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-@if(_isCheckingAuth) {
+@if (_isCheckingAuth)
+{
     <Loading />
-} else {
+}
+else
+{
     <div class="h-screen overflow-hidden !bg-[#f4f5f7] text-slate-900">
         <div class="flex h-full min-h-0">
             <AdminSidebar />
@@ -27,10 +31,11 @@
     An unhandled error has occurred.
     <a href="" class="reload">Reload</a>
     <span class="dismiss">🗙</span>
-</div>  
+</div>
 
 @code {
     private bool _isCheckingAuth = true;
+    private bool _isRedirecting;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -39,19 +44,31 @@
             return;
         }
 
+        _navigation.LocationChanged += OnLocationChanged;
+
         await CheckAdminAuthAsync();
 
         _isCheckingAuth = false;
         await InvokeAsync(StateHasChanged);
     }
 
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        _ = InvokeAsync(CheckAdminAuthAsync);
+    }
+
     private async Task CheckAdminAuthAsync()
     {
+        if (_isRedirecting)
+        {
+            return;
+        }
+
         var isAuthenticated = await _authStorageService.IsAuthenticatedAsync();
 
         if (!isAuthenticated)
         {
-            _navigation.NavigateTo(RouterConfig.Admin.Login, replace: true);
+            await EndAdminSessionAsync("expired");
             return;
         }
 
@@ -59,15 +76,31 @@
 
         if (!result.Success || result.Data is null)
         {
-            await _authStorageService.ClearAuthAsync();
-            _navigation.NavigateTo(RouterConfig.Admin.Login, replace: true);
+            await EndAdminSessionAsync("invalid");
             return;
         }
 
         if (result.Data.IsCustomer)
         {
+            _isRedirecting = true;
             _navigation.NavigateTo(RouterConfig.AccessDenied, replace: true);
-            return;
         }
+    }
+
+    private async Task EndAdminSessionAsync(string reason)
+    {
+        _isRedirecting = true;
+        await _authStorageService.ClearAuthAsync();
+
+        var loginUrl = !_isCheckingAuth
+            ? $"{RouterConfig.Admin.Login}?session={reason}"
+            : RouterConfig.Admin.Login;
+
+        _navigation.NavigateTo(loginUrl, replace: true);
+    }
+
+    public void Dispose()
+    {
+        _navigation.LocationChanged -= OnLocationChanged;
     }
 }

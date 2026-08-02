@@ -49,8 +49,9 @@ namespace PickleChic.WEB.DTO.Admin
         public bool IsActive => Status == 1;
 
         public string? MainImageUrl =>
-            Images.FirstOrDefault(i => i.IsMain)?.URL
-            ?? Images.FirstOrDefault()?.URL;
+            PickleChic.WEB.Helpers.MediaUrl.Resolve(
+                Images.FirstOrDefault(i => i.IsMain)?.URL
+                ?? Images.FirstOrDefault()?.URL);
 
         public string AttributesDisplay =>
             Attributes.Count == 0

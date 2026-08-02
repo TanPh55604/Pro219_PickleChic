@@ -56,6 +56,22 @@ public class LocalImageFileService
     public string BuildPublicUrl(string relativePath) =>
         $"{_options.PublicBaseUrl.TrimEnd('/')}/{relativePath.Replace('\\', '/')}";
 
+    public string? ToAbsolutePublicUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            || url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return url;
+        }
+
+        return BuildPublicUrl(url.TrimStart('/').Replace('\\', '/'));
+    }
+
     private async Task<(string RelativePath, string PublicUrl)> SaveAsync(
         IFormFile file,
         string relativeDirectory)

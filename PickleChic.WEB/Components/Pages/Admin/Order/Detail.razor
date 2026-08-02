@@ -167,8 +167,8 @@ else
                                                     <p class="text-slate-500">@item.ProductVariant.VariantName</p>
                                                 }
                                             </td>
-                                            <td class="!py-3 text-slate-600">
-                                                @(item.ProductVariant?.SKU ?? "—")
+                                            <td class="!py-3">
+                                                <span class="font-bold text-slate-800">@(item.ProductVariant?.SKU ?? "—")</span>
                                             </td>
                                             <td class="!py-3 text-right text-slate-700">
                                                 @item.UnitPrice.ToString("N0")đ

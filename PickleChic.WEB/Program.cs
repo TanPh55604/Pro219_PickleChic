@@ -1,6 +1,7 @@
 using MudBlazor;
 using MudBlazor.Services;
 using PickleChic.WEB.Components;
+using PickleChic.WEB.Helpers;
 using PickleChic.WEB.Services.Admin;
 using PickleChic.WEB.Services.Api;
 using PickleChic.WEB.Services.Auth;
@@ -8,6 +9,9 @@ using PickleChic.WEB.Services.Customer;
 using PickleChic.WEB.Services.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var apiBaseUrl = builder.Configuration["AppSettings:APIBaseURL"] ?? "https://localhost:7001/";
+MediaUrl.ApiBaseUrl = apiBaseUrl;
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -61,7 +65,7 @@ builder.Services.AddScoped(sp =>
 {
     return new HttpClient
     {
-        BaseAddress = new Uri("https://localhost:7001/")
+        BaseAddress = new Uri(apiBaseUrl)
     };
 });
 

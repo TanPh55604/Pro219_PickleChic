@@ -53,12 +53,12 @@ else
                                       Required="true"
                                       Immediate="true" />
 
-                        <div class="flex justify-end">
+                        @* <div class="flex justify-end">
                             <a href="@RouterConfig.Admin.AdminForgotPassword"
                                class="text-sm font-semibold text-[#A05AFF] transition hover:text-[#8B3FE6]">
                                 Quên mật khẩu?
                             </a>
-                        </div>
+                        </div> *@
 
                         <MudButton Variant="Variant.Filled"
                                    Color="Color.Primary"
@@ -99,10 +99,41 @@ else
             return;
         }
 
+        ShowSessionMessageIfNeeded();
         await RedirectIfAlreadyLoggedInAsync();
 
         _isCheckingAuth = false;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowSessionMessageIfNeeded()
+    {
+        var relative = _navigation.ToBaseRelativePath(_navigation.Uri);
+        var queryIndex = relative.IndexOf('?', StringComparison.Ordinal);
+        if (queryIndex < 0)
+        {
+            return;
+        }
+
+        var query = relative[(queryIndex + 1)..];
+        var session = query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+            .Select(part => part.Split('=', 2))
+            .Where(parts => parts.Length == 2
+                            && parts[0].Equals("session", StringComparison.OrdinalIgnoreCase))
+            .Select(parts => Uri.UnescapeDataString(parts[1]))
+            .FirstOrDefault();
+
+        if (string.IsNullOrWhiteSpace(session))
+        {
+            return;
+        }
+
+        var message = session.Equals("invalid", StringComparison.OrdinalIgnoreCase)
+            ? "Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại."
+            : "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+
+        _snackbar.Add(message, Severity.Warning);
+        _navigation.NavigateTo(RouterConfig.Admin.Login, replace: true);
     }
 
     private async Task RedirectIfAlreadyLoggedInAsync()

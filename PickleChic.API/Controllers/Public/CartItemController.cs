@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using PickleChic.API.DTOs;
+using PickleChic.API.Services;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
 
@@ -11,11 +12,16 @@ public class CartItemController : ControllerBase
 {
     private readonly CartItemRepository _repository;
     private readonly ProductVariantRepository _variantRepository;
+    private readonly LocalImageFileService _fileService;
 
-    public CartItemController(CartItemRepository repository, ProductVariantRepository variantRepository)
+    public CartItemController(
+        CartItemRepository repository,
+        ProductVariantRepository variantRepository,
+        LocalImageFileService fileService)
     {
         _repository = repository;
         _variantRepository = variantRepository;
+        _fileService = fileService;
     }
 
     [HttpGet("get-all")]
@@ -57,7 +63,12 @@ public class CartItemController : ControllerBase
                     Price = ci.ProductVariant.Price,
                     StockQuantity = ci.ProductVariant.StockQuantity,
                     Status = ci.ProductVariant.Status,
-                    ProductName = ci.ProductVariant.Product?.ProductName ?? string.Empty
+                    ProductName = ci.ProductVariant.Product?.ProductName ?? string.Empty,
+                    MainImageUrl = _fileService.ToAbsolutePublicUrl(
+                        ci.ProductVariant.ProductVariantImages?
+                            .OrderByDescending(img => img.IsMain)
+                            .Select(img => img.URL)
+                            .FirstOrDefault())
                 }
             }).ToList();
 

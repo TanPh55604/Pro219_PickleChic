@@ -1,5 +1,6 @@
 ﻿@using PickleChic.WEB.DTO.Admin
 @using PickleChic.WEB.DTO.Customer
+@using PickleChic.WEB.Helpers
 @using PickleChic.WEB.Model
 @using PickleChic.WEB.Components.Pages.Customer.Profile
 
@@ -43,13 +44,17 @@
                             <div @key="item.ProductVariantId" class="!px-3 !py-2.5">
                                 <div class="flex flex-col !gap-2 sm:flex-row sm:items-center">
                                     <div class="flex min-w-0 flex-1 items-center !gap-3">
-                                        @if (!string.IsNullOrWhiteSpace(item.ImageUrl))
+                                        @if (!string.IsNullOrWhiteSpace(MediaUrl.Resolve(item.ImageUrl)))
                                         {
-                                            <MudImage Src="@item.ImageUrl" Width="40" Height="40" ObjectFit="ObjectFit.Cover" Class="!rounded-lg" />
+                                            <div class="flex !h-12 !w-12 shrink-0 items-center justify-center overflow-hidden !rounded-lg !border !border-slate-200 !bg-white !p-1">
+                                                <MudImage Src="@MediaUrl.Resolve(item.ImageUrl)"
+                                                          ObjectFit="ObjectFit.Contain"
+                                                          Class="!max-h-full !max-w-full" />
+                                            </div>
                                         }
                                         <div class="min-w-0">
                                             <p class="truncate text-sm font-semibold text-slate-800">@item.DisplayName</p>
-                                            <p class="text-xs text-slate-500">SKU: @(item.Sku ?? "—") · Tồn @item.StockQuantity</p>
+                                            <p class="text-xs text-slate-500">SKU: <span class="font-bold text-slate-700">@(item.Sku ?? "—")</span> · Tồn @item.StockQuantity</p>
                                             <p class="text-sm font-bold text-[#A05AFF]">@item.UnitPrice.ToString("N0") đ</p>
                                         </div>
                                     </div>
@@ -197,20 +202,36 @@
 
                 @if (!Tab.IsGuest && Tab.CustomerId is > 0)
                 {
-                    <div class="flex items-center justify-between !gap-3">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-600">Mã giảm giá</p>
-                            <p class="text-xs text-slate-400">
-                                @(string.IsNullOrWhiteSpace(Tab.VoucherCode) ? "Chưa chọn" : Tab.VoucherCode)
-                            </p>
+                    <div class="!space-y-1">
+                        <div class="flex items-center justify-between !gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-600">Mã giảm giá</p>
+                                <p class="text-xs text-slate-400">
+                                    @(string.IsNullOrWhiteSpace(Tab.VoucherCode) ? "Chưa chọn" : Tab.VoucherCode)
+                                </p>
+                            </div>
+                            <MudButton Variant="Variant.Outlined"
+                                       Size="Size.Small"
+                                       OnClick="OpenVoucherDialogAsync"
+                                       Class="!rounded-lg !normal-case">
+                                Chọn mã
+                            </MudButton>
                         </div>
-                        <MudButton Variant="Variant.Outlined"
-                                   Size="Size.Small"
-                                   OnClick="OpenVoucherDialogAsync"
-                                   Class="!rounded-lg !normal-case">
-                            Chọn mã
-                        </MudButton>
+
+                        @if (!string.IsNullOrWhiteSpace(_voucherError))
+                        {
+                            <p class="text-xs leading-5 text-amber-700">
+                                @_voucherError
+                            </p>
+                        }
                     </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_calculationError) && string.IsNullOrWhiteSpace(Tab.VoucherCode))
+                {
+                    <p class="text-xs leading-5 text-amber-700">
+                        @_calculationError
+                    </p>
                 }
 
                 <div class="flex items-center justify-between !gap-3">
@@ -257,13 +278,33 @@
                                          ValueChanged="OnCashReceivedChangedAsync"
                                          Label="Tiền khách đưa"
                                          Variant="Variant.Outlined"
-                                         Min="0"
-                                         Format="N0"
                                          Adornment="Adornment.End"
                                          AdornmentText="đ"
-                                         HideSpinButtons="true"
                                          Immediate="true"
-                                         Margin="Margin.Dense" />
+                                         Margin="Margin.Dense"
+                                         Min="0"
+                                         Max="1000000000"
+                                         Step="1000"
+                                         Format="F0"
+                                         HideSpinButtons="true"
+                                         Placeholder="Nhập số, chọn gợi ý bên dưới" />
+
+                        @if (CashSuggestions.Count > 0)
+                        {
+                            <div class="flex flex-wrap !gap-1.5">
+                                @foreach (var amount in CashSuggestions)
+                                {
+                                    var selected = IsCashSuggestionSelected(amount);
+                                    <button type="button"
+                                            @onclick="() => ApplyCashSuggestionAsync(amount)"
+                                            class="@(selected
+                                                ? "!rounded-full !border !border-[#A05AFF] !bg-[#A05AFF] !px-2.5 !py-1 text-xs font-semibold !text-white shadow-sm"
+                                                : "!rounded-full !border !border-slate-200 !bg-slate-50 !px-2.5 !py-1 text-xs font-semibold text-slate-700 transition hover:!border-[#A05AFF] hover:!bg-[#A05AFF]/10 hover:!text-[#A05AFF]")">
+                                        @amount.ToString("N0")
+                                    </button>
+                                }
+                            </div>
+                        }
 
                         <div class="flex justify-between text-sm">
                             <span class="font-semibold text-slate-600">Tiền trả lại</span>
@@ -311,6 +352,8 @@
     private readonly HashSet<int> _overStockWarnedIds = new();
     private bool _stockSynced;
     private OrderCalculationResult? _calculation;
+    private string? _voucherError;
+    private string? _calculationError;
 
     private decimal _localSubtotal =>
         Tab.Items.Sum(i => i.UnitPrice * i.Quantity);
@@ -329,6 +372,11 @@
 
     private decimal _changeAmount =>
         (Tab.CashReceived ?? 0) - _displayFinal;
+
+    private List<decimal> CashSuggestions => BuildCashSuggestions();
+
+    private bool IsCashSuggestionSelected(decimal amount) =>
+        Tab.CashReceived is decimal cash && cash == amount;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -394,6 +442,8 @@
         if (Tab.Items.Count == 0)
         {
             _calculation = null;
+            _voucherError = null;
+            _calculationError = null;
             return;
         }
 
@@ -409,11 +459,44 @@
             if (request is null)
             {
                 _calculation = null;
+                _voucherError = null;
+                _calculationError = null;
                 return;
             }
 
             var result = await _posService.CalculateTotalAsync(request);
-            _calculation = result.Success ? result.Data : null;
+            if (result.Success && result.Data is not null)
+            {
+                _calculation = result.Data;
+                _voucherError = null;
+                _calculationError = null;
+                return;
+            }
+
+            var errorMessage = string.IsNullOrWhiteSpace(result.Message)
+                ? "Không thể tính tổng đơn hàng"
+                : result.Message;
+
+            if (!string.IsNullOrWhiteSpace(request.DiscountCode))
+            {
+                _voucherError = errorMessage;
+                _calculationError = null;
+                request.DiscountCode = null;
+                var retry = await _posService.CalculateTotalAsync(request);
+                _calculation = retry.Success ? retry.Data : null;
+                if (!retry.Success)
+                {
+                    _calculationError = string.IsNullOrWhiteSpace(retry.Message)
+                        ? "Không thể tính tổng đơn hàng"
+                        : retry.Message;
+                }
+
+                return;
+            }
+
+            _voucherError = null;
+            _calculationError = errorMessage;
+            _calculation = null;
         }
         finally
         {
@@ -542,6 +625,11 @@
         if (Tab.PaymentMethod == "cash" && (Tab.CashReceived ?? 0) < _displayFinal)
         {
             return "Tiền khách đưa chưa đủ tạm tính";
+        }
+
+        if (!string.IsNullOrWhiteSpace(_voucherError))
+        {
+            return "Mã giảm giá hiện không áp dụng được. Gỡ mã hoặc chọn mã khác trước khi thanh toán.";
         }
 
         if (Tab.IsGuest)
@@ -709,6 +797,8 @@
         Tab.AddressLabel = null;
         Tab.VoucherId = null;
         Tab.VoucherCode = null;
+        _voucherError = null;
+        _calculationError = null;
         _customerAddresses = new();
         await NotifyChangedAsync();
     }
@@ -735,6 +825,8 @@
         Tab.GuestAddress = null;
         Tab.VoucherId = null;
         Tab.VoucherCode = null;
+        _voucherError = null;
+        _calculationError = null;
 
         if (Tab.IsShipping)
         {
@@ -777,6 +869,7 @@
         {
             Tab.VoucherId = null;
             Tab.VoucherCode = null;
+            _voucherError = null;
         }
 
         await NotifyChangedAsync();
@@ -811,15 +904,101 @@
             Tab.CashReceived = null;
         }
 
-        await NotifyChangedAsync();
+        await NotifyChangedAsync(recalculate: false);
     }
 
     private async Task OnCashReceivedChangedAsync(decimal? value)
     {
-        Tab.CashReceived = value is < 0 ? 0 : value;
-        await NotifyChangedAsync();
+        Tab.CashReceived = value is > 0 ? value : null;
+        await NotifyChangedAsync(recalculate: false);
     }
 
+    private async Task ApplyCashSuggestionAsync(decimal amount)
+    {
+        if (amount < 0)
+        {
+            amount = 0;
+        }
+
+        Tab.CashReceived = amount > 0 ? amount : null;
+        await NotifyChangedAsync(recalculate: false);
+    }
+
+    private List<decimal> BuildCashSuggestions()
+    {
+        const decimal maxAmount = 1_000_000_000m;
+
+        if (Tab.CashReceived is > 0)
+        {
+            return BuildThreeAroundAmount((long)Math.Truncate(Tab.CashReceived.Value), maxAmount);
+        }
+
+        var payable = (long)Math.Max(0, Math.Ceiling(_displayFinal));
+        if (payable <= 0)
+        {
+            return new List<decimal>();
+        }
+
+        return BuildThreeAroundAmount(payable, maxAmount);
+    }
+
+    private static List<decimal> BuildThreeAroundAmount(long raw, decimal maxAmount)
+    {
+        if (raw <= 0)
+        {
+            return new List<decimal>();
+        }
+
+        if (raw < 1_000)
+        {
+            return new[] { 1_000L, 10_000L, 100_000L }
+                .Select(mul => raw * (decimal)mul)
+                .Where(amount => amount <= maxAmount)
+                .Take(3)
+                .ToList();
+        }
+
+        var suggestions = new List<decimal>(3);
+        var divided = raw / 10m;
+        if (divided >= 1_000m)
+        {
+            suggestions.Add(divided);
+        }
+
+        suggestions.Add(raw);
+
+        var times10 = raw * 10m;
+        if (times10 <= maxAmount)
+        {
+            suggestions.Add(times10);
+        }
+
+        while (suggestions.Count < 3)
+        {
+            var last = suggestions[^1];
+            var next = last * 10m;
+            if (next > maxAmount)
+            {
+                break;
+            }
+
+            suggestions.Add(next);
+        }
+
+        while (suggestions.Count < 3)
+        {
+            var first = suggestions[0];
+            var prev = first / 10m;
+            if (prev < 1_000m)
+            {
+                break;
+            }
+
+            suggestions.Insert(0, prev);
+        }
+
+        return suggestions.Take(3).ToList();
+    }
     private async Task OnNoteChangedAsync(string? value)
     {
         Tab.Note = string.IsNullOrWhiteSpace(value) ? null : value.Trim();

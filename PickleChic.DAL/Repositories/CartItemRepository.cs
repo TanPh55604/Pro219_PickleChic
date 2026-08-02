@@ -40,6 +40,8 @@ public class CartItemRepository
         return await _context.CartItems
             .Include(ci => ci.ProductVariant)
                 .ThenInclude(pv => pv!.Product)
+            .Include(ci => ci.ProductVariant)
+                .ThenInclude(pv => pv!.ProductVariantImages)
             .Where(ci => ci.CustomerId == customerId
                 && _context.ProductVariants.Any(pv =>
                     pv.Id == ci.ProductVariantId

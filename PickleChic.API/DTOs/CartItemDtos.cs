@@ -32,6 +32,7 @@ public class CartProductVariantDto
     public int StockQuantity { get; set; }
     public int Status { get; set; }
     public string ProductName { get; set; } = null!;
+    public string? MainImageUrl { get; set; }
 }
 
 public class AddToCartPosDto

@@ -1,5 +1,5 @@
 ﻿<header class="sticky top-0 z-30 !h-16 !border-b !border-slate-200 !bg-white/90 backdrop-blur">
-    <div class="flex h-full items-center justify-between !px-6">
+    <div class="flex h-full items-center justify-between !gap-4 !px-6">
         <div class="min-w-0">
             <nav class="flex items-center gap-2 text-sm">
                 @foreach (var item in BreadcrumbItems.Select((value, index) => new { value, index }))
@@ -28,25 +28,52 @@
             </nav>
         </div>
 
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-3 !rounded-full !border !border-slate-200 !bg-white !px-3 !py-1.5 shadow-sm">
-                <div class="flex !h-8 !w-8 items-center justify-center !rounded-full !bg-[#A05AFF] text-sm font-semibold !text-white">
-                    @GetAvatarText(_currentUser?.FullName)
-                </div>
+        <MudMenu ActivationEvent="MouseEvent.MouseOver"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Dense="true"
+                 Class="shrink-0">
+            <ActivatorContent>
+                <div class="flex cursor-pointer items-center !gap-3 !rounded-full !border !border-slate-200 !bg-white !px-3 !py-1.5 shadow-sm transition hover:!border-[#A05AFF]/50 hover:shadow">
+                    <div class="flex !h-8 !w-8 items-center justify-center !rounded-full !bg-[#A05AFF] text-sm font-semibold !text-white">
+                        @GetAvatarText(_currentUser?.FullName)
+                    </div>
 
-                <div class="hidden leading-tight sm:block">
-                    <p class="text-sm font-medium text-slate-800">
+                    <MudIcon Icon="@Icons.Material.Filled.ExpandMore"
+                             Size="Size.Small"
+                             Class="text-slate-400" />
+                </div>
+            </ActivatorContent>
+            <ChildContent>
+                <div class="!min-w-[240px] !border-b !border-slate-100 !px-4 !py-3">
+                    <p class="text-sm font-semibold text-slate-900">
                         @(_currentUser?.FullName ?? "Admin")
                     </p>
+                    @if (!string.IsNullOrWhiteSpace(_currentUser?.Email))
+                    {
+                        <p class="!mt-0.5 text-xs text-slate-500">
+                            @_currentUser.Email
+                        </p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_currentUser?.Role))
+                    {
+                        <p class="!mt-2 inline-flex !rounded-full !bg-[#A05AFF]/10 !px-2.5 !py-0.5 text-xs font-semibold text-[#A05AFF]">
+                            @_currentUser.Role
+                        </p>
+                    }
                 </div>
-            </div>
-        </div>
+
+                <MudMenuItem Href="@RouterConfig.Admin.AdminChangePassword"
+                             Icon="@Icons.Material.Filled.Password">
+                    Đổi mật khẩu
+                </MudMenuItem>
+            </ChildContent>
+        </MudMenu>
     </div>
 </header>
 
 @code {
     private AuthModel? _currentUser;
-
     private List<BreadcrumbItemModel> BreadcrumbItems { get; set; } = [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -57,9 +84,8 @@
         }
 
         _currentUser = await _authStorageService.GetUserAsync();
-
         await InvokeAsync(StateHasChanged);
-}
+    }
 
     protected override void OnInitialized()
     {
@@ -98,7 +124,7 @@
     {
         var items = new List<BreadcrumbItemModel>
         {
-            new("Trang chủ", "/admin")
+            new("Trang chủ", "/admin/home")
         };
 
         switch (CurrentPath)

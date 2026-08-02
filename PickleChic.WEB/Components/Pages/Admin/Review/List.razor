@@ -98,7 +98,14 @@
                             @(context.ProductName ?? "—")
                         </p>
                         <p class="line-clamp-1 text-slate-500">
-                            @(context.VariantName ?? context.SKU ?? $"Variant #{context.ProductVariantId}")
+                            @if (!string.IsNullOrWhiteSpace(context.VariantName))
+                            {
+                                @context.VariantName
+                            }
+                            else if (!string.IsNullOrWhiteSpace(context.SKU))
+                            {
+                                <span class="font-bold text-slate-700">@context.SKU</span>
+                            }
                         </p>
                     </div>
                 </MudTd>

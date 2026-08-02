@@ -1,4 +1,5 @@
 using PickleChic.WEB.DTO.Admin;
+using PickleChic.WEB.Helpers;
 
 namespace PickleChic.WEB.DTO.Customer
 {
@@ -31,8 +32,9 @@ namespace PickleChic.WEB.DTO.Customer
         public List<ProductVariantAttributeResponse> Attributes { get; set; } = new();
 
         public string? MainImageUrl =>
-            Images.FirstOrDefault(i => i.IsMain)?.URL
-            ?? Images.FirstOrDefault()?.URL;
+            MediaUrl.Resolve(
+                Images.FirstOrDefault(i => i.IsMain)?.URL
+                ?? Images.FirstOrDefault()?.URL);
 
         public string DisplayName =>
             string.IsNullOrWhiteSpace(VariantName)

@@ -1,5 +1,6 @@
 using PickleChic.WEB.Constant;
 using PickleChic.WEB.DTO.Customer;
+using PickleChic.WEB.Helpers;
 
 namespace PickleChic.WEB.Model
 {
@@ -25,6 +26,8 @@ namespace PickleChic.WEB.Model
 
         public string ProductUrl { get; set; } = string.Empty;
 
+        public string? ImageUrl { get; set; }
+
         public decimal LineTotal => Price * Quantity;
 
         public bool CanIncrease => Quantity < StockQuantity;
@@ -49,6 +52,7 @@ namespace PickleChic.WEB.Model
                 Price = variant?.Price ?? 0,
                 Quantity = item.Quantity,
                 StockQuantity = variant?.StockQuantity ?? 0,
+                ImageUrl = MediaUrl.Resolve(variant?.MainImageUrl),
                 ProductUrl = productId > 0
                     ? RouterConfig.BuildRoute(RouterConfig.Customer.ProductDetail, productId)
                     : RouterConfig.Customer.Products

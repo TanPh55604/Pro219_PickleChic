@@ -32,6 +32,8 @@ namespace PickleChic.WEB.DTO.Customer
         public int Status { get; set; }
 
         public string ProductName { get; set; } = string.Empty;
+
+        public string? MainImageUrl { get; set; }
     }
 
     public class CartItemCreateRequest
