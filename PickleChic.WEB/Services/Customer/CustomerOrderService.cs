@@ -48,18 +48,23 @@ namespace PickleChic.WEB.Services.Customer
                 requireAuth: true);
         }
 
-        public async Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentSuccessAsync(int orderId, bool pos = false)
+        public async Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentSuccessAsync(
+            int orderId,
+            bool pos = false,
+            bool requireAuth = false)
         {
             return await _apiProvider.GetAsync<PaymentCallbackOrderResponse>(
                 EndPointConfig.Order.PaymentSuccess(orderId, pos),
-                requireAuth: false);
+                requireAuth: requireAuth);
         }
 
-        public async Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentCanceledAsync(int orderId)
+        public async Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentCanceledAsync(
+            int orderId,
+            bool requireAuth = false)
         {
             return await _apiProvider.GetAsync<PaymentCallbackOrderResponse>(
                 EndPointConfig.Order.PaymentCanceled(orderId),
-                requireAuth: false);
+                requireAuth: requireAuth);
         }
 
         public async Task<ApiResult<UserOrderDetailResponse>> GetUserOrderDetailAsync(int orderId)
@@ -69,12 +74,15 @@ namespace PickleChic.WEB.Services.Customer
                 requireAuth: true);
         }
 
-        public async Task<ApiResult<UserOrderDetailResponse>> CancelUserOrderAsync(int orderId)
+        public async Task<ApiResult<UserOrderDetailResponse>> CancelUserOrderAsync(
+            int orderId,
+            CancelOrderRequest request,
+            bool requireAuth = true)
         {
-            return await _apiProvider.PostAsync<object, UserOrderDetailResponse>(
+            return await _apiProvider.PostAsync<CancelOrderRequest, UserOrderDetailResponse>(
                 EndPointConfig.Order.UserCancel(orderId),
-                new { },
-                requireAuth: true);
+                request,
+                requireAuth: requireAuth);
         }
 
         public async Task<ApiResult<List<UserOrderDetailResponse>>> GetUserOrdersAsync()

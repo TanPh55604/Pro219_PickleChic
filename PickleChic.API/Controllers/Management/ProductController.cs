@@ -267,6 +267,9 @@ public class ProductController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.ProductName))
+                return BadRequest("Tên sản phẩm đã tồn tại");
+
             var entity = new Product
             {
                 ProductName = dto.ProductName,
@@ -293,6 +296,9 @@ public class ProductController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.ProductName, dto.Id))
+                return BadRequest("Tên sản phẩm đã tồn tại");
+
             var entity = new Product
             {
                 Id = dto.Id,

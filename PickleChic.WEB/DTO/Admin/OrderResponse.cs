@@ -160,7 +160,7 @@ namespace PickleChic.WEB.DTO.Admin
     {
         public int Id { get; set; }
 
-        public string Name { get; set; } = string.Empty;
+        public string ProductName { get; set; } = string.Empty;
     }
 
     public class StatusHistoryEntryResponse
@@ -174,5 +174,9 @@ namespace PickleChic.WEB.DTO.Admin
         public string PaymentStatus { get; set; } = string.Empty;
 
         public string DateTime { get; set; } = string.Empty;
+
+        public string? UpdatedBy { get; set; }
+
+        public string? Reasons { get; set; }
     }
 }

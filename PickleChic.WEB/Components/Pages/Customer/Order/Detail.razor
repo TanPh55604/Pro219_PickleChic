@@ -1,5 +1,6 @@
 ﻿@attribute [Route(RouterConfig.Customer.OrderDetail)]
 @layout MainLayout
+@using System.Text.Json
 
 <PageTitle>PickleChic WEB - Hóa đơn</PageTitle>
 
@@ -82,6 +83,12 @@
                             <p class="text-sm font-black text-amber-900">
                                 Đơn hàng chưa thanh toán
                             </p>
+                            @if (_order.PaymentExpiration.HasValue)
+                            {
+                                <p class="!mt-1 text-sm text-amber-800">
+                                    Hết hạn thanh toán: @_order.PaymentExpiration.Value.ToString("HH:mm dd/MM/yyyy")
+                                </p>
+                            }
                         </div>
 
                         <button type="button"
@@ -113,8 +120,15 @@
                     <h2 class="text-lg font-black text-slate-950">Thông tin nhận hàng</h2>
 
                     <div class="!mt-4 !space-y-2 text-sm">
-                        <p class="font-black text-slate-950">@_order.ReceiverName · @_order.ReceiverPhone</p>
-                        <p class="leading-6 text-slate-500">@_order.FullAddress</p>
+                        @if (IsInStoreFulfillment)
+                        {
+                            <p class="font-black text-slate-950">@InStoreReceiverSummary</p>
+                        }
+                        else
+                        {
+                            <p class="font-black text-slate-950">@_order.ReceiverName · @_order.ReceiverPhone</p>
+                            <p class="leading-6 text-slate-500">@_order.FullAddress</p>
+                        }
 
                         @if (!string.IsNullOrWhiteSpace(_order.Notes))
                         {
@@ -184,16 +198,49 @@
                         </div>
                     </div>
                 </div>
+
+                @if (_statusHistory.Count > 0)
+                {
+                    <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                        <h2 class="text-lg font-black text-slate-950">Lịch sử đơn hàng</h2>
+
+                        <div class="!mt-4 !space-y-3">
+                            @foreach (var entry in _statusHistory.OrderByDescending(e => e.Index))
+                            {
+                                <div class="flex flex-col !gap-1 !rounded-2xl !bg-slate-50 !p-4 md:flex-row md:items-start md:justify-between">
+                                    <div class="!space-y-1">
+                                        <p class="font-black text-slate-950">@entry.OrderStatus</p>
+                                        <p class="text-sm text-slate-500">Thanh toán: @entry.PaymentStatus</p>
+                                        @if (ShouldShowCancelReason(entry) && !string.IsNullOrWhiteSpace(entry.Reasons))
+                                        {
+                                            <p class="text-sm text-slate-700">
+                                                <span class="font-semibold text-slate-500">Lý do:</span>
+                                                @entry.Reasons
+                                            </p>
+                                        }
+                                    </div>
+                                    <span class="shrink-0 text-sm text-slate-400">@entry.DateTime</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
             </div>
         }
     </div>
 </div>
 
 @code {
+    private static readonly JsonSerializerOptions StatusHistoryJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     [Parameter]
     public int Id { get; set; }
 
     private UserOrderDetailResponse? _order;
+    private List<StatusHistoryEntryResponse> _statusHistory = new();
     private bool _isLoading = true;
     private bool _isCancelling;
     private string? _errorMessage;
@@ -207,6 +254,35 @@
     private bool CanCancelOrder =>
         _order is not null
         && IsCancellableStatus(_order);
+
+    private bool IsGuestCustomer =>
+        _order is not null
+        && (string.Equals(_order.CustomerType, "Guest", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_order.CustomerType, "GuestOrder", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_order.ReceiverName, "Khách vãng lai", StringComparison.OrdinalIgnoreCase));
+
+    private bool IsInStoreFulfillment =>
+        _order is not null
+        && (_order.BOPIS == true
+            || (_order.IsOrderPOS && _order.ShippingFee <= 0)
+            || string.Equals(_order.ReceiverName, "Nhận tại quầy", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(_order.ReceiverName, "Khách vãng lai", StringComparison.OrdinalIgnoreCase)
+            || (_order.ShippingFee <= 0
+                && !string.IsNullOrWhiteSpace(_order.PurchaseChannel)
+                && (_order.PurchaseChannel.Contains("POS", StringComparison.OrdinalIgnoreCase)
+                    || _order.PurchaseChannel.Contains("cửa hàng", StringComparison.OrdinalIgnoreCase)
+                    || _order.PurchaseChannel.Contains("quầy", StringComparison.OrdinalIgnoreCase))));
+
+    private string InStoreReceiverSummary
+    {
+        get
+        {
+            var label = _order?.BOPIS == true ? "lấy tại quầy" : "mua tại quầy";
+            return IsGuestCustomer
+                ? $"Khách vãng lai - {label}"
+                : $"Nhận tại quầy - {label}";
+        }
+    }
 
     private static bool IsCancellableStatus(UserOrderDetailResponse order)
     {
@@ -245,10 +321,12 @@
                 ? "Không thể tải hóa đơn."
                 : result.Message;
             _order = null;
+            _statusHistory = new();
         }
         else
         {
             _order = result.Data;
+            _statusHistory = ParseStatusHistory(_order.StatusHistory);
             _errorMessage = null;
         }
 
@@ -264,13 +342,14 @@
 
         var parameters = new DialogParameters<OrderCancelDialog>
         {
-            { x => x.OrderCode, _order.OrderCode }
+            { x => x.OrderCode, _order.OrderCode },
+            { x => x.ReasonOptions, Constant.OrderCancelReason.Customer }
         };
 
         var options = new DialogOptions
         {
             CloseButton = true,
-            MaxWidth = MaxWidth.ExtraSmall,
+            MaxWidth = MaxWidth.Small,
             FullWidth = true
         };
 
@@ -280,7 +359,7 @@
             options);
 
         var dialogResult = await dialog.Result;
-        if (dialogResult is null || dialogResult.Canceled)
+        if (dialogResult is null || dialogResult.Canceled || dialogResult.Data is not CancelOrderDialogResult cancelData)
         {
             return;
         }
@@ -290,7 +369,15 @@
 
         try
         {
-            var result = await _customerOrderService.CancelUserOrderAsync(_order.Id);
+            var requireAuth = await _authStorageService.IsAuthenticatedAsync();
+            var result = await _customerOrderService.CancelUserOrderAsync(
+                _order.Id,
+                new CancelOrderRequest
+                {
+                    CancelReason = cancelData.CancelReason,
+                    CancelDetail = cancelData.CancelDetail
+                },
+                requireAuth: requireAuth);
 
             if (!result.Success || result.Data is null)
             {
@@ -303,6 +390,7 @@
             }
 
             _order = result.Data;
+            _statusHistory = ParseStatusHistory(_order.StatusHistory);
             _snackbar.Add($"Đã hủy đơn {_order.OrderCode}", Severity.Success);
         }
         finally
@@ -319,6 +407,33 @@
         }
 
         _navigation.NavigateTo(_order.PaymentLink, forceLoad: true);
+    }
+
+    private static bool ShouldShowCancelReason(StatusHistoryEntryResponse entry)
+    {
+        var status = string.IsNullOrWhiteSpace(entry.OrderStatus) ? entry.Status : entry.OrderStatus;
+        return status is Constant.OrderStatus.Cancelled
+            or "Đã hủy"
+            or "Cancelled"
+            or "Đã hủy bởi người dùng";
+    }
+
+    private static List<StatusHistoryEntryResponse> ParseStatusHistory(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<StatusHistoryEntryResponse>();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<StatusHistoryEntryResponse>>(json, StatusHistoryJsonOptions)
+                ?? new List<StatusHistoryEntryResponse>();
+        }
+        catch
+        {
+            return new List<StatusHistoryEntryResponse>();
+        }
     }
 
     private static string FormatMoney(decimal value)

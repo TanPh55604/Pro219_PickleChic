@@ -28,7 +28,7 @@ public partial class PickleChicDbContext
             {
                 Id = 1,
                 Name = "Vợt",
-                LinkImage = "/uploads/categories/1/vot.webp",
+                LinkImage = "/uploads/categories/1/vot.jpg",
                 Description = "Vợt pickleball chính hãng cho mọi trình độ",
                 Status = 1,
                 InsertedAt = SeedAt,
@@ -38,7 +38,7 @@ public partial class PickleChicDbContext
             {
                 Id = 2,
                 Name = "Bóng",
-                LinkImage = "/uploads/categories/2/bong.webp",
+                LinkImage = "/uploads/categories/2/bong.jpg",
                 Description = "Bóng pickleball indoor / outdoor đạt chuẩn thi đấu",
                 Status = 1,
                 InsertedAt = SeedAt,
@@ -48,7 +48,7 @@ public partial class PickleChicDbContext
             {
                 Id = 3,
                 Name = "Quần",
-                LinkImage = "/uploads/categories/3/quan.webp",
+                LinkImage = "/uploads/categories/3/quan.jpg",
                 Description = "Quần short thể thao pickleball thoáng mát, co giãn",
                 Status = 1,
                 InsertedAt = SeedAt,
@@ -203,20 +203,20 @@ public partial class PickleChicDbContext
         );
 
         modelBuilder.Entity<ProductVariantImage>().HasData(
-            new ProductVariantImage { Id = 1, ProductVariantId = 1, URL = "/uploads/products/1/sel-luxx-pink.jpg", Name = "Luxx Hồng", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 2, ProductVariantId = 2, URL = "/uploads/products/1/sel-luxx-black.jpg", Name = "Luxx Đen", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 3, ProductVariantId = 3, URL = "/uploads/products/1/sel-luxx-white.jpg", Name = "Luxx Trắng", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 4, ProductVariantId = 4, URL = "/uploads/products/1/sel-luxx-navy.jpg", Name = "Luxx Navy", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 5, ProductVariantId = 5, URL = "/uploads/products/2/jol-perseus-black.jpg", Name = "Perseus Đen", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 6, ProductVariantId = 6, URL = "/uploads/products/2/jol-perseus-pink.jpg", Name = "Perseus Hồng", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 7, ProductVariantId = 7, URL = "/uploads/products/2/jol-perseus-white.jpg", Name = "Perseus Trắng", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 8, ProductVariantId = 8, URL = "/uploads/products/2/jol-perseus-navy.jpg", Name = "Perseus Navy", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 9, ProductVariantId = 9, URL = "/uploads/products/3/franklin-x40.jpg", Name = "X-40 Vàng", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 10, ProductVariantId = 10, URL = "/uploads/products/4/jol-trinity-s-black.jpg", Name = "Trinity S Đen", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 11, ProductVariantId = 11, URL = "/uploads/products/4/jol-trinity-m-pink.jpg", Name = "Trinity M Hồng", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 12, ProductVariantId = 12, URL = "/uploads/products/4/jol-trinity-l-white.jpg", Name = "Trinity L Trắng", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 13, ProductVariantId = 13, URL = "/uploads/products/5/sel-pro-m-black.jpg", Name = "Pro Line M Đen", Description = null, IsMain = true },
-            new ProductVariantImage { Id = 14, ProductVariantId = 14, URL = "/uploads/products/5/sel-pro-l-pink.jpg", Name = "Pro Line L Hồng", Description = null, IsMain = true }
+            new ProductVariantImage { Id = 1, ProductVariantId = 1, URL = "/uploads/products/1/1/fb69b506185c4f489708473c3c48e4dd.webp", Name = "shopping.webp", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 2, ProductVariantId = 2, URL = "/uploads/products/1/2/cff77bed6d244300af25edcfc15ac6d8.webp", Name = "tải xuống.webp", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 3, ProductVariantId = 3, URL = "/uploads/products/1/3/0081939c04f3453687eca0b10dd7ba61.jpg", Name = "images.jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 4, ProductVariantId = 4, URL = "/uploads/products/1/4/df518b7fb3834ba198c44371dcfefc63.jpg", Name = "images (1).jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 5, ProductVariantId = 5, URL = "/uploads/products/2/5/a0b618b87bf349f094b9c1a476901423.webp", Name = "joola-perseus-iv-16mm-850x850xcrop.webp", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 6, ProductVariantId = 6, URL = "/uploads/products/2/6/08ebdbc952144ee69f0f60089cdceb7f.webp", Name = "shopping (1).webp", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 7, ProductVariantId = 7, URL = "/uploads/products/2/7/3ffed08264084919b3cfd8ade7926f00.jpg", Name = "images (2).jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 8, ProductVariantId = 8, URL = "/uploads/products/2/8/8ab9a6c9a57a4b6bb27de74329160ccf.webp", Name = "shopping (2).webp", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 9, ProductVariantId = 9, URL = "/uploads/products/3/9/8c1300c806e74a1591286453fab0308a.jpg", Name = "images (3).jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 10, ProductVariantId = 10, URL = "/uploads/products/4/10/8f47f41cee184423976da631bb82d512.jpg", Name = "images (4).jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 11, ProductVariantId = 11, URL = "/uploads/products/4/11/c87342fe7be64705854952b8ec29f95f.jpg", Name = "images (5).jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 12, ProductVariantId = 12, URL = "/uploads/products/4/12/38271ca13b744867954e48031be15aba.jpg", Name = "images (6).jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 13, ProductVariantId = 13, URL = "/uploads/products/5/13/f31da9d246644ebfb65ed7aaea73a9f6.jpg", Name = "images (7).jpg", Description = null, IsMain = true },
+            new ProductVariantImage { Id = 14, ProductVariantId = 14, URL = "/uploads/products/5/14/df78246eb67c4842b624e3a6e1509416.jpg", Name = "images (8).jpg", Description = null, IsMain = true }
         );
 
         modelBuilder.Entity<ProductVariantAttribute>().HasData(

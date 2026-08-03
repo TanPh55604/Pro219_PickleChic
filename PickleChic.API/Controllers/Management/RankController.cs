@@ -70,6 +70,9 @@ public class RankController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.RankName))
+                return BadRequest("Tên xếp hạng đã tồn tại");
+
             var entity = new Rank
             {
                 RankName = dto.RankName,
@@ -90,6 +93,9 @@ public class RankController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.RankName, dto.Id))
+                return BadRequest("Tên xếp hạng đã tồn tại");
+
             var entity = new Rank
             {
                 Id = dto.Id,

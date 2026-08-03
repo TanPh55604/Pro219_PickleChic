@@ -99,6 +99,9 @@ public class ProductAttributeController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.AttributeName, dto.CategoryId))
+                return BadRequest("Tên thuộc tính đã tồn tại trong thể loại này");
+
             var entity = new ProductAttribute
             {
                 AttributeName = dto.AttributeName,
@@ -119,6 +122,9 @@ public class ProductAttributeController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.AttributeName, dto.CategoryId))
+                return BadRequest("Tên thuộc tính đã tồn tại trong thể loại này");
+
             var entity = new ProductAttribute
             {
                 AttributeName = dto.AttributeName,
@@ -143,6 +149,9 @@ public class ProductAttributeController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.AttributeName, dto.CategoryId, dto.Id))
+                return BadRequest("Tên thuộc tính đã tồn tại trong thể loại này");
+
             var valuesTuple = dto.AttributeValues.Select(v => (v.Id, v.Value, v.Note, v.FlagAction)).ToList();
             var updated = await _repository.UpdateWithValuesAndFlagAsync(
                 dto.Id,
@@ -165,6 +174,9 @@ public class ProductAttributeController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.AttributeName, dto.CategoryId, dto.Id))
+                return BadRequest("Tên thuộc tính đã tồn tại trong thể loại này");
+
             var entity = new ProductAttribute
             {
                 Id = dto.Id,

@@ -80,7 +80,10 @@
 
         _orderDetailUrl = RouterConfig.BuildRoute(RouterConfig.Customer.OrderDetail, OrderId.Value);
 
-        var result = await _customerOrderService.ConfirmPaymentCanceledAsync(OrderId.Value);
+        var requireAuth = await _authStorageService.IsAuthenticatedAsync();
+        var result = await _customerOrderService.ConfirmPaymentCanceledAsync(
+            OrderId.Value,
+            requireAuth: requireAuth);
 
         if (!result.Success || result.Data is null)
         {

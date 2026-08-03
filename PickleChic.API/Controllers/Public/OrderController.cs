@@ -1309,7 +1309,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("PaymentSuccess")]
-    public async Task<ActionResult<Order>> PaymentSuccess([FromQuery] int orderId, [FromQuery] bool pos, [FromQuery] string? errorMessage = null)
+    public async Task<ActionResult<PaymentCallbackOrderDto>> PaymentSuccess([FromQuery] int orderId, [FromQuery] bool pos, [FromQuery] string? errorMessage = null)
     {
         try
         {
@@ -1381,7 +1381,7 @@ public class OrderController : ControllerBase
                 await ProcessRewardPointsAsync(order);
             }
 
-            return Ok(result);
+            return Ok(MapToPaymentCallbackDto(result));
         }
         catch (Exception)
         {
@@ -1462,7 +1462,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("PaymentCanceled")]
-    public async Task<ActionResult<Order>> PaymentCanceled([FromQuery] int orderId, [FromQuery] string? errorMessage = null)
+    public async Task<ActionResult<PaymentCallbackOrderDto>> PaymentCanceled([FromQuery] int orderId, [FromQuery] string? errorMessage = null)
     {
         try
         {
@@ -1474,7 +1474,7 @@ public class OrderController : ControllerBase
 
             if (order.OrderStatus == Constant.OrderStatus.Cancelled)
             {
-                return Ok(order);
+                return Ok(MapToPaymentCallbackDto(order));
             }
 
             var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -1532,7 +1532,7 @@ public class OrderController : ControllerBase
 
             await _pointHistoryRepository.RefundPointsForOrderAsync(order.Id);
 
-            return Ok(result);
+            return Ok(MapToPaymentCallbackDto(result));
         }
         catch (Exception)
         {
@@ -1642,7 +1642,7 @@ public class OrderController : ControllerBase
 
     [HttpPost("user/cancel/{orderId}")]
     [Authorize]
-    public async Task<ActionResult<UserOrderDetailDto>> CancelUserOrder(int orderId)
+    public async Task<ActionResult<UserOrderDetailDto>> CancelUserOrder(int orderId, [FromBody] CancelOrderRequestDto? request)
     {
         try
         {
@@ -1650,6 +1650,11 @@ public class OrderController : ControllerBase
             if (string.IsNullOrEmpty(claimVal) || !int.TryParse(claimVal, out var customerId))
             {
                 return Unauthorized("Không thể xác định thông tin người dùng từ token.");
+            }
+
+            if (request is null || string.IsNullOrWhiteSpace(request.CancelReason))
+            {
+                return BadRequest("Vui lòng chọn lý do hủy đơn.");
             }
 
             var order = await _orderRepository.GetByIdAsync(orderId);
@@ -1679,6 +1684,12 @@ public class OrderController : ControllerBase
                 customerUserName = "Guest";
             }
 
+            var cancelReason = request.CancelReason.Trim();
+            var cancelDetail = request.CancelDetail?.Trim();
+            var reasons = string.IsNullOrWhiteSpace(cancelDetail)
+                ? cancelReason
+                : $"{cancelReason}: {cancelDetail}";
+
             var statusHistory = ParseStatusHistory(order.StatusHistory);
             statusHistory.Add(new StatusHistoryEntry
             {
@@ -1688,7 +1699,7 @@ public class OrderController : ControllerBase
                 PaymentStatus = Constant.PaymentStatus.Cancelled,
                 DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
                 UpdatedBy = customerUserName,
-                Reasons = "Khách hàng hủy đơn"
+                Reasons = reasons
             });
 
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
@@ -1816,6 +1827,17 @@ public class OrderController : ControllerBase
         }
     }
 
+    private static PaymentCallbackOrderDto MapToPaymentCallbackDto(Order order)
+    {
+        return new PaymentCallbackOrderDto
+        {
+            Id = order.Id,
+            OrderCode = order.OrderCode,
+            PaymentStatus = order.PaymentStatus,
+            OrderStatus = order.OrderStatus
+        };
+    }
+
     private UserOrderDetailDto MapToUserOrderDetailDto(Order order)
     {
         decimal totalPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
@@ -1887,12 +1909,17 @@ public class OrderController : ControllerBase
             },
             Status = order.Status,
             PaymentLink = order.PaymentLink,
+            PaymentExpiration = order.PaymentExpiration,
+            IsOrderPOS = order.IsOrderPOS,
+            BOPIS = order.BOPIS,
+            CustomerType = order.CustomerType,
             ReceiverName = order.Address?.FullName ?? "",
             ReceiverPhone = order.Address?.PhoneNumber ?? "",
             FullAddress = fullAddress,
             TotalPrice = totalPrice,
             DiscountAmount = discountAmount,
             FinalPrice = Math.Max(0, totalPrice - discountAmount + order.ShippingFee),
+            StatusHistory = order.StatusHistory,
             OrderItems = order.OrderItems?.Select(oi => new UserOrderItemDetailDto
             {
                 ProductVariantId = oi.ProductVariantId,

@@ -107,5 +107,42 @@
 
             public const int MaxTabs = 15;
         }
+
+        public static class OrderCancelReason
+        {
+            public const string Other = "Lý do khác";
+
+            public static readonly string[] Customer =
+            [
+                "Muốn thay đổi sản phẩm / màu / size",
+                "Tìm thấy giá rẻ hơn",
+                "Thời gian giao hàng quá lâu",
+                "Đặt nhầm / trùng đơn",
+                "Không còn nhu cầu",
+                "Không liên hệ được shop",
+                Other
+            ];
+
+            public static readonly string[] Admin =
+            [
+                "Khách yêu cầu hủy",
+                "Hết hàng / không đủ tồn",
+                "Không liên hệ được khách",
+                "Địa chỉ giao hàng không hợp lệ",
+                "Đơn nghi ngờ gian lận",
+                Other
+            ];
+
+            public static string Format(string reason, string? detail)
+            {
+                var selected = reason.Trim();
+                if (string.IsNullOrWhiteSpace(detail))
+                {
+                    return selected;
+                }
+
+                return $"{selected}: {detail.Trim()}";
+            }
+        }
     }
 }

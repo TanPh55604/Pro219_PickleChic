@@ -115,7 +115,14 @@
                                     </p>
 
                                     <p class="!mt-1 line-clamp-1 text-sm text-slate-500">
-                                        @order.ReceiverName · @order.ReceiverPhone · @order.FullAddress
+                                        @if (IsGuestInStoreOrder(order))
+                                        {
+                                            <text>Khách vãng lai - @GetGuestInStoreLabel(order)</text>
+                                        }
+                                        else
+                                        {
+                                            <text>@order.ReceiverName · @order.ReceiverPhone · @order.FullAddress</text>
+                                        }
                                     </p>
                                 </div>
 
@@ -254,6 +261,30 @@
         _navigation.NavigateTo(order.PaymentLink, forceLoad: true);
     }
 
+    private static bool IsGuestCustomer(UserOrderDetailResponse order)
+    {
+        return string.Equals(order.CustomerType, "Guest", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(order.CustomerType, "GuestOrder", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(order.ReceiverName, "Khách vãng lai", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsInStoreFulfillment(UserOrderDetailResponse order)
+    {
+        return order.BOPIS == true
+               || (order.IsOrderPOS && order.ShippingFee <= 0)
+               || (order.ShippingFee <= 0
+                   && !string.IsNullOrWhiteSpace(order.PurchaseChannel)
+                   && (order.PurchaseChannel.Contains("POS", StringComparison.OrdinalIgnoreCase)
+                       || order.PurchaseChannel.Contains("cửa hàng", StringComparison.OrdinalIgnoreCase)
+                       || order.PurchaseChannel.Contains("quầy", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static bool IsGuestInStoreOrder(UserOrderDetailResponse order) =>
+        IsGuestCustomer(order) && IsInStoreFulfillment(order);
+
+    private static string GetGuestInStoreLabel(UserOrderDetailResponse order) =>
+        order.BOPIS == true ? "lấy tại quầy" : "mua tại quầy";
+
     private RenderFragment RenderOrderDetail(UserOrderDetailResponse order) => __builder =>
     {
         <div class="!mt-4 !space-y-6">
@@ -275,8 +306,17 @@
             <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
                 <h2 class="text-lg font-black text-slate-950">Thông tin nhận hàng</h2>
                 <div class="!mt-4 !space-y-2 text-sm">
-                    <p class="font-black text-slate-950">@order.ReceiverName · @order.ReceiverPhone</p>
-                    <p class="leading-6 text-slate-500">@order.FullAddress</p>
+                    @if (IsGuestInStoreOrder(order))
+                    {
+                        <p class="font-black text-slate-950">
+                            Khách vãng lai - @GetGuestInStoreLabel(order)
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="font-black text-slate-950">@order.ReceiverName · @order.ReceiverPhone</p>
+                        <p class="leading-6 text-slate-500">@order.FullAddress</p>
+                    }
                 </div>
             </div>
 

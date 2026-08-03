@@ -132,7 +132,7 @@
                                 </p>
 
                                 <p class="!mt-1 line-clamp-1 text-sm text-slate-500">
-                                    @order.ReceiverName · @order.FullAddress
+                                    @GetReceiverSummary(order)
                                 </p>
                             </div>
 
@@ -258,6 +258,39 @@
         }
 
         _navigation.NavigateTo(order.PaymentLink, forceLoad: true);
+    }
+
+    private static bool IsGuestCustomer(UserOrderDetailResponse order)
+    {
+        return string.Equals(order.CustomerType, "Guest", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(order.CustomerType, "GuestOrder", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(order.ReceiverName, "Khách vãng lai", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsInStoreFulfillment(UserOrderDetailResponse order)
+    {
+        return order.BOPIS == true
+               || (order.IsOrderPOS && order.ShippingFee <= 0)
+               || string.Equals(order.ReceiverName, "Nhận tại quầy", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(order.ReceiverName, "Khách vãng lai", StringComparison.OrdinalIgnoreCase)
+               || (order.ShippingFee <= 0
+                   && !string.IsNullOrWhiteSpace(order.PurchaseChannel)
+                   && (order.PurchaseChannel.Contains("POS", StringComparison.OrdinalIgnoreCase)
+                       || order.PurchaseChannel.Contains("cửa hàng", StringComparison.OrdinalIgnoreCase)
+                       || order.PurchaseChannel.Contains("quầy", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private static string GetReceiverSummary(UserOrderDetailResponse order)
+    {
+        if (!IsInStoreFulfillment(order))
+        {
+            return $"{order.ReceiverName} · {order.FullAddress}";
+        }
+
+        var label = order.BOPIS == true ? "lấy tại quầy" : "mua tại quầy";
+        return IsGuestCustomer(order)
+            ? $"Khách vãng lai - {label}"
+            : $"Nhận tại quầy - {label}";
     }
 
     private static string GetStatusBadgeClass(string status)

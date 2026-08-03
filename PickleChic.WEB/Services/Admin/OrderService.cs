@@ -22,9 +22,11 @@ namespace PickleChic.WEB.Services.Admin
                 url += $"?keyword={Uri.EscapeDataString(keyword.Trim())}";
             }
 
-            return await _apiProvider.GetAsync<List<OrderResponse>>(
+            var result =  await _apiProvider.GetAsync<List<OrderResponse>>(
                 url,
                 requireAuth: true);
+
+            return result;
         }
 
         public async Task<ApiResult<OrderResponse>> GetByIdAsync(int id)

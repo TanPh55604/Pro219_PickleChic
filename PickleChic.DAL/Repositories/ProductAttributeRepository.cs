@@ -60,6 +60,15 @@ public class ProductAttributeRepository
         }
     }
 
+    public async Task<bool> ExistsByNameAsync(string attributeName, int? categoryId, int? excludeId = null)
+    {
+        var normalized = attributeName.Trim().ToLower();
+        return await _context.ProductAttributes.AnyAsync(a =>
+            a.CategoryId == categoryId
+            && a.AttributeName.ToLower() == normalized
+            && (!excludeId.HasValue || a.Id != excludeId.Value));
+    }
+
     public async Task<ProductAttribute?> UpdateWithValuesAndFlagAsync(
         int id,
         string attributeName,
