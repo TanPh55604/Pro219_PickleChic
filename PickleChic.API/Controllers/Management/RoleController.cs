@@ -61,6 +61,11 @@ public class RoleController : ControllerBase
     {
         try
         {
+            if (await _repository.IsRoleNameExistsAsync(dto.RoleName))
+            {
+                return BadRequest("Tên vai trò đã tồn tại");
+            }
+
             var entity = new Role
             {
                 RoleName = dto.RoleName,
@@ -82,6 +87,11 @@ public class RoleController : ControllerBase
     {
         try
         {
+            if (await _repository.IsRoleNameExistsAsync(dto.RoleName, dto.Id))
+            {
+                return BadRequest("Tên vai trò đã tồn tại");
+            }
+
             var entity = new Role
             {
                 Id = dto.Id,
