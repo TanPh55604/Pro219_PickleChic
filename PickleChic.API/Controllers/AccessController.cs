@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using PickleChic.API;
 using PickleChic.API.DTOs;
-using PickleChic.API.DTOs;
 using PickleChic.API.Utilities;
+using PickleChic.DAL.Context;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
 using System.IdentityModel.Tokens.Jwt;
@@ -173,6 +173,40 @@ namespace PickleChic.API.Controllers
                 var userId = int.Parse(User.FindFirst(ClaimTypes.SerialNumber)?.Value);
                 var user = await _customerRepository.GetByIdAsync(userId);
 
+                var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+                int targetRoleId = -1;
+                if (roleClaim == "Customer")
+                {
+                    targetRoleId = 2;
+                }
+                else if (roleClaim != null && int.TryParse(roleClaim, out int roleId))
+                {
+                    targetRoleId = roleId;
+                }
+
+                List<PagePermissionDTO> pagePermissions = new List<PagePermissionDTO>();
+                if (targetRoleId != -1)
+                {
+                    using (var context = new PickleChicDbContext())
+                    {
+                        var role = await context.Roles.FindAsync(targetRoleId);
+                        if (role != null && !string.IsNullOrWhiteSpace(role.Permissions))
+                        {
+                            try
+                            {
+                                pagePermissions = System.Text.Json.JsonSerializer.Deserialize<List<PagePermissionDTO>>(
+                                    role.Permissions,
+                                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                                ) ?? new List<PagePermissionDTO>();
+                            }
+                            catch
+                            {
+                               
+                            }
+                        }
+                    }
+                }
+
                 var userInfo = new
                 {
                     id = userId,
@@ -185,7 +219,8 @@ namespace PickleChic.API.Controllers
                     rankName = rankName,
                     totalpoints = user != null ? user.TotalPoints : 0,
                     expirationTime = expirationTime,
-                    isExpired = isExpired
+                    isExpired = isExpired,
+                    pagePermissions = pagePermissions
                 };
 
                 return Ok(userInfo);

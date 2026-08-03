@@ -1,5 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using PickleChic.DAL.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace PickleChic.DAL.Context;
 
@@ -540,5 +545,282 @@ public partial class PickleChicDbContext
             new Review { Id = 18, OrderItemId = 18, ProductVariantId = 14, Title = "Hồng xinh", Content = "Màu đẹp, mặc thoải mái.", Overall = 5, Status = 1, CreateAt = new DateTime(2026, 7, 26, 16, 0, 0), Delete = false },
             new Review { Id = 19, OrderItemId = 19, ProductVariantId = 13, Title = "Đáng mua", Content = "Quần bền, hợp chơi lâu.", Overall = 4, Status = 1, CreateAt = new DateTime(2026, 7, 27, 10, 0, 0), Delete = false }
         );
+    }
+
+    private static void SeedPagePermissions(ModelBuilder modelBuilder)
+    {
+        try
+        {
+            var adminPagesDir = FindAdminPagesDirectory();
+            var routerConfigPath = FindRouterConfigPath();
+            
+            var routeConstants = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (File.Exists(routerConfigPath))
+            {
+                var routerConfigText = File.ReadAllText(routerConfigPath);
+                var matches = Regex.Matches(
+                    routerConfigText, 
+                    @"public\s+const\s+string\s+(\w+)\s*=\s*""([^""]+)"""
+                );
+                foreach (Match match in matches)
+                {
+                    var key = match.Groups[1].Value;
+                    var val = match.Groups[2].Value;
+                    routeConstants[key] = val;
+                }
+            }
+
+            var folders = Directory.GetDirectories(adminPagesDir);
+            var pageList = new List<(string FolderName, string Route)>();
+
+            foreach (var folder in folders)
+            {
+                var folderName = Path.GetFileName(folder);
+                
+                var razorFiles = Directory.GetFiles(folder, "*.razor", SearchOption.AllDirectories);
+                if (razorFiles.Length == 0) continue;
+
+                string? selectedRoute = null;
+                
+                var listFile = razorFiles.FirstOrDefault(f => Path.GetFileName(f).Equals("List.razor", StringComparison.OrdinalIgnoreCase));
+                var mainFile = razorFiles.FirstOrDefault(f => Path.GetFileNameWithoutExtension(f).Equals(folderName, StringComparison.OrdinalIgnoreCase));
+                
+                var filesToScan = new List<string>();
+                if (listFile != null) filesToScan.Add(listFile);
+                if (mainFile != null) filesToScan.Add(mainFile);
+                filesToScan.AddRange(razorFiles.Where(f => f != listFile && f != mainFile));
+
+                foreach (var file in filesToScan)
+                {
+                    var content = File.ReadAllText(file);
+                    
+                    var routeMatch = Regex.Match(
+                        content, 
+                        @"@attribute\s*\[\s*Route\(\s*RouterConfig\.Admin\.(\w+)\s*\)\s*\]"
+                    );
+                    if (routeMatch.Success)
+                    {
+                        var constName = routeMatch.Groups[1].Value;
+                        if (routeConstants.TryGetValue(constName, out var routeVal))
+                        {
+                            selectedRoute = routeVal;
+                            break;
+                        }
+                    }
+
+                    var pageMatch = Regex.Match(
+                        content, 
+                        @"@page\s*""([^""]+)"""
+                    );
+                    if (pageMatch.Success)
+                    {
+                        selectedRoute = pageMatch.Groups[1].Value;
+                        break;
+                    }
+                    
+                    var routeStringMatch = Regex.Match(
+                        content, 
+                        @"@attribute\s*\[\s*Route\(\s*""([^""]+)""\s*\)\s*\]"
+                    );
+                    if (routeStringMatch.Success)
+                    {
+                        selectedRoute = routeStringMatch.Groups[1].Value;
+                        break;
+                    }
+                }
+
+                if (folderName.Equals("Auth", StringComparison.OrdinalIgnoreCase))
+                {
+                    var loginFile = razorFiles.FirstOrDefault(f => Path.GetFileName(f).Equals("Login.razor", StringComparison.OrdinalIgnoreCase));
+                    if (loginFile != null)
+                    {
+                        var content = File.ReadAllText(loginFile);
+                        var loginMatch = Regex.Match(content, @"@attribute\s*\[\s*Route\(\s*RouterConfig\.Admin\.(\w+)\s*\)\s*\]");
+                        if (loginMatch.Success && routeConstants.TryGetValue(loginMatch.Groups[1].Value, out var routeVal))
+                        {
+                            pageList.Add(("Login", routeVal));
+                        }
+                        else
+                        {
+                            pageList.Add(("Login", "/admin/login"));
+                        }
+                    }
+                    continue;
+                }
+
+                if (selectedRoute != null)
+                {
+                    pageList.Add((folderName, selectedRoute));
+                }
+            }
+
+            var pagePermissions = new List<PagePermission>();
+            var seenCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var page in pageList)
+            {
+                var (code, route) = NormalizePage(page.FolderName, page.Route);
+                if (seenCodes.Contains(code)) continue;
+                seenCodes.Add(code);
+
+                pagePermissions.Add(new PagePermission
+                {
+                    PageCode = code,
+                    PageRoute = route,
+                    AvailablePermissions = "CRUD",
+                    DefaultPermissions = "R"
+                });
+            }
+
+            var sortedPermissions = pagePermissions
+                .OrderBy(p => p.PageCode)
+                .ToList();
+
+            for (int i = 0; i < sortedPermissions.Count; i++)
+            {
+                sortedPermissions[i].Id = i + 1;
+            }
+
+            modelBuilder.Entity<PagePermission>().HasData(sortedPermissions);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"Failed to seed page permissions data: {ex.Message}", ex);
+        }
+    }
+
+    private static (string PageCode, string PageRoute) NormalizePage(string folderName, string actualRoute)
+    {
+        var route = actualRoute.Split('{')[0].TrimEnd('/');
+        
+        string pageCode = folderName.ToUpper();
+        string pageRoute = route;
+
+        if (route.Equals("/admin/categories", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/category";
+            pageCode = "CATEGORY";
+        }
+        else if (route.Equals("/admin/customers", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/customer";
+            pageCode = "CUSTOMER";
+        }
+        else if (route.Equals("/admin/orders", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/order";
+            pageCode = "ORDER";
+        }
+        else if (route.Equals("/admin/staffs", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/staff";
+            pageCode = "STAFF";
+        }
+        else if (route.Equals("/admin/vouchers", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/voucher";
+            pageCode = "VOUCHER";
+        }
+        else if (route.Equals("/admin/brands", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/brand";
+            pageCode = "BRAND";
+        }
+        else if (route.Equals("/admin/ranks", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/rank";
+            pageCode = "RANK";
+        }
+        else if (route.Equals("/admin/reviews", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/review";
+            pageCode = "REVIEW";
+        }
+        else if (route.Equals("/admin/promotions", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/promotion";
+            pageCode = "PROMOTION";
+        }
+        else if (route.Equals("/admin/attributes", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/attribute";
+            pageCode = "ATTRIBUTE";
+        }
+        else if (route.Equals("/admin/product-variants", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/productvariant";
+            pageCode = "PRODUCTVARIANT";
+        }
+        else if (route.Equals("/admin/products", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/product";
+            pageCode = "PRODUCT";
+        }
+        else if (route.Equals("/admin/permissions", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/permissions";
+            pageCode = "PERMISSIONS";
+        }
+        else if (route.Equals("/admin/dashboard", StringComparison.OrdinalIgnoreCase))
+        {
+            pageRoute = "/admin/statistical";
+            pageCode = "STATISTICAL";
+        }
+        
+        return (pageCode, pageRoute);
+    }
+
+    private static string FindAdminPagesDirectory()
+    {
+        var currentDir = Directory.GetCurrentDirectory();
+        while (!string.IsNullOrEmpty(currentDir))
+        {
+            var path = Path.Combine(currentDir, "PickleChic.WEB", "Components", "Pages", "Admin");
+            if (Directory.Exists(path)) return path;
+
+            var parent = Directory.GetParent(currentDir);
+            if (parent == null || parent.FullName == currentDir) break;
+            currentDir = parent.FullName;
+        }
+
+        var assemblyDir = Path.GetDirectoryName(typeof(PickleChicDbContext).Assembly.Location);
+        if (!string.IsNullOrEmpty(assemblyDir))
+        {
+            var dir = new DirectoryInfo(assemblyDir);
+            while (dir != null)
+            {
+                var path = Path.Combine(dir.FullName, "PickleChic.WEB", "Components", "Pages", "Admin");
+                if (Directory.Exists(path)) return path;
+                dir = dir.Parent;
+            }
+        }
+        throw new DirectoryNotFoundException("Could not find PickleChic.WEB/Components/Pages/Admin directory");
+    }
+
+    private static string FindRouterConfigPath()
+    {
+        var currentDir = Directory.GetCurrentDirectory();
+        while (!string.IsNullOrEmpty(currentDir))
+        {
+            var path = Path.Combine(currentDir, "PickleChic.WEB", "Constant", "RouterConfig.cs");
+            if (File.Exists(path)) return path;
+
+            var parent = Directory.GetParent(currentDir);
+            if (parent == null || parent.FullName == currentDir) break;
+            currentDir = parent.FullName;
+        }
+        
+        var assemblyDir = Path.GetDirectoryName(typeof(PickleChicDbContext).Assembly.Location);
+        if (!string.IsNullOrEmpty(assemblyDir))
+        {
+            var dir = new DirectoryInfo(assemblyDir);
+            while (dir != null)
+            {
+                var path = Path.Combine(dir.FullName, "PickleChic.WEB", "Constant", "RouterConfig.cs");
+                if (File.Exists(path)) return path;
+                dir = dir.Parent;
+            }
+        }
+        throw new FileNotFoundException("Could not find RouterConfig.cs");
     }
 }

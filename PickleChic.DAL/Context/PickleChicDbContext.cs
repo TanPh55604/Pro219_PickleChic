@@ -43,6 +43,7 @@ public partial class PickleChicDbContext : DbContext
     public DbSet<District> Districts { get; set; }
     public DbSet<Ward> Wards { get; set; }
     public DbSet<Review> Reviews { get; set; }
+    public DbSet<PagePermission> PagePermissions { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -260,6 +261,7 @@ public partial class PickleChicDbContext : DbContext
             .OnDelete(DeleteBehavior.SetNull);
 
         SeedExampleData(modelBuilder);
+        SeedPagePermissions(modelBuilder);
     }
 
     private static string FindJsonPath()

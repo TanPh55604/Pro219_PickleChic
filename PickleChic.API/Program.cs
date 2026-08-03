@@ -74,7 +74,7 @@ builder.Services.AddScoped<WardRepository>();
 builder.Services.AddScoped<CustomerRepository>();
 builder.Services.AddScoped<RankRepository>();
 builder.Services.AddScoped<StaffRepository>();
-//builder.Services.AddScoped<RoleRepository>();
+builder.Services.AddScoped<RoleRepository>();
 builder.Services.AddScoped<CategoryRepository>();
 builder.Services.AddScoped<BrandRepository>();
 builder.Services.AddScoped<ProductRepository>();
@@ -96,6 +96,7 @@ builder.Services.AddScoped<OrderRepository>();
 builder.Services.AddScoped<OrderItemRepository>();
 builder.Services.AddScoped<PaymentMethodRepository>();
 builder.Services.AddScoped<ReviewRepository>();
+builder.Services.AddScoped<PagePermissionRepository>();
 
 builder.Services.AddScoped<PickleChic.API.Services.OrderManagerService>();
 
