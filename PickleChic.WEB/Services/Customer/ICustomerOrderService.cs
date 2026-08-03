@@ -18,13 +18,21 @@ namespace PickleChic.WEB.Services.Customer
             bool usePoints = false,
             bool bopis = false);
 
-        Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentSuccessAsync(int orderId, bool pos = false);
+        Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentSuccessAsync(
+            int orderId,
+            bool pos = false,
+            bool requireAuth = false);
 
-        Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentCanceledAsync(int orderId);
+        Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentCanceledAsync(
+            int orderId,
+            bool requireAuth = false);
 
         Task<ApiResult<UserOrderDetailResponse>> GetUserOrderDetailAsync(int orderId);
 
-        Task<ApiResult<UserOrderDetailResponse>> CancelUserOrderAsync(int orderId);
+        Task<ApiResult<UserOrderDetailResponse>> CancelUserOrderAsync(
+            int orderId,
+            CancelOrderRequest request,
+            bool requireAuth = true);
 
         Task<ApiResult<List<UserOrderDetailResponse>>> GetUserOrdersAsync();
 

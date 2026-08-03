@@ -19,7 +19,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("get-all")]
-    public async Task<ActionResult<List<Order>>> GetAll(string? keyword, int? status = null)
+    public async Task<ActionResult<List<ManagementOrderResponseDto>>> GetAll(string? keyword, int? status = null)
     {
         try
         {
@@ -39,7 +39,7 @@ public class OrderController : ControllerBase
                     .ToList();
             }
 
-            return Ok(result);
+            return Ok(result.Select(MapToManagementOrderDto).ToList());
         }
         catch (Exception)
         {
@@ -48,7 +48,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("get-all-bopis")]
-    public async Task<ActionResult<List<Order>>> GetAllBOPIS()
+    public async Task<ActionResult<List<ManagementOrderResponseDto>>> GetAllBOPIS()
     {
         try
         {
@@ -56,7 +56,7 @@ public class OrderController : ControllerBase
             if (result.Count == 0)
                 return NoContent();
            result = result.Where(o => o.BOPIS == true&&o.Delete!=true).OrderByDescending(x=>x.OrderDate).ToList();
-            return Ok(result);
+            return Ok(result.Select(MapToManagementOrderDto).ToList());
         }
         catch (Exception)
         {
@@ -65,7 +65,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("get-by-id/{id}")]
-    public async Task<ActionResult<Order>> GetById(int id)
+    public async Task<ActionResult<ManagementOrderResponseDto>> GetById(int id)
     {
         try
         {
@@ -73,7 +73,7 @@ public class OrderController : ControllerBase
             if (result is null)
                 return NotFound();
 
-            return Ok(result);
+            return Ok(MapToManagementOrderDto(result));
         }
         catch (Exception)
         {
@@ -82,7 +82,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPost("create")]
-    public async Task<ActionResult<Order>> Create([FromBody] OrderCreateDto dto)
+    public async Task<ActionResult<ManagementOrderResponseDto>> Create([FromBody] OrderCreateDto dto)
     {
         try
         {
@@ -136,7 +136,8 @@ public class OrderController : ControllerBase
             };
 
             var created = await _repository.AddAsync(entity);
-            return Ok(created);
+            var refreshed = await _repository.GetByIdAsync(created.Id) ?? created;
+            return Ok(MapToManagementOrderDto(refreshed));
         }
         catch (Exception)
         {
@@ -145,7 +146,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPatch("update")]
-    public async Task<ActionResult> Update([FromBody] OrderUpdateDto dto)
+    public async Task<ActionResult<ManagementOrderResponseDto>> Update([FromBody] OrderUpdateDto dto)
     {
         try
         {
@@ -176,7 +177,8 @@ public class OrderController : ControllerBase
             if (updated is null)
                 return NotFound();
 
-            return Ok(updated);
+            var refreshed = await _repository.GetByIdAsync(updated.Id) ?? updated;
+            return Ok(MapToManagementOrderDto(refreshed));
         }
         catch (Exception)
         {
@@ -202,7 +204,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpPatch("update-status/{id}")]
-    public async Task<ActionResult> UpdateStatus(int id, [FromBody] OrderStatusUpdateDto dto)
+    public async Task<ActionResult<ManagementOrderResponseDto>> UpdateStatus(int id, [FromBody] OrderStatusUpdateDto dto)
     {
         try
         {
@@ -474,12 +476,125 @@ public class OrderController : ControllerBase
                 }
             }
 
-            return Ok(updated);
+            var refreshed = await _repository.GetByIdAsync(id) ?? updated;
+            return Ok(MapToManagementOrderDto(refreshed));
         }
         catch (Exception)
         {
             return StatusCode(500, "Db Error");
         }
+    }
+
+    private static ManagementOrderResponseDto MapToManagementOrderDto(Order order)
+    {
+        return new ManagementOrderResponseDto
+        {
+            Id = order.Id,
+            CustomerId = order.CustomerId,
+            OrderCode = order.OrderCode,
+            AddressId = order.AddressId,
+            OrderDate = order.OrderDate,
+            PaymentMethodId = order.PaymentMethodId,
+            VoucherId = order.VoucherId,
+            PaymentStatus = order.PaymentStatus,
+            OrderStatus = order.OrderStatus,
+            Status = order.Status,
+            Notes = order.Notes,
+            LastUpdate = order.LastUpdate,
+            CustomerType = order.CustomerType,
+            IsOrderPOS = order.IsOrderPOS,
+            BOPIS = order.BOPIS,
+            PaymentLink = order.PaymentLink,
+            PaymentExpiration = order.PaymentExpiration,
+            ShippingFee = order.ShippingFee,
+            StatusHistory = order.StatusHistory,
+            UpdateBy = order.UpdateBy,
+            InsertedAt = order.InsertedAt,
+            Customer = order.Customer is null
+                ? null
+                : new ManagementOrderCustomerDto
+                {
+                    Id = order.Customer.Id,
+                    FullName = order.Customer.FullName,
+                    Email = order.Customer.Email,
+                    PhoneNumber = order.Customer.PhoneNumber
+                },
+            Address = order.Address is null
+                ? null
+                : new ManagementOrderAddressDto
+                {
+                    Id = order.Address.Id,
+                    FullName = order.Address.FullName,
+                    PhoneNumber = order.Address.PhoneNumber,
+                    DetailInfo = order.Address.DetailInfo,
+                    Ward = order.Address.Ward is null
+                        ? null
+                        : new ManagementOrderWardDto
+                        {
+                            Id = order.Address.Ward.Id,
+                            Name = order.Address.Ward.Name,
+                            District = order.Address.Ward.District is null
+                                ? null
+                                : new ManagementOrderDistrictDto
+                                {
+                                    Id = order.Address.Ward.District.Id,
+                                    Name = order.Address.Ward.District.Name,
+                                    Province = order.Address.Ward.District.Province is null
+                                        ? null
+                                        : new ManagementOrderProvinceDto
+                                        {
+                                            Id = order.Address.Ward.District.Province.Id,
+                                            Name = order.Address.Ward.District.Province.Name
+                                        }
+                                }
+                        }
+                },
+            PaymentMethod = order.PaymentMethod is null
+                ? null
+                : new ManagementOrderPaymentMethodDto
+                {
+                    Id = order.PaymentMethod.Id,
+                    Name = order.PaymentMethod.Name
+                },
+            Voucher = order.Voucher is null
+                ? null
+                : new ManagementOrderVoucherDto
+                {
+                    Id = order.Voucher.Id,
+                    VoucherCode = order.Voucher.VoucherCode,
+                    DiscountType = order.Voucher.DiscountType,
+                    DiscountValue = order.Voucher.DiscountValue
+                },
+            OrderItems = order.OrderItems?
+                .Where(oi => !oi.Delete)
+                .Select(oi => new ManagementOrderItemDto
+                {
+                    Id = oi.Id,
+                    OrderId = oi.OrderId,
+                    ProductVariantId = oi.ProductVariantId,
+                    Quantity = oi.Quantity,
+                    UnitPrice = oi.UnitPrice,
+                    DiscountAmount = oi.DiscountAmount,
+                    Subtotal = oi.Subtotal,
+                    ProductVariant = oi.ProductVariant is null
+                        ? null
+                        : new ManagementOrderProductVariantDto
+                        {
+                            Id = oi.ProductVariant.Id,
+                            SKU = oi.ProductVariant.SKU,
+                            VariantName = oi.ProductVariant.VariantName,
+                            Product = oi.ProductVariant.Product is null
+                                ? null
+                                : new ManagementOrderProductDto
+                                {
+                                    Id = oi.ProductVariant.Product.Id,
+                                    ProductName = oi.ProductVariant.Product.ProductName
+                                }
+                        }
+                })
+                .ToList()
+                ?? new List<ManagementOrderItemDto>()
+        };
     }
 
     private List<StatusHistoryEntry> ParseStatusHistory(string? json)

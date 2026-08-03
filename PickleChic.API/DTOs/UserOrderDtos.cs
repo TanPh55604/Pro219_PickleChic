@@ -15,6 +15,10 @@ public class UserOrderDetailDto
     public string OrderStatus { get; set; } = null!;
     public string? PaymentLink { get; set; }
     public int? Status { get; set; } = 0!;
+    public DateTime? PaymentExpiration { get; set; }
+    public bool IsOrderPOS { get; set; }
+    public bool? BOPIS { get; set; }
+    public string? CustomerType { get; set; }
     
     public string ReceiverName { get; set; } = null!;
     public string ReceiverPhone { get; set; } = null!;
@@ -25,6 +29,8 @@ public class UserOrderDetailDto
     public decimal FinalPrice { get; set; }
 
     public List<UserOrderItemDetailDto> OrderItems { get; set; } = new();
+
+    public string? StatusHistory { get; set; }
 }
 
 public class UserOrderItemDetailDto
@@ -37,4 +43,18 @@ public class UserOrderItemDetailDto
     public decimal UnitPrice { get; set; }
     public decimal DiscountAmount { get; set; }
     public decimal Subtotal { get; set; }
+}
+
+public class CancelOrderRequestDto
+{
+    public string CancelReason { get; set; } = null!;
+    public string? CancelDetail { get; set; }
+}
+
+public class PaymentCallbackOrderDto
+{
+    public int Id { get; set; }
+    public string OrderCode { get; set; } = null!;
+    public string PaymentStatus { get; set; } = null!;
+    public string OrderStatus { get; set; } = null!;
 }

@@ -34,7 +34,7 @@ else
                         <MudButton Variant="Variant.Filled"
                                    Disabled="@_isUpdateStatus"
                                    Color="Color.Error"
-                                   OnClick="@(() => HandleStatusUpdateAsync(CurrentStatus, "failed"))"
+                                   OnClick="HandleCancelOrderAsync"
                                    Class="!rounded-xl !normal-case">
                             Hủy
                         </MudButton>
@@ -160,7 +160,7 @@ else
                                         <tr class="!border-b !border-slate-100">
                                             <td class="!py-3">
                                                 <p class="font-medium text-slate-900">
-                                                    @(item.ProductVariant?.Product?.Name ?? $"Biến thể #{item.ProductVariantId}")
+                                                    @(item.ProductVariant?.Product?.ProductName ?? $"Biến thể #{item.ProductVariantId}")
                                                 </p>
                                                 @if (!string.IsNullOrWhiteSpace(item.ProductVariant?.VariantName))
                                                 {
@@ -213,12 +213,23 @@ else
                         <div class="!mt-4 !space-y-3">
                             @foreach (var entry in _statusHistory.OrderByDescending(e => e.Index))
                             {
-                                <div class="flex flex-col !gap-1 !rounded-xl !bg-slate-50 !p-4 md:flex-row md:items-center md:justify-between">
-                                    <div>
+                                <div class="flex flex-col !gap-1 !rounded-xl !bg-slate-50 !p-4 md:flex-row md:items-start md:justify-between">
+                                    <div class="!space-y-1">
                                         <p class="font-semibold text-slate-900">@entry.OrderStatus</p>
                                         <p class="text-sm text-slate-500">Thanh toán: @entry.PaymentStatus</p>
+                                        @if (!string.IsNullOrWhiteSpace(entry.UpdatedBy))
+                                        {
+                                            <p class="text-sm text-slate-500">Cập nhật bởi: @entry.UpdatedBy</p>
+                                        }
+                                        @if (ShouldShowCancelReason(entry) && !string.IsNullOrWhiteSpace(entry.Reasons))
+                                        {
+                                            <p class="text-sm text-slate-700">
+                                                <span class="font-medium text-slate-500">Lý do:</span>
+                                                @entry.Reasons
+                                            </p>
+                                        }
                                     </div>
-                                    <span class="text-sm text-slate-400">@entry.DateTime</span>
+                                    <span class="shrink-0 text-sm text-slate-400">@entry.DateTime</span>
                                 </div>
                             }
                         </div>
@@ -233,16 +244,21 @@ else
                     <div class="!mt-4 !space-y-3 text-sm">
                         <div>
                             <p class="text-slate-500">Họ tên</p>
-                            <p class="font-semibold text-slate-900">@(_model.Customer?.FullName ?? "—")</p>
+                            <p class="font-semibold text-slate-900">
+                                @(IsGuestCustomer ? "Khách vãng lai" : (_model.Customer?.FullName ?? "—"))
+                            </p>
                         </div>
-                        <div>
-                            <p class="text-slate-500">Email</p>
-                            <p class="font-semibold text-slate-900">@(_model.Customer?.Email ?? "—")</p>
-                        </div>
-                        <div>
-                            <p class="text-slate-500">Số điện thoại</p>
-                            <p class="font-semibold text-slate-900">@(_model.Customer?.PhoneNumber ?? _model.Address?.PhoneNumber ?? "—")</p>
-                        </div>
+                        @if (!IsGuestCustomer)
+                        {
+                            <div>
+                                <p class="text-slate-500">Email</p>
+                                <p class="font-semibold text-slate-900">@(_model.Customer?.Email ?? "—")</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Số điện thoại</p>
+                                <p class="font-semibold text-slate-900">@(_model.Customer?.PhoneNumber ?? _model.Address?.PhoneNumber ?? "—")</p>
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -257,11 +273,12 @@ else
                             <div>
                                 <p class="text-slate-500">Hình thức</p>
                                 <p class="font-semibold text-slate-900">
-                                    @(_model.BOPIS == true ? "Đặt online — đến lấy tại cửa hàng" : "Mua trực tiếp tại quầy")
+                                    @(_model.BOPIS == true ? "Lấy tại quầy" : "Mua tại quầy")
                                 </p>
                             </div>
-                            @if (!string.IsNullOrWhiteSpace(_model.Customer?.PhoneNumber)
-                                 || !string.IsNullOrWhiteSpace(_model.Address?.PhoneNumber))
+                            @if (!IsGuestCustomer
+                                 && (!string.IsNullOrWhiteSpace(_model.Customer?.PhoneNumber)
+                                     || !string.IsNullOrWhiteSpace(_model.Address?.PhoneNumber)))
                             {
                                 <div>
                                     <p class="text-slate-500">Số điện thoại liên hệ</p>
@@ -356,6 +373,16 @@ else
         _model.BOPIS == true
         || (_model.IsOrderPOS && _model.ShippingFee <= 0);
 
+    private bool IsGuestCustomer =>
+        string.Equals(_model.CustomerType, "Guest", StringComparison.OrdinalIgnoreCase)
+        || _model.CustomerId == -1
+        || string.Equals(_model.Customer?.Email, "guest@example.com", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(_model.Customer?.FullName, "Khách vãng lai", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(_model.Customer?.FullName, "guest", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(_model.Address?.FullName, "Khách vãng lai", StringComparison.OrdinalIgnoreCase);
+
+    private bool IsGuestInStoreOrder => IsInStoreFulfillment && IsGuestCustomer;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadOrderAsync();
@@ -419,6 +446,49 @@ else
         await SubmitStatusUpdateAsync(nextStatus, nextPaymentStatus);
     }
 
+    private async Task HandleCancelOrderAsync()
+    {
+        if (!IsPendingGroup(CurrentStatus))
+        {
+            _snackbar.Add("Trạng thái đơn đã thay đổi, vui lòng tải lại trang", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<OrderCancelDialog>
+        {
+            { x => x.OrderCode, _model.OrderCode },
+            { x => x.ReasonOptions, Constant.OrderCancelReason.Admin }
+            // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
+            // { x => x.ShowRestoreStockOption, true }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<OrderCancelDialog>(
+            "Hủy đơn hàng",
+            parameters,
+            options);
+
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled || dialogResult.Data is not CancelOrderDialogResult cancelData)
+        {
+            return;
+        }
+
+        var reasons = Constant.OrderCancelReason.Format(cancelData.CancelReason, cancelData.CancelDetail);
+        var (nextStatus, nextPaymentStatus) = ResolveNextStatus(CurrentStatus, "failed");
+
+        // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
+        // bool restoreStock = cancelData.RestoreStock;
+
+        await SubmitStatusUpdateAsync(nextStatus, nextPaymentStatus, reasons);
+    }
+
     private (int Status, string PaymentStatus) ResolveNextStatus(int currentStatus, string? outcome)
     {
         if (IsPendingGroup(currentStatus))
@@ -472,7 +542,7 @@ else
         return (CurrentStatus, _model.PaymentStatus);
     }
 
-    private async Task SubmitStatusUpdateAsync(int nextStatus, string paymentStatus)
+    private async Task SubmitStatusUpdateAsync(int nextStatus, string paymentStatus, string? reasons = null)
     {
         var nextOrderStatusLabel = Constant.OrderStatus.GetLabel(nextStatus);
 
@@ -495,7 +565,10 @@ else
             {
                 OrderStatus = nextOrderStatusLabel,
                 PaymentStatus = paymentStatus,
-                UpdateBy = updateBy
+                UpdateBy = updateBy,
+                Reasons = reasons
+                // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
+                // RestoreStock = restoreStock
             };
 
             var result = await _adminOrderService.UpdateStatusAsync(Id, request);
@@ -533,6 +606,16 @@ else
         {
             return new List<StatusHistoryEntryResponse>();
         }
+    }
+
+    private static bool ShouldShowCancelReason(StatusHistoryEntryResponse entry)
+    {
+        // DATN cũ: StatusCanceledByUser = 3 → tương đương trạng thái hủy ở PickleChic
+        var status = string.IsNullOrWhiteSpace(entry.OrderStatus) ? entry.Status : entry.OrderStatus;
+        return status is Constant.OrderStatus.Cancelled
+            or "Đã hủy"
+            or "Cancelled"
+            or "Đã hủy bởi người dùng";
     }
 
     private static string FormatAddress(OrderAddressResponse? address)

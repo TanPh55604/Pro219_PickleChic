@@ -120,6 +120,14 @@ namespace PickleChic.WEB.DTO.Customer
 
         public string? PaymentLink { get; set; }
 
+        public DateTime? PaymentExpiration { get; set; }
+
+        public bool IsOrderPOS { get; set; }
+
+        public bool? BOPIS { get; set; }
+
+        public string? CustomerType { get; set; }
+
         public string ReceiverName { get; set; } = string.Empty;
 
         public string ReceiverPhone { get; set; } = string.Empty;
@@ -133,6 +141,8 @@ namespace PickleChic.WEB.DTO.Customer
         public decimal FinalPrice { get; set; }
 
         public List<UserOrderItemDetailResponse> OrderItems { get; set; } = new();
+
+        public string? StatusHistory { get; set; }
     }
 
     public class UserOrderItemDetailResponse
@@ -152,5 +162,22 @@ namespace PickleChic.WEB.DTO.Customer
         public decimal DiscountAmount { get; set; }
 
         public decimal Subtotal { get; set; }
+    }
+
+    public class CancelOrderRequest
+    {
+        public string CancelReason { get; set; } = string.Empty;
+
+        public string? CancelDetail { get; set; }
+    }
+
+    public class CancelOrderDialogResult
+    {
+        public string CancelReason { get; set; } = string.Empty;
+
+        public string? CancelDetail { get; set; }
+
+        // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
+        // public bool RestoreStock { get; set; }
     }
 }
