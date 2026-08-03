@@ -112,6 +112,11 @@ public class ProductVariantController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsBySkuAsync(dto.SKU))
+                return BadRequest("Mã SKU đã tồn tại");
+            if (await _repository.ExistsByVariantNameAsync(dto.ProductId, dto.VariantName ?? string.Empty))
+                return BadRequest("Tên biến thể đã tồn tại trong sản phẩm này");
+
             var entity = new ProductVariant
             {
                 ProductId = dto.ProductId,
@@ -136,6 +141,11 @@ public class ProductVariantController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsBySkuAsync(dto.SKU))
+                return BadRequest("Mã SKU đã tồn tại");
+            if (await _repository.ExistsByVariantNameAsync(dto.ProductId, dto.VariantName ?? string.Empty))
+                return BadRequest("Tên biến thể đã tồn tại trong sản phẩm này");
+
             var entity = new ProductVariant
             {
                 ProductId = dto.ProductId,
@@ -177,6 +187,11 @@ public class ProductVariantController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsBySkuAsync(dto.SKU, dto.Id))
+                return BadRequest("Mã SKU đã tồn tại");
+            if (await _repository.ExistsByVariantNameAsync(dto.ProductId, dto.VariantName ?? string.Empty, dto.Id))
+                return BadRequest("Tên biến thể đã tồn tại trong sản phẩm này");
+
             var entity = new ProductVariant
             {
                 Id = dto.Id,
@@ -205,6 +220,11 @@ public class ProductVariantController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsBySkuAsync(dto.SKU, dto.Id))
+                return BadRequest("Mã SKU đã tồn tại");
+            if (await _repository.ExistsByVariantNameAsync(dto.ProductId, dto.VariantName ?? string.Empty, dto.Id))
+                return BadRequest("Tên biến thể đã tồn tại trong sản phẩm này");
+
             var entity = new ProductVariant
             {
                 Id = dto.Id,

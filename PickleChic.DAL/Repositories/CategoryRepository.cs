@@ -91,4 +91,13 @@ public class CategoryRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExistsByNameAsync(string name, int? excludeId = null)
+    {
+        var normalized = name.Trim().ToLower();
+        return await _context.Categories.AnyAsync(c =>
+            !c.Delete
+            && c.Name.ToLower() == normalized
+            && (!excludeId.HasValue || c.Id != excludeId.Value));
+    }
 }

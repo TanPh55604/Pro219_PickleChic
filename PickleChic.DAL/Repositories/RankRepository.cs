@@ -59,4 +59,12 @@ public class RankRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExistsByNameAsync(string rankName, int? excludeId = null)
+    {
+        var normalized = rankName.Trim().ToLower();
+        return await _context.Ranks.AnyAsync(r =>
+            r.RankName.ToLower() == normalized
+            && (!excludeId.HasValue || r.Id != excludeId.Value));
+    }
 }
