@@ -61,6 +61,9 @@ public class BrandController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.Name))
+                return BadRequest("Tên thương hiệu đã tồn tại");
+
             var entity = new Brand
             {
                 Name = dto.Name,
@@ -85,6 +88,9 @@ public class BrandController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.Name, dto.Id))
+                return BadRequest("Tên thương hiệu đã tồn tại");
+
             var entity = new Brand
             {
                 Id = dto.Id,

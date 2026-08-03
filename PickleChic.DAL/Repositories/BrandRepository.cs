@@ -78,4 +78,13 @@ public class BrandRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> ExistsByNameAsync(string name, int? excludeId = null)
+    {
+        var normalized = name.Trim().ToLower();
+        return await _context.Brands.AnyAsync(b =>
+            !b.Delete
+            && b.Name.ToLower() == normalized
+            && (!excludeId.HasValue || b.Id != excludeId.Value));
+    }
 }

@@ -77,6 +77,15 @@ public class ProductRepository
         return entity;
     }
 
+    public async Task<bool> ExistsByNameAsync(string productName, int? excludeId = null)
+    {
+        var normalized = productName.Trim().ToLower();
+        return await _context.Products.AnyAsync(p =>
+            !p.IsDeleted
+            && p.ProductName.ToLower() == normalized
+            && (!excludeId.HasValue || p.Id != excludeId.Value));
+    }
+
     public async Task<Product?> UpdateAsync(Product entity)
     {
         try

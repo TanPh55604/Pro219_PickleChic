@@ -52,6 +52,29 @@ public class ProductVariantRepository
         return entity;
     }
 
+    public async Task<bool> ExistsBySkuAsync(string sku, int? excludeId = null)
+    {
+        var normalized = sku.Trim().ToLower();
+        return await _context.ProductVariants.AnyAsync(pv =>
+            pv.SKU.ToLower() == normalized
+            && (!excludeId.HasValue || pv.Id != excludeId.Value));
+    }
+
+    public async Task<bool> ExistsByVariantNameAsync(int productId, string variantName, int? excludeId = null)
+    {
+        if (string.IsNullOrWhiteSpace(variantName))
+        {
+            return false;
+        }
+
+        var normalized = variantName.Trim().ToLower();
+        return await _context.ProductVariants.AnyAsync(pv =>
+            pv.ProductId == productId
+            && pv.VariantName != null
+            && pv.VariantName.ToLower() == normalized
+            && (!excludeId.HasValue || pv.Id != excludeId.Value));
+    }
+
     public async Task<ProductVariant?> UpdateAsync(ProductVariant entity)
     {
         try

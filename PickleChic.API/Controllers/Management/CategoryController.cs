@@ -71,6 +71,9 @@ public class CategoryController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.Name))
+                return BadRequest("Tên thể loại đã tồn tại");
+
             var entity = new Category
             {
                 Name = dto.Name,
@@ -159,6 +162,9 @@ public class CategoryController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByNameAsync(dto.Name, dto.Id))
+                return BadRequest("Tên thể loại đã tồn tại");
+
             var entity = new Category
             {
                 Id = dto.Id,
