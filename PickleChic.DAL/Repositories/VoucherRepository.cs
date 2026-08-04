@@ -41,8 +41,16 @@ public class VoucherRepository
         return await _context.Vouchers.Where(x => (x.MinimumSpend == null || x.MinimumSpend <= minSpend) && x.IsActive).ToListAsync();
     }
 
+    public async Task<bool> ExistsByCodeAsync(string code, int? excludeId = null)
+    {
+        var normalized = code.Trim().ToLower();
+        var now = DateTime.Now;
 
-
+        return await _context.Vouchers.AnyAsync(v =>
+            v.VoucherCode.ToLower() == normalized
+            && v.EndDate >= now
+            && (!excludeId.HasValue || v.Id != excludeId.Value));
+    }
 
     public async Task<Voucher> AddAsync(Voucher entity)
     {

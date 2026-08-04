@@ -52,6 +52,7 @@
                                   Variant="Variant.Outlined"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Phone"
+                                  MaxLength="10"
                                   Required="true"
                                   Immediate="true" />
 
@@ -60,8 +61,7 @@
                                    Label="Ngày sinh"
                                    Placeholder="Chọn ngày sinh"
                                    Variant="Variant.Outlined"
-                                   AdornmentIcon="@Icons.Material.Filled.CalendarMonth"
-                                   Required="true" />
+                                   AdornmentIcon="@Icons.Material.Filled.CalendarMonth" />
 
                     <MudSelect T="int"
                                @bind-Value="_model.Gender"

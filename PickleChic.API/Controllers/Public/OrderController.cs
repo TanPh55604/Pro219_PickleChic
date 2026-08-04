@@ -790,6 +790,10 @@ public class OrderController : ControllerBase
             order.AddressId = addressId;
             order.Notes = note;
             order.ShippingFee = shippingFee;
+            order.TotalAmount = totalPrice;
+            order.VoucherDiscountAmount = discountAmount;
+            order.PointsDiscountAmount = pointsUsed;
+            order.FinalAmount = Math.Max(0, totalPrice - discountAmount + shippingFee - pointsUsed);
             order.OrderDate = DateTime.Now;
             if (isZeroOrder)
             {
@@ -1209,6 +1213,10 @@ public class OrderController : ControllerBase
             order.AddressId = addressId;
             order.Notes = dto.Note;
             order.ShippingFee = shippingFee;
+            order.TotalAmount = totalPrice;
+            order.VoucherDiscountAmount = discountAmount;
+            order.PointsDiscountAmount = pointsUsed;
+            order.FinalAmount = Math.Max(0, totalPrice - discountAmount + shippingFee - pointsUsed);
             order.OrderDate = DateTime.Now;
             order.PaymentStatus = Constant.PaymentStatus.Completed;
             order.OrderStatus = initialStatus;
@@ -1402,28 +1410,8 @@ public class OrderController : ControllerBase
             return;
         }
 
-        decimal totalProductPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
-        decimal discountAmount = 0;
-
-        if (order.Voucher != null)
-        {
-            var voucher = order.Voucher;
-            if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
-            {
-                discountAmount = totalProductPrice * (voucher.DiscountValue / 100);
-                if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
-                {
-                    discountAmount = voucher.MaxDiscountAmount.Value;
-                }
-            }
-            else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
-            {
-                discountAmount = voucher.DiscountValue;
-            }
-            discountAmount = Math.Min(discountAmount, totalProductPrice);
-        }
-
-        decimal finalPaidAmount = Math.Max(0, totalProductPrice - discountAmount);
+        var (totalProductPrice, discountAmount, pointsDiscount, _) = ResolveOrderAmounts(order);
+        decimal finalPaidAmount = Math.Max(0, totalProductPrice - discountAmount - pointsDiscount);
 
         double percentReward = _configuration.GetValue<double?>("PercentReward") ?? _configuration.GetValue<double?>("RewardPercent") ?? 10.0;
         int pointsToAdd = Math.Max(0, (int)Math.Round((double)finalPaidAmount * percentReward / 100.0));
@@ -1840,26 +1828,7 @@ public class OrderController : ControllerBase
 
     private UserOrderDetailDto MapToUserOrderDetailDto(Order order)
     {
-        decimal totalPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
-        decimal discountAmount = 0;
-
-        if (order.Voucher != null)
-        {
-            var voucher = order.Voucher;
-            if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
-            {
-                discountAmount = totalPrice * (voucher.DiscountValue / 100);
-                if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
-                {
-                    discountAmount = voucher.MaxDiscountAmount.Value;
-                }
-            }
-            else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
-            {
-                discountAmount = voucher.DiscountValue;
-            }
-            discountAmount = Math.Min(discountAmount, totalPrice);
-        }
+        var (totalPrice, voucherDiscount, pointsDiscount, finalPrice) = ResolveOrderAmounts(order);
 
         string fullAddress = "";
         if (order.Address != null)
@@ -1917,8 +1886,10 @@ public class OrderController : ControllerBase
             ReceiverPhone = order.Address?.PhoneNumber ?? "",
             FullAddress = fullAddress,
             TotalPrice = totalPrice,
-            DiscountAmount = discountAmount,
-            FinalPrice = Math.Max(0, totalPrice - discountAmount + order.ShippingFee),
+            DiscountAmount = voucherDiscount,
+            VoucherDiscountAmount = voucherDiscount,
+            PointsDiscountAmount = pointsDiscount,
+            FinalPrice = finalPrice,
             StatusHistory = order.StatusHistory,
             OrderItems = order.OrderItems?.Select(oi => new UserOrderItemDetailDto
             {
@@ -1934,6 +1905,58 @@ public class OrderController : ControllerBase
                     .ToList() ?? new List<string>()
             }).ToList() ?? new List<UserOrderItemDetailDto>()
         };
+    }
+
+    private static (decimal totalAmount, decimal voucherDiscount, decimal pointsDiscount, decimal finalAmount) ResolveOrderAmounts(Order order)
+    {
+        var itemsTotal = order.OrderItems?.Where(oi => !oi.Delete).Sum(oi => oi.Subtotal) ?? 0;
+
+        var hasPersisted =
+            order.TotalAmount > 0
+            || order.VoucherDiscountAmount > 0
+            || order.PointsDiscountAmount > 0
+            || order.FinalAmount > 0;
+
+        if (hasPersisted)
+        {
+            var totalAmount = order.TotalAmount > 0 ? order.TotalAmount : itemsTotal;
+            return (
+                totalAmount,
+                order.VoucherDiscountAmount,
+                order.PointsDiscountAmount,
+                order.FinalAmount);
+        }
+
+        decimal voucherDiscount = 0;
+        if (order.Voucher != null)
+        {
+            var voucher = order.Voucher;
+            if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+            {
+                voucherDiscount = itemsTotal * (voucher.DiscountValue / 100);
+                if (voucher.MaxDiscountAmount.HasValue && voucherDiscount > voucher.MaxDiscountAmount.Value)
+                {
+                    voucherDiscount = voucher.MaxDiscountAmount.Value;
+                }
+            }
+            else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+            {
+                voucherDiscount = voucher.DiscountValue;
+            }
+
+            voucherDiscount = Math.Min(voucherDiscount, itemsTotal);
+        }
+
+        decimal pointsDiscount = 0;
+        if (order.PointHistories != null)
+        {
+            pointsDiscount = order.PointHistories
+                .Where(ph => ph.Points < 0)
+                .Sum(ph => Math.Abs(ph.Points));
+        }
+
+        var finalAmount = Math.Max(0, itemsTotal - voucherDiscount + order.ShippingFee - pointsDiscount);
+        return (itemsTotal, voucherDiscount, pointsDiscount, finalAmount);
     }
 
     private async Task<Address?> GetOrCreatePickupAddressAsync(int customerId)

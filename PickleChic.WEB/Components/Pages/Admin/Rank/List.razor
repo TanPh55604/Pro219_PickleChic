@@ -18,9 +18,6 @@
 
     <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
         <h2 class="text-base font-bold text-slate-900">Tỷ lệ tích điểm thưởng</h2>
-        <p class="!mt-1 text-sm text-slate-500">
-            Phần trăm giá trị đơn hàng được quy đổi thành điểm thưởng cho khách hàng (0 - 100)
-        </p>
 
         <div class="!mt-4 flex w-full flex-col items-center !gap-2 md:max-w-md md:flex-row">
             <MudNumericField T="double"
@@ -76,7 +73,7 @@
                   Hover="true"
                   Elevation="0"
                   FixedHeader="true"
-                  Height="calc(100vh - 340px)"
+                  Height="calc(100vh - 520px)"
                   RowsPerPage="10">
             <HeaderContent>
                 <MudTh>STT</MudTh>
@@ -127,7 +124,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadRanksAsync();
+        await Task.WhenAll(LoadRanksAsync(), LoadPercentRewardAsync());
     }
 
     private async Task LoadRanksAsync()
@@ -145,11 +142,30 @@
                 return;
             }
 
-            _ranks = (result.Data ?? new()).OrderBy(x => x.SpendAmount).ToList();
+            _ranks = (result.Data ?? new())
+                .Where(x => !x.Delete)
+                .OrderBy(x => x.SpendAmount)
+                .ToList();
         }
         finally
         {
             _isLoading = false;
+        }
+    }
+
+    private async Task LoadPercentRewardAsync()
+    {
+        var result = await _adminRankService.GetPercentRewardAsync();
+
+        if (!result.Success)
+        {
+            _snackbar.Add(ConvertError(result.Message), Severity.Error);
+            return;
+        }
+
+        if (result.Data is not null)
+        {
+            _percentReward = result.Data.PercentReward;
         }
     }
 
@@ -206,6 +222,6 @@
     }
 
     private static string ConvertError(string message) =>
-        message == "Db Error" ? "Không thể tải danh sách xếp hạng" :
+        message == "Db Error" ? "Không thể xử lý dữ liệu xếp hạng" :
         string.IsNullOrWhiteSpace(message) ? "Có lỗi xảy ra. Vui lòng thử lại" : message;
 }

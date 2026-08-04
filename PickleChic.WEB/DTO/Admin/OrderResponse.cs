@@ -38,6 +38,14 @@ namespace PickleChic.WEB.DTO.Admin
 
         public decimal ShippingFee { get; set; }
 
+        public decimal TotalAmount { get; set; }
+
+        public decimal VoucherDiscountAmount { get; set; }
+
+        public decimal PointsDiscountAmount { get; set; }
+
+        public decimal FinalAmount { get; set; }
+
         public string? StatusHistory { get; set; }
 
         public string? UpdateBy { get; set; }
@@ -54,9 +62,12 @@ namespace PickleChic.WEB.DTO.Admin
 
         public List<OrderItemResponse> OrderItems { get; set; } = new();
 
-        public decimal ItemsTotal => OrderItems.Sum(i => i.Subtotal);
+        public decimal ItemsTotal => TotalAmount > 0 ? TotalAmount : OrderItems.Sum(i => i.Subtotal);
 
-        public decimal GrandTotal => ItemsTotal + ShippingFee;
+        public decimal GrandTotal =>
+            TotalAmount > 0 || VoucherDiscountAmount > 0 || PointsDiscountAmount > 0 || FinalAmount > 0
+                ? FinalAmount
+                : ItemsTotal + ShippingFee;
     }
 
     public class OrderCustomerResponse

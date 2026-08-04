@@ -1,70 +1,88 @@
 @using PickleChic.WEB.DTO.Customer
 @using PickleChic.WEB.Model
+@using PickleChic.WEB.Schema
 
-<div class="!space-y-2">
-    <div class="grid !gap-2 sm:grid-cols-2">
-        <MudTextField Value="Address.FullName"
-                      ValueChanged="@(async (string v) => await OnFullNameChanged(v))"
-                      Label="Họ tên"
+<MudForm @ref="_form"
+         Model="@Address"
+         Validation="@_validator.ValidateValue">
+    <div class="!space-y-2">
+        <div class="grid !gap-2 sm:grid-cols-2">
+            <MudTextField Value="Address.FullName"
+                          ValueChanged="@(async (string v) => await OnFullNameChanged(v))"
+                          For="@(() => Address.FullName)"
+                          Label="Họ tên"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          Required="true"
+                          Immediate="true" />
+
+            <MudTextField Value="Address.PhoneNumber"
+                          ValueChanged="@(async (string v) => await OnPhoneChanged(v))"
+                          For="@(() => Address.PhoneNumber)"
+                          Label="Số điện thoại"
+                          Variant="Variant.Outlined"
+                          Margin="Margin.Dense"
+                          MaxLength="10"
+                          Required="true"
+                          Immediate="true" />
+        </div>
+
+        <MudTextField Value="Address.DetailInfo"
+                      ValueChanged="@(async (string v) => await OnDetailChanged(v))"
+                      For="@(() => Address.DetailInfo)"
+                      Label="Địa chỉ chi tiết"
                       Variant="Variant.Outlined"
                       Margin="Margin.Dense"
+                      Required="true"
                       Immediate="true" />
 
-        <MudTextField Value="Address.PhoneNumber"
-                      ValueChanged="@(async (string v) => await OnPhoneChanged(v))"
-                      Label="Số điện thoại"
-                      Variant="Variant.Outlined"
-                      Margin="Margin.Dense"
-                      Immediate="true" />
+        <div class="grid !gap-2 md:grid-cols-3">
+            <MudSelect T="int?"
+                       Value="Address.ProvinceId"
+                       ValueChanged="OnProvinceChangedAsync"
+                       For="@(() => Address.ProvinceId)"
+                       Label="Tỉnh/TP"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Required="true">
+                @foreach (var p in _provinces)
+                {
+                    <MudSelectItem T="int?" Value="@p.Id">@p.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudSelect T="int?"
+                       Value="Address.DistrictId"
+                       ValueChanged="OnDistrictChangedAsync"
+                       For="@(() => Address.DistrictId)"
+                       Label="Quận/Huyện"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Required="true"
+                       Disabled="@(!Address.ProvinceId.HasValue || !_districts.Any())">
+                @foreach (var d in _districts)
+                {
+                    <MudSelectItem T="int?" Value="@d.Id">@d.Name</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudSelect T="int"
+                       Value="Address.WardId"
+                       ValueChanged="OnWardChangedAsync"
+                       For="@(() => Address.WardId)"
+                       Label="Phường/Xã"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       Required="true"
+                       Disabled="@(!Address.DistrictId.HasValue || !_wards.Any())">
+                @foreach (var w in _wards)
+                {
+                    <MudSelectItem Value="@w.Id">@w.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
     </div>
-
-    <MudTextField Value="Address.DetailInfo"
-                  ValueChanged="@(async (string v) => await OnDetailChanged(v))"
-                  Label="Địa chỉ chi tiết"
-                  Variant="Variant.Outlined"
-                  Margin="Margin.Dense"
-                  Immediate="true" />
-
-    <div class="grid !gap-2 md:grid-cols-3">
-        <MudSelect T="int?"
-                   Value="_provinceId"
-                   ValueChanged="OnProvinceChangedAsync"
-                   Label="Tỉnh/TP"
-                   Variant="Variant.Outlined"
-                   Margin="Margin.Dense">
-            @foreach (var p in _provinces)
-            {
-                <MudSelectItem T="int?" Value="@p.Id">@p.Name</MudSelectItem>
-            }
-        </MudSelect>
-
-        <MudSelect T="int?"
-                   Value="_districtId"
-                   ValueChanged="OnDistrictChangedAsync"
-                   Label="Quận/Huyện"
-                   Variant="Variant.Outlined"
-                   Margin="Margin.Dense"
-                   Disabled="@(!_districts.Any())">
-            @foreach (var d in _districts)
-            {
-                <MudSelectItem T="int?" Value="@d.Id">@d.Name</MudSelectItem>
-            }
-        </MudSelect>
-
-        <MudSelect T="int"
-                   Value="Address.WardId"
-                   ValueChanged="OnWardChangedAsync"
-                   Label="Phường/Xã"
-                   Variant="Variant.Outlined"
-                   Margin="Margin.Dense"
-                   Disabled="@(!_wards.Any())">
-            @foreach (var w in _wards)
-            {
-                <MudSelectItem Value="@w.Id">@w.Name</MudSelectItem>
-            }
-        </MudSelect>
-    </div>
-</div>
+</MudForm>
 
 @code {
     [Parameter, EditorRequired]
@@ -73,11 +91,12 @@
     [Parameter]
     public EventCallback OnChanged { get; set; }
 
+    private MudForm? _form;
+    private readonly OfflinePosGuestAddressSchema.CreateUpdate _validator = new();
+
     private List<ProvinceResponse> _provinces = new();
     private List<DistrictResponse> _districts = new();
     private List<WardResponse> _wards = new();
-    private int? _provinceId;
-    private int? _districtId;
 
     protected override async Task OnInitializedAsync()
     {
@@ -87,18 +106,26 @@
             _provinces = provinces.Data;
         }
 
-        _provinceId = Address.ProvinceId;
-        _districtId = Address.DistrictId;
-
-        if (_provinceId is > 0)
+        if (Address.ProvinceId is > 0)
         {
-            await LoadDistrictsAsync(_provinceId.Value);
+            await LoadDistrictsAsync(Address.ProvinceId.Value);
         }
 
-        if (_districtId is > 0)
+        if (Address.DistrictId is > 0)
         {
-            await LoadWardsAsync(_districtId.Value);
+            await LoadWardsAsync(Address.DistrictId.Value);
         }
+    }
+
+    public async Task<bool> ValidateAsync()
+    {
+        if (_form is null)
+        {
+            return false;
+        }
+
+        await _form.ValidateAsync();
+        return _form.IsValid;
     }
 
     private async Task NotifyAsync()
@@ -129,9 +156,7 @@
 
     private async Task OnProvinceChangedAsync(int? provinceId)
     {
-        _provinceId = provinceId;
         Address.ProvinceId = provinceId;
-        _districtId = null;
         Address.DistrictId = null;
         Address.WardId = 0;
         _districts = new();
@@ -147,7 +172,6 @@
 
     private async Task OnDistrictChangedAsync(int? districtId)
     {
-        _districtId = districtId;
         Address.DistrictId = districtId;
         Address.WardId = 0;
         _wards = new();

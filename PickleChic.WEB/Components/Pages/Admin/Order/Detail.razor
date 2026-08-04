@@ -193,6 +193,20 @@ else
                                 <span>Tạm tính</span>
                                 <span>@_model.ItemsTotal.ToString("N0")đ</span>
                             </div>
+                            @if (_model.VoucherDiscountAmount > 0)
+                            {
+                                <div class="flex w-full max-w-xs justify-between text-slate-600">
+                                    <span>Giảm voucher</span>
+                                    <span class="text-rose-600">-@_model.VoucherDiscountAmount.ToString("N0")đ</span>
+                                </div>
+                            }
+                            @if (_model.PointsDiscountAmount > 0)
+                            {
+                                <div class="flex w-full max-w-xs justify-between text-slate-600">
+                                    <span>Giảm điểm thưởng</span>
+                                    <span class="text-rose-600">-@_model.PointsDiscountAmount.ToString("N0")đ</span>
+                                </div>
+                            }
                             <div class="flex w-full max-w-xs justify-between text-slate-600">
                                 <span>Phí vận chuyển</span>
                                 <span>@_model.ShippingFee.ToString("N0")đ</span>
