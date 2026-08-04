@@ -349,10 +349,20 @@
                         <span class="font-semibold text-slate-500">Tạm tính</span>
                         <span class="font-black text-slate-950">@FormatMoney(order.TotalPrice)</span>
                     </div>
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold text-slate-500">Giảm giá</span>
-                        <span class="font-black text-[#d71920]">-@FormatMoney(order.DiscountAmount)</span>
-                    </div>
+                    @if (order.VoucherDiscountAmount > 0 || (order.DiscountAmount > 0 && order.PointsDiscountAmount <= 0 && order.VoucherDiscountAmount <= 0))
+                    {
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-500">Giảm voucher</span>
+                            <span class="font-black text-[#d71920]">-@FormatMoney(order.VoucherDiscountAmount > 0 ? order.VoucherDiscountAmount : order.DiscountAmount)</span>
+                        </div>
+                    }
+                    @if (order.PointsDiscountAmount > 0)
+                    {
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-500">Giảm điểm thưởng</span>
+                            <span class="font-black text-[#d71920]">-@FormatMoney(order.PointsDiscountAmount)</span>
+                        </div>
+                    }
                     <div class="flex items-center justify-between">
                         <span class="font-semibold text-slate-500">Phí vận chuyển</span>
                         <span class="font-black text-slate-950">@FormatMoney(order.ShippingFee)</span>

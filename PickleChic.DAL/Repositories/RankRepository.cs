@@ -15,7 +15,9 @@ public class RankRepository
 
     public async Task<List<Rank>> GetAllAsync()
     {
-        return await _context.Ranks.ToListAsync();
+        return await _context.Ranks
+            .Where(r => !r.Delete)
+            .ToListAsync();
     }
 
     public async Task<Rank?> GetByIdAsync(int id)
@@ -25,6 +27,7 @@ public class RankRepository
 
     public async Task<Rank> AddAsync(Rank entity)
     {
+        entity.Delete = false;
         _context.Ranks.Add(entity);
         await _context.SaveChangesAsync();
         return entity;
@@ -35,7 +38,7 @@ public class RankRepository
         try
         {
             var existing = await _context.Ranks.FindAsync(entity.Id);
-            if (existing is null)
+            if (existing is null || existing.Delete)
                 return null;
 
             existing.RankName = entity.RankName;
@@ -49,13 +52,13 @@ public class RankRepository
         }
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> SoftDeleteAsync(int id)
     {
-        var entity = await _context.Ranks.FindAsync(id);
-        if (entity is null)
+        var entity = await _context.Ranks.FirstOrDefaultAsync(r => r.Id == id);
+        if (entity is null || entity.Delete)
             return false;
 
-        _context.Ranks.Remove(entity);
+        entity.Delete = true;
         await _context.SaveChangesAsync();
         return true;
     }
@@ -64,7 +67,16 @@ public class RankRepository
     {
         var normalized = rankName.Trim().ToLower();
         return await _context.Ranks.AnyAsync(r =>
-            r.RankName.ToLower() == normalized
+            !r.Delete
+            && r.RankName.ToLower() == normalized
+            && (!excludeId.HasValue || r.Id != excludeId.Value));
+    }
+
+    public async Task<bool> ExistsBySpendAmountAsync(decimal spendAmount, int? excludeId = null)
+    {
+        return await _context.Ranks.AnyAsync(r =>
+            !r.Delete
+            && r.SpendAmount == spendAmount
             && (!excludeId.HasValue || r.Id != excludeId.Value));
     }
 }

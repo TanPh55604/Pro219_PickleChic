@@ -47,6 +47,20 @@ public class Order
     [Column(TypeName = "decimal(18,2)")]
     public decimal ShippingFee { get; set; }
 
+    /// <summary>Tạm tính sản phẩm (sau khuyến mãi dòng), không gồm ship / voucher / điểm.</summary>
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal TotalAmount { get; set; }
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal VoucherDiscountAmount { get; set; }
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal PointsDiscountAmount { get; set; }
+
+    /// <summary>Số tiền khách thực trả: TotalAmount - voucher - điểm + ShippingFee (>= 0).</summary>
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal FinalAmount { get; set; }
+
     public string? StatusHistory { get; set; }
 
     public string? UpdateBy { get; set; }

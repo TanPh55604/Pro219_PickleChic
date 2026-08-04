@@ -37,6 +37,7 @@ public class OrderRepository
                         .ThenInclude(d => d!.Province)
             .Include(o => o.PaymentMethod)
             .Include(o => o.Voucher)
+            .Include(o => o.PointHistories)
             .Include(o => o.OrderItems!)
                 .ThenInclude(oi => oi.ProductVariant!)
                     .ThenInclude(pv => pv.Product)
@@ -65,6 +66,10 @@ public class OrderRepository
             existing.OrderDate = entity.OrderDate;
             existing.AddressId = entity.AddressId;
             existing.ShippingFee = entity.ShippingFee;
+            existing.TotalAmount = entity.TotalAmount;
+            existing.VoucherDiscountAmount = entity.VoucherDiscountAmount;
+            existing.PointsDiscountAmount = entity.PointsDiscountAmount;
+            existing.FinalAmount = entity.FinalAmount;
             existing.PaymentMethodId = entity.PaymentMethodId;
             existing.VoucherId = entity.VoucherId;
             existing.PaymentStatus = entity.PaymentStatus;
@@ -124,6 +129,7 @@ public class OrderRepository
                     .ThenInclude(w => w!.District)
                         .ThenInclude(d => d!.Province)
             .Include(o => o.Voucher)
+            .Include(o => o.PointHistories)
             .Include(o => o.OrderItems!)
                 .ThenInclude(oi => oi.ProductVariant!)
                     .ThenInclude(pv => pv.Product)
@@ -143,6 +149,7 @@ public class OrderRepository
                     .ThenInclude(w => w!.District)
                         .ThenInclude(d => d!.Province)
             .Include(o => o.Voucher)
+            .Include(o => o.PointHistories)
             .Include(o => o.OrderItems!)
                 .ThenInclude(oi => oi.ProductVariant!)
                     .ThenInclude(pv => pv.Product)
@@ -171,6 +178,14 @@ public class OrderRepository
         decimal totalSpent = 0;
         foreach (var order in orders)
         {
+            if (order.FinalAmount > 0 || order.TotalAmount > 0 || order.VoucherDiscountAmount > 0 || order.PointsDiscountAmount > 0)
+            {
+                totalSpent += order.FinalAmount > 0
+                    ? Math.Max(0, order.FinalAmount - order.ShippingFee)
+                    : Math.Max(0, order.TotalAmount - order.VoucherDiscountAmount - order.PointsDiscountAmount);
+                continue;
+            }
+
             decimal totalProductPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
             decimal discountAmount = 0;
 
@@ -208,6 +223,7 @@ public class OrderRepository
                         .ThenInclude(d => d!.Province)
             .Include(o => o.PaymentMethod)
             .Include(o => o.Voucher)
+            .Include(o => o.PointHistories)
             .Include(o => o.OrderItems!)
                 .ThenInclude(oi => oi.ProductVariant!)
                     .ThenInclude(pv => pv.Product)
@@ -232,6 +248,7 @@ public class OrderRepository
                     .ThenInclude(w => w!.District)
                         .ThenInclude(d => d!.Province)
             .Include(o => o.Voucher)
+            .Include(o => o.PointHistories)
             .Include(o => o.OrderItems!)
                 .ThenInclude(oi => oi.ProductVariant!)
                     .ThenInclude(pv => pv.Product)
