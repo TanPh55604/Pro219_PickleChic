@@ -76,8 +76,7 @@
 
             public static string Delete(int id) => $"management/rank/delete/{id}";
 
-            public static string UpdatePercentReward(double value) =>
-                $"management/rank/percent-reward?value={value.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
+            public const string PercentReward = "management/rank/percent-reward";
         }
 
         public static class Attribute

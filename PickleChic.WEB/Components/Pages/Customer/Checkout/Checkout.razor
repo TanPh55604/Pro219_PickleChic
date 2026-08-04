@@ -898,7 +898,7 @@
         else
         {
             await LoadCartInternalAsync();
-            await RecalculateTotalsAsync();
+            await RecalculateAfterCartChangeAsync();
         }
 
         _isUpdating = false;
@@ -928,10 +928,11 @@
 
             if (_cartItems.Any())
             {
-                await RecalculateTotalsAsync();
+                await RecalculateAfterCartChangeAsync();
             }
             else
             {
+                _couponError = string.Empty;
                 ResetTotals();
             }
         }
@@ -950,14 +951,25 @@
             return;
         }
 
-        if (_selectedAddressId <= 0)
+        var code = _couponCode.Trim();
+        await RecalculateTotalsAsync(code, treatAsApply: true);
+    }
+
+    private async Task RecalculateAfterCartChangeAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(_couponCode) && string.IsNullOrWhiteSpace(_appliedCoupon))
         {
-            _couponError = "Vui lòng chọn địa chỉ giao hàng trước khi áp mã";
+            var applied = await RecalculateTotalsAsync(_couponCode.Trim(), treatAsApply: true);
+            if (!applied)
+            {
+                await RecalculateTotalsAsync();
+            }
+
             return;
         }
 
-        var code = _couponCode.Trim();
-        await RecalculateTotalsAsync(code, treatAsApply: true);
+        _couponError = string.Empty;
+        await RecalculateTotalsAsync();
     }
 
     private async Task QuickApplyVoucherAsync(VoucherResponse voucher)
@@ -977,7 +989,7 @@
 
     private async Task<bool> RecalculateTotalsAsync(string? discountCodeOverride = null, bool treatAsApply = false)
     {
-        if (!_cartItems.Any() || (!_isBopis && _selectedAddressId <= 0))
+        if (!_cartItems.Any())
         {
             ResetTotals();
             return false;
@@ -991,7 +1003,7 @@
 
         var request = new OrderCalculationRequest
         {
-            AddressId = _isBopis ? null : _selectedAddressId,
+            AddressId = _isBopis || _selectedAddressId <= 0 ? null : _selectedAddressId,
             DiscountCode = discountCode,
             UsePoints = _usePoints,
             Bopis = _isBopis,
