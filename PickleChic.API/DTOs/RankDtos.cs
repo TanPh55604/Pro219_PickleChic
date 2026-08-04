@@ -10,13 +10,3 @@ public class RankUpdateDto : RankCreateDto
 {
     public int Id { get; set; }
 }
-
-public class PercentRewardUpdateDto
-{
-    public double PercentReward { get; set; }
-}
-
-public class PercentRewardResponseDto
-{
-    public double PercentReward { get; set; }
-}

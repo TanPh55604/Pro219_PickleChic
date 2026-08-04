@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using PickleChic.WEB.Constant;
 using PickleChic.WEB.Model;
 
 namespace PickleChic.WEB.Schema
@@ -30,12 +29,11 @@ namespace PickleChic.WEB.Schema
 
                 RuleFor(x => x.PhoneNumber)
                     .NotEmpty().WithMessage("Số điện thoại không được để trống")
-                    .Matches(Validation.Phone.Pattern).WithMessage(Validation.Phone.ErrorMessage);
+                    .Matches(@"^(0|\+84)[0-9]{9,10}$").WithMessage("Số điện thoại không đúng định dạng");
 
                 RuleFor(x => x.DateOfBirth)
-                    .LessThan(DateTime.Today)
-                    .When(x => x.DateOfBirth.HasValue)
-                    .WithMessage("Ngày sinh không hợp lệ");
+                    .NotEmpty().WithMessage("Ngày sinh không được để trống")
+                    .LessThan(DateTime.Today).WithMessage("Ngày sinh không hợp lệ");
 
                 RuleFor(x => x.Gender)
                     .NotEmpty().WithMessage("Giới tính không được để trống");

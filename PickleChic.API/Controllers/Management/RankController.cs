@@ -54,7 +54,7 @@ public class RankController : ControllerBase
         try
         {
             var result = await _repository.GetByIdAsync(id);
-            if (result is null || result.Delete)
+            if (result is null)
                 return NotFound();
 
             return Ok(result);
@@ -72,9 +72,6 @@ public class RankController : ControllerBase
         {
             if (await _repository.ExistsByNameAsync(dto.RankName))
                 return BadRequest("Tên xếp hạng đã tồn tại");
-
-            if (await _repository.ExistsBySpendAmountAsync(dto.SpendAmount))
-                return BadRequest("Mức chi tiêu của xếp hạng đã tồn tại");
 
             var entity = new Rank
             {
@@ -98,9 +95,6 @@ public class RankController : ControllerBase
         {
             if (await _repository.ExistsByNameAsync(dto.RankName, dto.Id))
                 return BadRequest("Tên xếp hạng đã tồn tại");
-
-            if (await _repository.ExistsBySpendAmountAsync(dto.SpendAmount, dto.Id))
-                return BadRequest("Mức chi tiêu của xếp hạng đã tồn tại");
 
             var entity = new Rank
             {
@@ -126,7 +120,7 @@ public class RankController : ControllerBase
     {
         try
         {
-            var success = await _repository.SoftDeleteAsync(id);
+            var success = await _repository.DeleteAsync(id);
             if (!success)
                 return NotFound();
 
@@ -138,22 +132,12 @@ public class RankController : ControllerBase
         }
     }
 
-    [HttpGet("percent-reward")]
-    public ActionResult<PercentRewardResponseDto> GetPercentReward()
-    {
-        var percentReward = _config.GetValue<double?>("PercentReward")
-            ?? _config.GetValue<double?>("RewardPercent")
-            ?? 10.0;
-
-        return Ok(new PercentRewardResponseDto { PercentReward = percentReward });
-    }
-
     [HttpPatch("percent-reward")]
-    public async Task<ActionResult<PercentRewardResponseDto>> UpdatePercentReward([FromBody] PercentRewardUpdateDto dto)
+    public async Task<IActionResult> UpdatePercentReward([FromQuery] double value)
     {
-        if (dto is null || dto.PercentReward <= 0 || dto.PercentReward >= 100)
+        if (value <= 0 || value >= 100)
         {
-            return BadRequest("Tỷ lệ thưởng phải lớn hơn 0 và nhỏ hơn 100");
+            return BadRequest("Value must be greater than 0 and less than 100");
         }
 
         try
@@ -166,33 +150,33 @@ public class RankController : ControllerBase
 
             if (!System.IO.File.Exists(filePath))
             {
-                return NotFound("Không tìm thấy appsettings.json");
+                return NotFound("appsettings.json not found");
             }
 
             var json = await System.IO.File.ReadAllTextAsync(filePath);
-            var options = new JsonSerializerOptions
-            {
-                ReadCommentHandling = JsonCommentHandling.Skip,
-                WriteIndented = true
+            var options = new JsonSerializerOptions 
+            { 
+                ReadCommentHandling = JsonCommentHandling.Skip, 
+                WriteIndented = true 
             };
             var jsonNode = JsonNode.Parse(json);
             if (jsonNode == null)
             {
-                return BadRequest("appsettings.json không hợp lệ");
+                return BadRequest("Invalid JSON in appsettings.json");
             }
 
-            jsonNode["PercentReward"] = dto.PercentReward;
+            jsonNode["PercentReward"] = value;
 
             var updatedJson = jsonNode.ToJsonString(options);
             await System.IO.File.WriteAllTextAsync(filePath, updatedJson);
 
-            _config["PercentReward"] = dto.PercentReward.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            _config["PercentReward"] = value.ToString();
 
-            return Ok(new PercentRewardResponseDto { PercentReward = dto.PercentReward });
+            return Ok(new { PercentReward = value });
         }
         catch (Exception ex)
         {
-            return StatusCode(500, $"Không thể cập nhật tỷ lệ thưởng: {ex.Message}");
+            return StatusCode(500, $"Error updating appsettings.json: {ex.Message}");
         }
     }
 }

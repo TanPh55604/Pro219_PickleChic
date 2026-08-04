@@ -167,10 +167,7 @@ else
 
         if (result.Success && result.Data is not null)
         {
-            _ranks = result.Data
-                .Where(x => !x.Delete)
-                .OrderBy(x => x.SpendAmount)
-                .ToList();
+            _ranks = result.Data.OrderBy(x => x.SpendAmount).ToList();
         }
     }
 

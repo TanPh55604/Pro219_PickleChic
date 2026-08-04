@@ -15,8 +15,6 @@ namespace PickleChic.WEB.Services.Admin
 
         Task<ApiResult<bool>> DeleteAsync(int id);
 
-        Task<ApiResult<PercentRewardResponse>> GetPercentRewardAsync();
-
         Task<ApiResult<PercentRewardResponse>> UpdatePercentRewardAsync(double value);
     }
 }

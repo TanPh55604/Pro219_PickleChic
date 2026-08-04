@@ -223,7 +223,6 @@
             }
 
             _ranks = (result.Data ?? new())
-                .Where(x => !x.Delete)
                 .OrderBy(x => x.SpendAmount)
                 .ToList();
         }

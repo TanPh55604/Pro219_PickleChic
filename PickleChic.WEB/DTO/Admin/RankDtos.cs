@@ -7,8 +7,6 @@ namespace PickleChic.WEB.DTO.Admin
         public string RankName { get; set; } = string.Empty;
 
         public decimal SpendAmount { get; set; }
-
-        public bool Delete { get; set; }
     }
 
     public class RankCreateRequest
@@ -24,11 +22,6 @@ namespace PickleChic.WEB.DTO.Admin
     }
 
     public class PercentRewardResponse
-    {
-        public double PercentReward { get; set; }
-    }
-
-    public class PercentRewardUpdateRequest
     {
         public double PercentReward { get; set; }
     }

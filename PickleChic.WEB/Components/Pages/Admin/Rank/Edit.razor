@@ -70,13 +70,9 @@ else
     {
         var result = await _adminRankService.GetByIdAsync(Id);
 
-        if (!result.Success || result.Data is null || result.Data.Delete)
+        if (!result.Success || result.Data is null)
         {
-            _snackbar.Add(
-                result.Data?.Delete == true
-                    ? "Xếp hạng đã bị xóa"
-                    : ConvertError(result.Message),
-                Severity.Error);
+            _snackbar.Add(ConvertError(result.Message), Severity.Error);
             _navigation.NavigateTo(RouterConfig.Admin.Ranks, replace: true);
             return;
         }

@@ -270,11 +270,26 @@ public class OrderController : ControllerBase
                             var receiverName = existingOrder.Customer.FullName;
                             var subject = "[PickleChic] Đơn hàng #" + existingOrder.OrderCode + " đã hoàn thành thành công!";
                             
-                            decimal totalPrice;
-                            decimal discountAmount;
-                            decimal pointsDiscount;
-                            decimal finalPrice;
-                            (totalPrice, discountAmount, pointsDiscount, finalPrice) = ResolveOrderAmounts(existingOrder);
+                            decimal totalPrice = existingOrder.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
+                            decimal discountAmount = 0;
+                            if (existingOrder.Voucher != null)
+                            {
+                                var voucher = existingOrder.Voucher;
+                                if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    discountAmount = totalPrice * (voucher.DiscountValue / 100);
+                                    if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                                    {
+                                        discountAmount = voucher.MaxDiscountAmount.Value;
+                                    }
+                                }
+                                else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    discountAmount = voucher.DiscountValue;
+                                }
+                                discountAmount = Math.Min(discountAmount, totalPrice);
+                            }
+                            decimal finalPrice = Math.Max(0, totalPrice - discountAmount + existingOrder.ShippingFee);
 
                             string fullAddress = "";
                             if (existingOrder.Address != null)
@@ -333,16 +348,6 @@ public class OrderController : ControllerBase
                                     <tr>
                                         <td style=""padding: 6px 0; font-size: 14px; color: #64748b;"">Giảm giá voucher:</td>
                                         <td style=""padding: 6px 0; font-size: 14px; color: #ef4444; text-align: right;"">-{discountAmount.ToString("#,##0")} ₫</td>
-                                    </tr>";
-                            }
-
-                            string pointsDiscountRow = "";
-                            if (pointsDiscount > 0)
-                            {
-                                pointsDiscountRow = $@"
-                                    <tr>
-                                        <td style=""padding: 6px 0; font-size: 14px; color: #64748b;"">Giảm giá điểm thưởng:</td>
-                                        <td style=""padding: 6px 0; font-size: 14px; color: #ef4444; text-align: right;"">-{pointsDiscount.ToString("#,##0")} ₫</td>
                                     </tr>";
                             }
 
@@ -415,7 +420,6 @@ public class OrderController : ControllerBase
                                                                 <td style=""padding: 6px 0; font-size: 14px; color: #0f172a; text-align: right;"">{existingOrder.ShippingFee.ToString("#,##0")} ₫</td>
                                                             </tr>
                                                             {voucherDiscountRow}
-                                                            {pointsDiscountRow}
                                                             <tr>
                                                                 <td style=""padding: 12px 0 0 0; font-size: 16px; font-weight: bold; color: #0f172a; border-top: 1px dashed #e2e8f0; margin-top: 10px;"">Tổng tiền thanh toán:</td>
                                                                 <td style=""padding: 12px 0 0 0; font-size: 20px; font-weight: 800; color: #A05AFF; text-align: right; border-top: 1px dashed #e2e8f0; margin-top: 10px;"">{finalPrice.ToString("#,##0")} ₫</td>
@@ -483,8 +487,6 @@ public class OrderController : ControllerBase
 
     private static ManagementOrderResponseDto MapToManagementOrderDto(Order order)
     {
-        var amounts = ResolveOrderAmounts(order);
-
         return new ManagementOrderResponseDto
         {
             Id = order.Id,
@@ -505,10 +507,6 @@ public class OrderController : ControllerBase
             PaymentLink = order.PaymentLink,
             PaymentExpiration = order.PaymentExpiration,
             ShippingFee = order.ShippingFee,
-            TotalAmount = amounts.totalAmount,
-            VoucherDiscountAmount = amounts.voucherDiscount,
-            PointsDiscountAmount = amounts.pointsDiscount,
-            FinalAmount = amounts.finalAmount,
             StatusHistory = order.StatusHistory,
             UpdateBy = order.UpdateBy,
             InsertedAt = order.InsertedAt,
@@ -597,58 +595,6 @@ public class OrderController : ControllerBase
                 .ToList()
                 ?? new List<ManagementOrderItemDto>()
         };
-    }
-
-    private static (decimal totalAmount, decimal voucherDiscount, decimal pointsDiscount, decimal finalAmount) ResolveOrderAmounts(Order order)
-    {
-        var itemsTotal = order.OrderItems?.Where(oi => !oi.Delete).Sum(oi => oi.Subtotal) ?? 0;
-
-        var hasPersisted =
-            order.TotalAmount > 0
-            || order.VoucherDiscountAmount > 0
-            || order.PointsDiscountAmount > 0
-            || order.FinalAmount > 0;
-
-        if (hasPersisted)
-        {
-            var totalAmount = order.TotalAmount > 0 ? order.TotalAmount : itemsTotal;
-            return (
-                totalAmount,
-                order.VoucherDiscountAmount,
-                order.PointsDiscountAmount,
-                order.FinalAmount);
-        }
-
-        decimal voucherDiscount = 0;
-        if (order.Voucher != null)
-        {
-            var voucher = order.Voucher;
-            if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
-            {
-                voucherDiscount = itemsTotal * (voucher.DiscountValue / 100);
-                if (voucher.MaxDiscountAmount.HasValue && voucherDiscount > voucher.MaxDiscountAmount.Value)
-                {
-                    voucherDiscount = voucher.MaxDiscountAmount.Value;
-                }
-            }
-            else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
-            {
-                voucherDiscount = voucher.DiscountValue;
-            }
-
-            voucherDiscount = Math.Min(voucherDiscount, itemsTotal);
-        }
-
-        decimal pointsDiscount = 0;
-        if (order.PointHistories != null)
-        {
-            pointsDiscount = order.PointHistories
-                .Where(ph => ph.Points < 0)
-                .Sum(ph => Math.Abs(ph.Points));
-        }
-
-        var finalAmount = Math.Max(0, itemsTotal - voucherDiscount + order.ShippingFee - pointsDiscount);
-        return (itemsTotal, voucherDiscount, pointsDiscount, finalAmount);
     }
 
     private List<StatusHistoryEntry> ParseStatusHistory(string? json)

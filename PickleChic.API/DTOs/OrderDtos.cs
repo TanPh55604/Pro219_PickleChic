@@ -87,10 +87,6 @@ public class ManagementOrderResponseDto
     public string? PaymentLink { get; set; }
     public DateTime? PaymentExpiration { get; set; }
     public decimal ShippingFee { get; set; }
-    public decimal TotalAmount { get; set; }
-    public decimal VoucherDiscountAmount { get; set; }
-    public decimal PointsDiscountAmount { get; set; }
-    public decimal FinalAmount { get; set; }
     public string? StatusHistory { get; set; }
     public string? UpdateBy { get; set; }
     public DateTime InsertedAt { get; set; }

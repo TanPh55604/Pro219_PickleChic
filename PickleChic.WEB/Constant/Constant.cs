@@ -1,6 +1,4 @@
-﻿using System.Text.RegularExpressions;
-
-namespace PickleChic.WEB.Constant
+﻿namespace PickleChic.WEB.Constant
 {
     public class Constant
     {
@@ -144,39 +142,6 @@ namespace PickleChic.WEB.Constant
                 }
 
                 return $"{selected}: {detail.Trim()}";
-            }
-        }
-    }
-
-    public static class Validation
-    {
-        public static class Phone
-        {
-            public const string Pattern = @"^0\d{9}$";
-
-            public const string ErrorMessage = "Số điện thoại gồm 10 số và bắt đầu từ 0";
-
-            public static bool IsValid(string? phone)
-            {
-                if (string.IsNullOrWhiteSpace(phone))
-                {
-                    return false;
-                }
-
-                return Regex.IsMatch(phone.Trim(), Pattern);
-            }
-
-            public static bool IsValidOrEmpty(string? phone)
-                => string.IsNullOrWhiteSpace(phone) || IsValid(phone);
-
-            public static string? GetError(string? phone, bool required = true)
-            {
-                if (string.IsNullOrWhiteSpace(phone))
-                {
-                    return required ? "Số điện thoại không được để trống" : null;
-                }
-
-                return IsValid(phone) ? null : ErrorMessage;
             }
         }
     }

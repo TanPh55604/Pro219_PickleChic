@@ -26,8 +26,6 @@ public class UserOrderDetailDto
     
     public decimal TotalPrice { get; set; }
     public decimal DiscountAmount { get; set; }
-    public decimal VoucherDiscountAmount { get; set; }
-    public decimal PointsDiscountAmount { get; set; }
     public decimal FinalPrice { get; set; }
 
     public List<UserOrderItemDetailDto> OrderItems { get; set; } = new();

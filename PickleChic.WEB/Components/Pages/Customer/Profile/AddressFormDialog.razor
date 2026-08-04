@@ -1,8 +1,4 @@
-﻿@using PickleChic.WEB.DTO.Customer
-@using PickleChic.WEB.Model
-@using PickleChic.WEB.Schema
-
-<MudDialog Class="!rounded-2xl">
+﻿<MudDialog Class="!rounded-2xl">
     <DialogContent>
         <div class="!px-2 !pt-2 !pb-1 sm:!px-4">
             <div class="!space-y-1 !pb-4">
@@ -15,23 +11,22 @@
                 </h2>
             </div>
 
-            <MudForm @ref="_form"
-                     Model="@_model"
-                     Validation="@_validator.ValidateValue">
+            <MudForm @ref="_form">
                 <div class="!space-y-4">
                     <MudTextField @bind-Value="_model.FullName"
                                   For="@(() => _model.FullName)"
                                   Label="Họ và tên người nhận"
                                   Variant="Variant.Outlined"
                                   Required="true"
+                                  RequiredError="Không được để trống"
                                   Immediate="true" />
 
                     <MudTextField @bind-Value="_model.PhoneNumber"
                                   For="@(() => _model.PhoneNumber)"
                                   Label="Số điện thoại"
                                   Variant="Variant.Outlined"
-                                  MaxLength="10"
                                   Required="true"
+                                  RequiredError="Không được để trống"
                                   Immediate="true" />
 
                     <MudTextField @bind-Value="_model.DetailInfo"
@@ -40,6 +35,7 @@
                                   Placeholder="Số nhà, tên đường..."
                                   Variant="Variant.Outlined"
                                   Required="true"
+                                  RequiredError="Không được để trống"
                                   Immediate="true" />
 
                     <MudSelect T="int?"
@@ -49,6 +45,7 @@
                                Label="Tỉnh / Thành phố"
                                Variant="Variant.Outlined"
                                Required="true"
+                               RequiredError="Không được để trống"
                                Disabled="@_isLoadingLocations">
                         @foreach (var province in _provinces)
                         {
@@ -63,6 +60,7 @@
                                Label="Quận / Huyện"
                                Variant="Variant.Outlined"
                                Required="true"
+                               RequiredError="Không được để trống"
                                Disabled="@(!_model.ProvinceId.HasValue || _isLoadingLocations)">
                         @foreach (var district in _districts)
                         {
@@ -76,6 +74,7 @@
                                Label="Phường / Xã"
                                Variant="Variant.Outlined"
                                Required="true"
+                               RequiredError="Không được để trống"
                                Disabled="@(!_model.DistrictId.HasValue || _isLoadingLocations)">
                         @foreach (var ward in _wards)
                         {
@@ -123,14 +122,17 @@
     public int CustomerId { get; set; }
 
     private MudForm? _form;
-    private readonly CustomerAddressSchema.CreateUpdate _validator = new();
-    private CustomerAddressFormModel _model = new();
+
+    private AddressFormModel _model = new();
 
     private List<ProvinceResponse> _provinces = new();
+
     private List<DistrictResponse> _districts = new();
+
     private List<WardResponse> _wards = new();
 
     private bool _isLoadingLocations;
+
     private bool _isSubmitting;
 
     private bool IsEdit => EditItem is not null;
@@ -141,7 +143,7 @@
 
         if (EditItem is not null)
         {
-            _model = new CustomerAddressFormModel
+            _model = new AddressFormModel
             {
                 FullName = EditItem.FullName,
                 PhoneNumber = EditItem.PhoneNumber,
@@ -278,7 +280,7 @@
     {
         if (_form is not null)
         {
-            await _form.ValidateAsync();
+            await _form.Validate();
 
             if (!_form.IsValid)
             {
@@ -330,5 +332,22 @@
 
         _snackbar.Add(result.Message, Severity.Success);
         MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private class AddressFormModel
+    {
+        public string FullName { get; set; } = string.Empty;
+
+        public string PhoneNumber { get; set; } = string.Empty;
+
+        public string DetailInfo { get; set; } = string.Empty;
+
+        public int? ProvinceId { get; set; }
+
+        public int? DistrictId { get; set; }
+
+        public int? WardId { get; set; }
+
+        public bool IsDefault { get; set; }
     }
 }

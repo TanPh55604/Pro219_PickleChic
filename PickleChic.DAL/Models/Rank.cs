@@ -13,7 +13,5 @@ public class Rank
     [Column(TypeName = "decimal(18,2)")]
     public decimal SpendAmount { get; set; }
 
-    public bool Delete { get; set; }
-
     public ICollection<Customer>? Customers { get; set; }
 }

@@ -180,21 +180,10 @@
                             <span class="font-black text-slate-950">@FormatMoney(_order.TotalPrice)</span>
                         </div>
 
-                        @if (_order.VoucherDiscountAmount > 0 || (_order.DiscountAmount > 0 && _order.PointsDiscountAmount <= 0 && _order.VoucherDiscountAmount <= 0))
-                        {
-                            <div class="flex items-center justify-between">
-                                <span class="font-semibold text-slate-500">Giảm voucher</span>
-                                <span class="font-black text-[#d71920]">-@FormatMoney(_order.VoucherDiscountAmount > 0 ? _order.VoucherDiscountAmount : _order.DiscountAmount)</span>
-                            </div>
-                        }
-
-                        @if (_order.PointsDiscountAmount > 0)
-                        {
-                            <div class="flex items-center justify-between">
-                                <span class="font-semibold text-slate-500">Giảm điểm thưởng</span>
-                                <span class="font-black text-[#d71920]">-@FormatMoney(_order.PointsDiscountAmount)</span>
-                            </div>
-                        }
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-500">Giảm giá</span>
+                            <span class="font-black text-[#d71920]">-@FormatMoney(_order.DiscountAmount)</span>
+                        </div>
 
                         <div class="flex items-center justify-between">
                             <span class="font-semibold text-slate-500">Phí vận chuyển</span>

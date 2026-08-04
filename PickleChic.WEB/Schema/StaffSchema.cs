@@ -1,5 +1,4 @@
 ﻿using FluentValidation;
-using PickleChic.WEB.Constant;
 using PickleChic.WEB.Model;
 
 namespace PickleChic.WEB.Schema
@@ -24,8 +23,9 @@ namespace PickleChic.WEB.Schema
                     .MaximumLength(255).WithMessage("Email có độ dài tối đa 255 ký tự");
 
                 RuleFor(x => x.PhoneNumber)
-                    .Must(Validation.Phone.IsValidOrEmpty)
-                    .WithMessage(Validation.Phone.ErrorMessage);
+                    .Matches(@"^(0|\+84)[0-9]{9,10}$")
+                    .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber))
+                    .WithMessage("Số điện thoại không đúng định dạng");
 
                 RuleFor(x => x.RoleId)
                     .GreaterThan(0).WithMessage("Vai trò không hợp lệ");
