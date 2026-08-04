@@ -175,7 +175,8 @@
                     }
                     else
                     {
-                        <GuestAddressEditor Address="EnsureGuestAddress()"
+                        <GuestAddressEditor @ref="_guestAddressEditor"
+                                            Address="EnsureGuestAddress()"
                                             OnChanged="PersistGuestAddressAsync" />
                     }
                 </div>
@@ -346,6 +347,7 @@
     public EventCallback OnCheckoutCompleted { get; set; }
 
     private List<AddressResponse> _customerAddresses = new();
+    private GuestAddressEditor? _guestAddressEditor;
     private bool _busy;
     private bool _checkingOut;
     private bool _calculating;
@@ -585,8 +587,10 @@
     private static bool IsGuestAddressComplete(OfflinePosGuestAddress? address) =>
         address is not null
         && !string.IsNullOrWhiteSpace(address.FullName)
-        && !string.IsNullOrWhiteSpace(address.PhoneNumber)
+        && Validation.Phone.IsValid(address.PhoneNumber)
         && !string.IsNullOrWhiteSpace(address.DetailInfo)
+        && address.ProvinceId is > 0
+        && address.DistrictId is > 0
         && address.WardId > 0;
 
     private string? ValidateBeforeCheckout()
@@ -646,6 +650,20 @@
         if (_checkingOut)
         {
             return;
+        }
+
+        if (Tab.IsShipping && Tab.IsGuest)
+        {
+            EnsureGuestAddress();
+            if (_guestAddressEditor is not null)
+            {
+                var addressValid = await _guestAddressEditor.ValidateAsync();
+                if (!addressValid)
+                {
+                    _snackbar.Add("Vui lòng kiểm tra lại địa chỉ giao hàng", Severity.Warning);
+                    return;
+                }
+            }
         }
 
         var error = ValidateBeforeCheckout();

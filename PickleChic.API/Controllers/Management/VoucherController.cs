@@ -65,9 +65,12 @@ public class VoucherController : ControllerBase
     {
         try
         {
+            if (await _repository.ExistsByCodeAsync(dto.VoucherCode))
+                return BadRequest("Mã voucher đã tồn tại");
+
             var entity = new Voucher
             {
-                VoucherCode = dto.VoucherCode,
+                VoucherCode = dto.VoucherCode.Trim(),
                 DiscountType = dto.DiscountType,
                 DiscountValue = dto.DiscountValue,
                 MinOrderValue = dto.MinOrderValue,
@@ -138,10 +141,13 @@ public class VoucherController : ControllerBase
                 return BadRequest("Không thể sửa voucher đang diễn ra hoặc đã kết thúc");
             }
 
+            if (await _repository.ExistsByCodeAsync(dto.VoucherCode, dto.Id))
+                return BadRequest("Mã voucher đã tồn tại");
+
             var entity = new Voucher
             {
                 Id = dto.Id,
-                VoucherCode = dto.VoucherCode,
+                VoucherCode = dto.VoucherCode.Trim(),
                 DiscountType = dto.DiscountType,
                 DiscountValue = dto.DiscountValue,
                 MinOrderValue = dto.MinOrderValue,

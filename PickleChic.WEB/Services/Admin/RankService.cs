@@ -59,11 +59,18 @@ namespace PickleChic.WEB.Services.Admin
                 requireAuth: true);
         }
 
+        public async Task<ApiResult<PercentRewardResponse>> GetPercentRewardAsync()
+        {
+            return await _apiProvider.GetAsync<PercentRewardResponse>(
+                EndPointConfig.Rank.PercentReward,
+                requireAuth: true);
+        }
+
         public async Task<ApiResult<PercentRewardResponse>> UpdatePercentRewardAsync(double value)
         {
-            return await _apiProvider.PatchAsync<object, PercentRewardResponse>(
-                EndPointConfig.Rank.UpdatePercentReward(value),
-                new { },
+            return await _apiProvider.PatchAsync<PercentRewardUpdateRequest, PercentRewardResponse>(
+                EndPointConfig.Rank.PercentReward,
+                new PercentRewardUpdateRequest { PercentReward = value },
                 requireAuth: true);
         }
     }
