@@ -80,14 +80,16 @@
                     </MudSelect>
                 </div>
 
-                <MudButton Variant="Variant.Filled"
-                           Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Save"
-                           OnClick="SubmitAsync"
-                           Disabled="@_isSubmitting"
-                           Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                    @(_isSubmitting ? "Đang lưu.." : "Lưu")
-                </MudButton>
+                <AuthorizeControl Action="@Constant.ActionButton.Create">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="SubmitAsync"
+                               Disabled="@_isSubmitting"
+                               Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                        @(_isSubmitting ? "Đang lưu.." : "Lưu")
+                    </MudButton>
+                </AuthorizeControl>
             </div>
         </MudForm>
     </div>
@@ -99,7 +101,7 @@
     private readonly StaffModel _model = new()
     {
         PasswordHash = "Admin12345@",
-        RoleId = 2,
+        RoleId = 1,
         Status = 1,
         LastLogin = DateTime.Now,
     };
@@ -108,12 +110,32 @@
 
     private bool _isSubmitting;
 
-    private readonly List<RoleOption> _roles = new()
+    private List<RoleOption> _roles = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        new(1, "Quản trị hệ thống"),
-        new(2, "Nhân viên quản trị"),
-        new(3, "Nhân viên bán hàng")
-    };
+        await LoadRolesAsync();
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        var result = await _adminRoleService.GetAllAsync();
+        if (!result.Success || result.Data is null)
+        {
+            _snackbar.Add("Không thể tải danh sách vai trò", Severity.Error);
+            return;
+        }
+
+        _roles = result.Data
+            .Where(x => x.Status == 1 && !string.Equals(x.RoleName, "Customer", StringComparison.OrdinalIgnoreCase))
+            .Select(x => new RoleOption(x.Id, x.RoleName))
+            .ToList();
+
+        if (_roles.Count > 0 && _roles.All(x => x.Id != _model.RoleId))
+        {
+            _model.RoleId = _roles[0].Id;
+        }
+    }
 
     private async Task SubmitAsync()
     {

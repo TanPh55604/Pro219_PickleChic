@@ -1,22 +1,244 @@
 ﻿@attribute [Route(RouterConfig.Admin.EditPermission)]
 @layout AdminLayout
+@using System.Text.Json
 
-<PageTitle>@Constant.metaDataAdmin Edit Permission</PageTitle>
+<PageTitle>@Constant.metaDataAdmin Sửa vai trò</PageTitle>
 
-<div class="mx-auto w-full max-w-5xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Cập nhật quyền</h1>
+@if (_isLoading)
+{
+    <Loading />
+}
+else
+{
+    <div class="mx-auto w-full max-w-5xl !space-y-5">
+        <div class="flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Sửa vai trò</h1>
+                <p class="!mt-1 text-sm text-slate-500">Đơn hàng chỉ có Xem và Duyệt.</p>
+            </div>
+            <a href="@RouterConfig.Admin.Permissions"
+               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-4 !py-2.5 text-sm font-semibold text-slate-700">
+                Quay lại
+            </a>
         </div>
 
-        <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.PermissionDetail, Id)"
-           class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-            Quay lại
-        </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+            <MudForm @ref="_form">
+                <MudTextField @bind-Value="_roleName"
+                              Label="Tên vai trò"
+                              Required="true"
+                              RequiredError="Vui lòng nhập tên vai trò"
+                              Variant="Variant.Outlined"
+                              Class="!mb-4" />
+
+                <MudSelect T="int"
+                           @bind-Value="_status"
+                           Label="Trạng thái"
+                           Variant="Variant.Outlined"
+                           Class="!mb-6">
+                    <MudSelectItem T="int" Value="1">Hoạt động</MudSelectItem>
+                    <MudSelectItem T="int" Value="0">Khóa</MudSelectItem>
+                </MudSelect>
+
+                <h2 class="!mb-3 text-sm font-bold uppercase tracking-wider text-slate-600">Chi tiết phân quyền</h2>
+
+                <MudSimpleTable Hover="true" Dense="true" Elevation="0">
+                    <thead>
+                        <tr>
+                            <th class="text-left">Chức năng</th>
+                            <th class="text-center">Xem</th>
+                            <th class="text-center">Thêm</th>
+                            <th class="text-center">Sửa</th>
+                            <th class="text-center">Xóa</th>
+                            <th class="text-center">Duyệt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _permissions)
+                        {
+                            <tr>
+                                <td class="font-semibold text-slate-700">@item.DisplayName</td>
+                                <td class="text-center">
+                                    <MudCheckBox @bind-Value="item.CanRead" Color="Color.Primary" Dense="true" />
+                                </td>
+                                <td class="text-center">
+                                    @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Create))
+                                    {
+                                        <MudCheckBox @bind-Value="item.CanCreate" Color="Color.Success" Dense="true" />
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Edit))
+                                    {
+                                        <MudCheckBox @bind-Value="item.CanUpdate" Color="Color.Warning" Dense="true" />
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Delete))
+                                    {
+                                        <MudCheckBox @bind-Value="item.CanDelete" Color="Color.Error" Dense="true" />
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Approve))
+                                    {
+                                        <MudCheckBox @bind-Value="item.CanApprove" Color="Color.Info" Dense="true" />
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </MudSimpleTable>
+
+                <div class="!mt-6 flex justify-end !gap-3">
+                    <MudButton Variant="Variant.Text" OnClick="@(() => _navigation.NavigateTo(RouterConfig.Admin.Permissions))" Class="!normal-case">
+                        Hủy
+                    </MudButton>
+                    <AuthorizeControl Action="@Constant.ActionButton.Edit">
+                        <MudButton Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   Disabled="@_isSaving"
+                                   OnClick="SubmitAsync"
+                                   Class="!rounded-xl !normal-case">
+                            @(_isSaving ? "Đang lưu..." : "Lưu thay đổi")
+                        </MudButton>
+                    </AuthorizeControl>
+                </div>
+            </MudForm>
+        </div>
     </div>
-</div>
+}
 
 @code {
-    [Parameter] public int Id { get; set; }
+    [Parameter]
+    public int Id { get; set; }
+
+    private MudForm? _form;
+    private string _roleName = string.Empty;
+    private int _status = 1;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private List<PagePermissionViewModel> _permissions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _permissions = PermissionHelper.GetUniqueModules()
+            .Select(m => new PagePermissionViewModel
+            {
+                PageCode = m.PageCode,
+                DisplayName = PermissionHelper.GetDisplayName(m.PageCode)
+            })
+            .OrderBy(x => x.DisplayName)
+            .ToList();
+
+        var result = await _adminRoleService.GetByIdAsync(Id);
+        if (!result.Success || result.Data is null)
+        {
+            _snackbar.Add(string.IsNullOrWhiteSpace(result.Message) ? "Không tìm thấy vai trò" : result.Message, Severity.Error);
+            _navigation.NavigateTo(RouterConfig.Admin.Permissions, replace: true);
+            return;
+        }
+
+        if (!result.Data.IsEdit)
+        {
+            _snackbar.Add("Vai trò hệ thống không được chỉnh sửa", Severity.Warning);
+            _navigation.NavigateTo(RouterConfig.BuildRoute(RouterConfig.Admin.PermissionDetail, Id), replace: true);
+            return;
+        }
+
+        _roleName = result.Data.RoleName;
+        _status = result.Data.Status;
+        ApplyExistingPermissions(result.Data.Permissions);
+        _isLoading = false;
+    }
+
+    private void ApplyExistingPermissions(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json.Contains("Waiting", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        List<PagePermissionItem>? existing;
+        try
+        {
+            existing = JsonSerializer.Deserialize<List<PagePermissionItem>>(
+                json,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch
+        {
+            return;
+        }
+
+        if (existing is null)
+        {
+            return;
+        }
+
+        foreach (var item in _permissions)
+        {
+            var found = existing.FirstOrDefault(x =>
+                string.Equals(x.PageCode, item.PageCode, StringComparison.OrdinalIgnoreCase));
+            if (found is null || string.IsNullOrWhiteSpace(found.PagePermissions))
+            {
+                continue;
+            }
+
+            var perms = found.PagePermissions;
+            item.CanRead = perms.Contains('R', StringComparison.OrdinalIgnoreCase);
+            item.CanCreate = perms.Contains('C', StringComparison.OrdinalIgnoreCase);
+            item.CanUpdate = perms.Contains('U', StringComparison.OrdinalIgnoreCase);
+            item.CanDelete = perms.Contains('D', StringComparison.OrdinalIgnoreCase);
+            item.CanApprove = perms.Contains('A', StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (_isSaving || _form is null)
+        {
+            return;
+        }
+
+        await _form.ValidateAsync();
+        if (!_form.IsValid || string.IsNullOrWhiteSpace(_roleName))
+        {
+            return;
+        }
+
+        _isSaving = true;
+        try
+        {
+            var payload = _permissions
+                .Where(x => x.HasAny)
+                .Select(x => new PagePermissionItem
+                {
+                    PageCode = x.PageCode,
+                    PagePermissions = x.GetPermissionString()
+                })
+                .ToList();
+
+            var result = await _adminRoleService.UpdateAsync(new RoleUpdateRequest
+            {
+                Id = Id,
+                RoleName = _roleName.Trim(),
+                Permissions = JsonSerializer.Serialize(payload),
+                Status = _status
+            });
+
+            if (!result.Success)
+            {
+                _snackbar.Add(string.IsNullOrWhiteSpace(result.Message) ? "Cập nhật thất bại" : result.Message, Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Cập nhật vai trò thành công", Severity.Success);
+            _navigation.NavigateTo(RouterConfig.Admin.Permissions);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
 }

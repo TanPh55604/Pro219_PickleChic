@@ -1,0 +1,38 @@
+@if (_hasAccess)
+{
+    @ChildContent
+}
+
+@code {
+    [CascadingParameter(Name = Constant.CascadingNameParams.Mine)]
+    public AuthModel? Mine { get; set; }
+
+    [Parameter]
+    public string Action { get; set; } = Constant.ActionButton.Read;
+
+    [Parameter]
+    public string? PageCode { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool _hasAccess
+    {
+        get
+        {
+            var pageCode = PageCode;
+            if (string.IsNullOrWhiteSpace(pageCode))
+            {
+                var relativePath = _navigation.ToBaseRelativePath(_navigation.Uri);
+                pageCode = PermissionHelper.GetPageCode(relativePath);
+            }
+
+            if (string.IsNullOrWhiteSpace(pageCode))
+            {
+                return true;
+            }
+
+            return PermissionHelper.HasAccess(Mine, pageCode, Action);
+        }
+    }
+}

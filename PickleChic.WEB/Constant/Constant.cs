@@ -110,6 +110,20 @@ namespace PickleChic.WEB.Constant
             public const int MaxTabs = 15;
         }
 
+        public static class ActionButton
+        {
+            public const string Create = "C";
+            public const string Read = "R";
+            public const string Edit = "U";
+            public const string Delete = "D";
+            public const string Approve = "A";
+        }
+
+        public static class CascadingNameParams
+        {
+            public const string Mine = "Mine";
+        }
+
         public static class OrderCancelReason
         {
             public const string Other = "Lý do khác";

@@ -1,62 +1,206 @@
 @attribute [Route(RouterConfig.Admin.PermissionDetail)]
 @layout AdminLayout
+@using System.Text.Json
 
-<PageTitle>@Constant.metaDataAdmin Permission Detail</PageTitle>
+<PageTitle>@Constant.metaDataAdmin Chi tiết phân quyền</PageTitle>
 
-<div class="mx-auto w-full max-w-7xl !space-y-6">
-    <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-900">Chi tiết quyền</h1>
+@if (_isLoading)
+{
+    <DetailPageSkeleton ShowSubtitle="true" InfoFieldCount="2" TableRowCount="6" />
+}
+else
+{
+    <div class="mx-auto w-full max-w-5xl !space-y-6">
+        <div class="flex flex-col !gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900">Chi tiết phân quyền</h1>
+                <p class="!mt-1 text-sm text-slate-500">@_model.RoleName</p>
+            </div>
+
+            <div class="flex flex-wrap !gap-3">
+                <a href="@RouterConfig.Admin.Permissions"
+                   class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
+                    <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+                    Quay lại
+                </a>
+
+                @if (_model.IsEdit)
+                {
+                    <AuthorizeControl Action="@Constant.ActionButton.Edit">
+                        <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditPermission, Id)"
+                           class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-[#A05AFF] !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-[#8B3FE6]">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                            Cập nhật
+                        </a>
+                    </AuthorizeControl>
+                }
+            </div>
         </div>
 
-        <div class="flex flex-wrap !gap-3">
-            <a href="@RouterConfig.Admin.Permissions"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !border !border-slate-200 !bg-white !px-5 !py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:!bg-slate-50">
-                <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
-                Quay lại
-            </a>
+        <div class="!rounded-2xl !border !border-slate-200 !bg-white shadow-sm">
+            <div class="!border-b !border-slate-200 !p-6 md:!p-8">
+                <div class="flex items-center !gap-4">
+                    <div class="flex !h-14 !w-14 items-center justify-center !rounded-2xl !bg-[#A05AFF]/10 text-[#A05AFF]">
+                        <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Large" />
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">@_model.RoleName</h2>
+                        <p class="!mt-1 text-sm text-slate-500">
+                            @(_model.Status == 1 ? "Đang hoạt động" : "Đã khóa")
+                            @if (!_isCustomerRole)
+                            {
+                                <text>· @_permissions.Count chức năng được phân quyền</text>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-            <a href="@RouterConfig.BuildRoute(RouterConfig.Admin.EditPermission, Id)"
-               class="inline-flex items-center justify-center !gap-2 !rounded-xl !bg-[#A05AFF] !px-5 !py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:!bg-[#8B3FE6]">
-                <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
-                Cập nhật
-            </a>
+            <div class="!p-6 md:!p-8">
+                @if (_isCustomerRole)
+                {
+                    <p class="text-base font-medium text-slate-700">Quyền dành cho khách hàng</p>
+                }
+                else
+                {
+                    <h3 class="text-lg font-bold text-slate-900">Danh sách quyền</h3>
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Error"
-                       StartIcon="@Icons.Material.Filled.Delete"
-                       Class="!rounded-xl !px-5 !py-2.5 !normal-case">
-                Xóa
-            </MudButton>
+                    @if (_permissions.Count == 0)
+                    {
+                        <p class="!mt-4 italic text-slate-400">Vai trò này chưa được gán quyền nào.</p>
+                    }
+                    else
+                    {
+                        <div class="!mt-5 overflow-x-auto">
+                            <MudSimpleTable Hover="true" Dense="true" Elevation="0" Class="!rounded-xl !border !border-slate-100">
+                                <thead>
+                                    <tr class="!bg-slate-50">
+                                        <th class="text-left">Chức năng</th>
+                                        <th class="text-center">Xem</th>
+                                        <th class="text-center">Thêm</th>
+                                        <th class="text-center">Sửa</th>
+                                        <th class="text-center">Xóa</th>
+                                        <th class="text-center">Duyệt</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in _permissions)
+                                    {
+                                        <tr>
+                                            <td class="font-semibold text-slate-800">
+                                                @PermissionHelper.GetDisplayName(item.PageCode)
+                                            </td>
+                                            <td class="text-center">@ActionIcon(item.PagePermissions, Constant.ActionButton.Read)</td>
+                                            <td class="text-center">
+                                                @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Create))
+                                                {
+                                                    @ActionIcon(item.PagePermissions, Constant.ActionButton.Create)
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-slate-300">—</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Edit))
+                                                {
+                                                    @ActionIcon(item.PagePermissions, Constant.ActionButton.Edit)
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-slate-300">—</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Delete))
+                                                {
+                                                    @ActionIcon(item.PagePermissions, Constant.ActionButton.Delete)
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-slate-300">—</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (PermissionHelper.SupportsAction(item.PageCode, Constant.ActionButton.Approve))
+                                                {
+                                                    @ActionIcon(item.PagePermissions, Constant.ActionButton.Approve)
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-slate-300">—</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </MudSimpleTable>
+                        </div>
+                    }
+                }
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
-    [Parameter] public int Id { get; set; }
+    [Parameter]
+    public int Id { get; set; }
 
-    // private async Task OpenDeleteDialog()
-    // {
-    //     var parameters = new DialogParameters<CategoryDeleteDialog>
-    //     {
-    //         { x => x.Category, _model }
-    //     };
+    private bool _isLoading = true;
+    private RoleResponse _model = new();
+    private List<PagePermissionItem> _permissions = new();
+    private bool _isCustomerRole;
 
-    //     var options = new DialogOptions
-    //     {
-    //         CloseButton = true,
-    //         MaxWidth = MaxWidth.ExtraSmall,
-    //         FullWidth = true
-    //     };
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await _adminRoleService.GetByIdAsync(Id);
+        if (!result.Success || result.Data is null)
+        {
+            _snackbar.Add(string.IsNullOrWhiteSpace(result.Message) ? "Không tìm thấy vai trò" : result.Message, Severity.Error);
+            _navigation.NavigateTo(RouterConfig.Admin.Permissions, replace: true);
+            return;
+        }
 
-    //     var dialog = await _dialogService.ShowAsync<CategoryDeleteDialog>("Xóa thể loại", parameters, options);
-    //     var result = await dialog.Result;
+        _model = result.Data;
+        _isCustomerRole = string.Equals(_model.RoleName, "Customer", StringComparison.OrdinalIgnoreCase);
+        _permissions = _isCustomerRole
+            ? new()
+            : ParsePermissions(_model.Permissions)
+                .OrderBy(x => PermissionHelper.GetDisplayName(x.PageCode))
+                .ToList();
+        _isLoading = false;
+    }
 
-    //     if (!result.Canceled)
-    //     {
-    //         TODO: Gọi API delete category ở đây.
+    private static RenderFragment ActionIcon(string? permissions, string action) => builder =>
+    {
+        var has = !string.IsNullOrWhiteSpace(permissions)
+                  && permissions.Contains(action, StringComparison.OrdinalIgnoreCase);
 
-    //         _navigation.NavigateTo(RouterConfig.Admin.Categories);
-    //     }
-    // }
+        builder.OpenComponent<MudIcon>(0);
+        builder.AddAttribute(1, "Icon", has ? Icons.Material.Filled.CheckCircle : Icons.Material.Outlined.Cancel);
+        builder.AddAttribute(2, "Size", Size.Small);
+        builder.AddAttribute(3, "Class", has ? "text-emerald-500" : "text-slate-300");
+        builder.CloseComponent();
+    };
+
+    private static List<PagePermissionItem> ParsePermissions(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json) || json.Contains("Waiting", StringComparison.OrdinalIgnoreCase))
+        {
+            return new();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<PagePermissionItem>>(
+                       json,
+                       new JsonSerializerOptions { PropertyNameCaseInsensitive = true })
+                   ?? new();
+        }
+        catch
+        {
+            return new();
+        }
+    }
 }

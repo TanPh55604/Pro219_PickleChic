@@ -23,5 +23,14 @@
         public DateTime? ExpirationTime { get; set; }
 
         public bool IsExpired { get; set; }
+
+        public List<PagePermissionItemResponse> PagePermissions { get; set; } = new();
+    }
+
+    public class PagePermissionItemResponse
+    {
+        public string PageCode { get; set; } = string.Empty;
+
+        public string PagePermissions { get; set; } = string.Empty;
     }
 }

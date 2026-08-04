@@ -1,4 +1,6 @@
-﻿namespace PickleChic.WEB.Model
+﻿using PickleChic.WEB.DTO.Auth;
+
+namespace PickleChic.WEB.Model
 {
     public class AuthModel
     {
@@ -21,6 +23,8 @@
         public int TotalPoints { get; set; }
 
         public bool MustChangePassword { get; set; }
+
+        public List<PagePermissionItemResponse> PagePermissions { get; set; } = new();
 
         public bool IsCustomer => Role == "Customer";
 

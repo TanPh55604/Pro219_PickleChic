@@ -29,83 +29,85 @@ else
 
                 @if (ShouldShowButtons())
                 {
-                    @if (IsPendingGroup(CurrentStatus))
-                    {
-                        <MudButton Variant="Variant.Filled"
-                                   Disabled="@_isUpdateStatus"
-                                   Color="Color.Error"
-                                   OnClick="HandleCancelOrderAsync"
-                                   Class="!rounded-xl !normal-case">
-                            Hủy
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled"
-                                   Disabled="@_isUpdateStatus"
-                                   Color="Color.Primary"
-                                   OnClick="@(() => HandleStatusUpdateAsync(CurrentStatus, "success"))"
-                                   Class="!rounded-xl !normal-case">
-                            Xác nhận
-                        </MudButton>
-                    }
-                    else if (CurrentStatus == Constant.OrderStatus.Code.Confirmed)
-                    {
-                        @if (_model.BOPIS == true)
+                    <AuthorizeControl Action="@Constant.ActionButton.Approve">
+                        @if (IsPendingGroup(CurrentStatus))
                         {
                             <MudButton Variant="Variant.Filled"
-                                       Color="Color.Primary"
                                        Disabled="@_isUpdateStatus"
-                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                       Color="Color.Error"
+                                       OnClick="HandleCancelOrderAsync"
                                        Class="!rounded-xl !normal-case">
-                                Chờ khách tới lấy
+                                Hủy
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled"
+                                       Disabled="@_isUpdateStatus"
+                                       Color="Color.Primary"
+                                       OnClick="@(() => HandleStatusUpdateAsync(CurrentStatus, "success"))"
+                                       Class="!rounded-xl !normal-case">
+                                Xác nhận
                             </MudButton>
                         }
-                        else if (_model.IsOrderPOS && _model.ShippingFee <= 0)
+                        else if (CurrentStatus == Constant.OrderStatus.Code.Confirmed)
+                        {
+                            @if (_model.BOPIS == true)
+                            {
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Disabled="@_isUpdateStatus"
+                                           OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                           Class="!rounded-xl !normal-case">
+                                    Chờ khách tới lấy
+                                </MudButton>
+                            }
+                            else if (_model.IsOrderPOS && _model.ShippingFee <= 0)
+                            {
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Success"
+                                           Disabled="@_isUpdateStatus"
+                                           OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                           Class="!rounded-xl !normal-case">
+                                    Hoàn thành
+                                </MudButton>
+                            }
+                            else
+                            {
+                                <MudButton Variant="Variant.Filled"
+                                           Color="Color.Primary"
+                                           Disabled="@_isUpdateStatus"
+                                           OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                           Class="!rounded-xl !normal-case">
+                                    Giao cho đơn vị vận chuyển
+                                </MudButton>
+                            }
+                        }
+                        else if (CurrentStatus == Constant.OrderStatus.Code.Shipping)
                         {
                             <MudButton Variant="Variant.Filled"
                                        Color="Color.Success"
                                        Disabled="@_isUpdateStatus"
-                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
+                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Shipping, "success"))"
+                                       Class="!rounded-xl !normal-case">
+                                Giao thành công
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Error"
+                                       Disabled="@_isUpdateStatus"
+                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Shipping, "failed"))"
+                                       Class="!rounded-xl !normal-case">
+                                Giao thất bại
+                            </MudButton>
+                        }
+                        else if (CurrentStatus == Constant.OrderStatus.Code.AwaitingPickup)
+                        {
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Success"
+                                       Disabled="@_isUpdateStatus"
+                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.AwaitingPickup))"
                                        Class="!rounded-xl !normal-case">
                                 Hoàn thành
                             </MudButton>
                         }
-                        else
-                        {
-                            <MudButton Variant="Variant.Filled"
-                                       Color="Color.Primary"
-                                       Disabled="@_isUpdateStatus"
-                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Confirmed))"
-                                       Class="!rounded-xl !normal-case">
-                                Giao cho đơn vị vận chuyển
-                            </MudButton>
-                        }
-                    }
-                    else if (CurrentStatus == Constant.OrderStatus.Code.Shipping)
-                    {
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Success"
-                                   Disabled="@_isUpdateStatus"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Shipping, "success"))"
-                                   Class="!rounded-xl !normal-case">
-                            Giao thành công
-                        </MudButton>
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Error"
-                                   Disabled="@_isUpdateStatus"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Shipping, "failed"))"
-                                   Class="!rounded-xl !normal-case">
-                            Giao thất bại
-                        </MudButton>
-                    }
-                    else if (CurrentStatus == Constant.OrderStatus.Code.AwaitingPickup)
-                    {
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Success"
-                                   Disabled="@_isUpdateStatus"
-                                   OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.AwaitingPickup))"
-                                   Class="!rounded-xl !normal-case">
-                            Hoàn thành
-                        </MudButton>
-                    }
+                    </AuthorizeControl>
                 }
             </div>
         </div>

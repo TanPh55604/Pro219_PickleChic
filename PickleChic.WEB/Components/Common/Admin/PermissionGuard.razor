@@ -1,0 +1,47 @@
+@if (_isAuthorized)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public AuthModel? Mine { get; set; }
+
+    private bool _isAuthorized;
+
+    protected override void OnParametersSet()
+    {
+        CheckPermission();
+    }
+
+    private void CheckPermission()
+    {
+        if (Mine is null)
+        {
+            _isAuthorized = false;
+            return;
+        }
+
+        var currentPath = new Uri(_navigation.Uri).AbsolutePath;
+        var pageCode = PermissionHelper.GetPageCode(currentPath);
+
+        if (string.IsNullOrWhiteSpace(pageCode))
+        {
+            _isAuthorized = true;
+            return;
+        }
+
+        var requiredAction = PermissionHelper.GetActionFromPath(currentPath);
+        if (PermissionHelper.HasAccess(Mine, pageCode, requiredAction))
+        {
+            _isAuthorized = true;
+            return;
+        }
+
+        _isAuthorized = false;
+        _navigation.NavigateTo(RouterConfig.AccessDenied, replace: true);
+    }
+}
