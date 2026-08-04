@@ -26,6 +26,8 @@
 @using PickleChic.WEB.Components.Pages.Admin.ProductVariant
 @using PickleChic.WEB.Components.Pages.Customer.Order
 
+@using PickleChic.WEB.Helpers
+@using PickleChic.WEB.DTO.Auth
 @inject IJSRuntime _JSRuntime
 @inject NavigationManager _navigation
 @inject ISnackbar _snackbar
@@ -36,6 +38,7 @@
 @inject IAuthService _authService
 @inject ICurrentUserService _currentUserService
 @inject IStaffService _adminStaffService
+@inject IRoleService _adminRoleService
 @inject ICategoryService _adminCategoryService
 @inject IBrandService _adminBrandService
 @inject IRankService _adminRankService

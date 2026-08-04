@@ -317,7 +317,7 @@ public class ProductVariantRepository
                 .ThenInclude(p => p!.Category)
             .Include(pv => pv.Product)
                 .ThenInclude(p => p!.Brand)
-            .Where(pv =>
+            .Where(pv =>    
                 pv.Product != null
                 && !pv.Product.IsDeleted
                 && pv.Product.Status > 0
@@ -329,7 +329,10 @@ public class ProductVariantRepository
             var lowerKeyword = keyword.Trim().ToLower();
             query = query.Where(pv =>
                 (pv.VariantName != null && pv.VariantName.ToLower().Contains(lowerKeyword))
-                || pv.SKU.ToLower().Contains(lowerKeyword));
+                || pv.SKU.ToLower().Contains(lowerKeyword)
+                || (pv.Product != null
+                    && pv.Product.ProductName != null
+                    && pv.Product.ProductName.ToLower().Contains(lowerKeyword)));
         }
 
         if (brandId.HasValue && brandId.Value > 0)

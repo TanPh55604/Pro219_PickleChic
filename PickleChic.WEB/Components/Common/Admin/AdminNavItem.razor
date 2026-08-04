@@ -1,19 +1,45 @@
 ﻿@using MudBlazor
 
-<NavLink href="@Href"
-         Match="@Match"
-         class="group flex items-center gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-500 transition hover:!bg-[#A05AFF]/10 hover:!text-[#A05AFF]"
-         activeClass="!bg-[#A05AFF]/12 !text-[#A05AFF] shadow-sm hover:!bg-[#A05AFF]/12 hover:!text-[#A05AFF]">
-    <MudIcon Icon="@Icon"
-             Size="Size.Small"
-             Class="shrink-0" />
+@if (CanShow)
+{
+    <NavLink href="@Href"
+             Match="@Match"
+             class="group flex items-center gap-3 !rounded-xl !px-4 !py-3 text-sm font-medium text-slate-500 transition hover:!bg-[#A05AFF]/10 hover:!text-[#A05AFF]"
+             activeClass="!bg-[#A05AFF]/12 !text-[#A05AFF] shadow-sm hover:!bg-[#A05AFF]/12 hover:!text-[#A05AFF]">
+        <MudIcon Icon="@Icon"
+                 Size="Size.Small"
+                 Class="shrink-0" />
 
-    <span class="truncate">@Text</span>
-</NavLink>
+        <span class="truncate">@Text</span>
+    </NavLink>
+}
 
 @code {
+    [CascadingParameter(Name = Constant.CascadingNameParams.Mine)]
+    public AuthModel? Mine { get; set; }
+
     [Parameter] public string Href { get; set; } = "/";
     [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Circle;
     [Parameter] public string Text { get; set; } = "";
     [Parameter] public NavLinkMatch Match { get; set; } = NavLinkMatch.Prefix;
+    [Parameter] public bool RequireRead { get; set; } = true;
+
+    private bool CanShow
+    {
+        get
+        {
+            if (!RequireRead)
+            {
+                return true;
+            }
+
+            var pageCode = PermissionHelper.GetPageCode(Href);
+            if (string.IsNullOrWhiteSpace(pageCode))
+            {
+                return true;
+            }
+
+            return PermissionHelper.HasAccess(Mine, pageCode, Constant.ActionButton.Read);
+        }
+    }
 }

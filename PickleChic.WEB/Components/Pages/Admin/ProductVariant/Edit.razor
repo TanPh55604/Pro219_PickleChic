@@ -117,14 +117,16 @@ else
                     </div>
 
                     <div class="flex justify-end !border-t !border-slate-200 !pt-6">
-                        <MudButton Variant="Variant.Filled"
-                                   Color="Color.Primary"
-                                   StartIcon="@Icons.Material.Filled.Save"
-                                   OnClick="SubmitAsync"
-                                   Disabled="@_isSubmitting"
-                                   Class="!rounded-xl !px-6 !py-2.5 !normal-case">
-                            @(_isSubmitting ? "Đang cập nhật.." : "Cập nhật")
-                        </MudButton>
+                        <AuthorizeControl Action="@Constant.ActionButton.Edit">
+                            <MudButton Variant="Variant.Filled"
+                                       Color="Color.Primary"
+                                       StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="SubmitAsync"
+                                       Disabled="@_isSubmitting"
+                                       Class="!rounded-xl !px-6 !py-2.5 !normal-case">
+                                @(_isSubmitting ? "Đang cập nhật.." : "Cập nhật")
+                            </MudButton>
+                        </AuthorizeControl>
                     </div>
                 </div>
             </MudForm>

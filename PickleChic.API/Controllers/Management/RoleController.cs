@@ -71,6 +71,7 @@ public class RoleController : ControllerBase
                 RoleName = dto.RoleName,
                 Permissions = dto.Permissions,
                 Status = dto.Status,
+                IsEdit = true,
             };
 
             var created = await _repository.AddAsync(entity);
@@ -87,6 +88,15 @@ public class RoleController : ControllerBase
     {
         try
         {
+            var existing = await _repository.GetByIdAsync(dto.Id);
+            if (existing is null)
+                return NotFound();
+
+            if (!existing.IsEdit)
+            {
+                return BadRequest("Vai trò hệ thống không được chỉnh sửa");
+            }
+
             if (await _repository.IsRoleNameExistsAsync(dto.RoleName, dto.Id))
             {
                 return BadRequest("Tên vai trò đã tồn tại");
@@ -98,6 +108,7 @@ public class RoleController : ControllerBase
                 RoleName = dto.RoleName,
                 Permissions = dto.Permissions,
                 Status = dto.Status,
+                IsEdit = existing.IsEdit,
             };
 
             var updated = await _repository.UpdateAsync(entity);
@@ -117,6 +128,15 @@ public class RoleController : ControllerBase
     {
         try
         {
+            var existing = await _repository.GetByIdAsync(id);
+            if (existing is null)
+                return NotFound();
+
+            if (!existing.IsEdit)
+            {
+                return BadRequest("Vai trò hệ thống không được xóa");
+            }
+
             var success = await _repository.DeleteAsync(id);
             if (!success)
                 return NotFound();
