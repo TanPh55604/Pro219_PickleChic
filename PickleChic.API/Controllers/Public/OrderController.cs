@@ -1180,7 +1180,7 @@ public class OrderController : ControllerBase
         try
         {
             bool isShipping = (dto.AddressId.HasValue && dto.AddressId.Value > 0) || dto.AddressDTO != null;
-            string initialStatus = isShipping ? Constant.OrderStatus.Shiping : Constant.OrderStatus.Done;
+            string initialStatus = isShipping ? Constant.OrderStatus.Pending : Constant.OrderStatus.Done;
 
             var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(customerUserName))
@@ -1201,7 +1201,7 @@ public class OrderController : ControllerBase
                 PaymentStatus = Constant.PaymentStatus.Completed,
                 DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
                 UpdatedBy = customerUserName,
-                Reasons = initialStatus == Constant.OrderStatus.Done ? "Mua tại quầy - Hoàn thành" : "Mua tại quầy - Chờ giao hàng"
+                Reasons = initialStatus == Constant.OrderStatus.Done ? "Mua tại quầy - Hoàn thành" : "Mua tại quầy(Giao đi) - Chờ xác nhận"
             });
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
 
@@ -1353,8 +1353,8 @@ public class OrderController : ControllerBase
                 statusHistory.Add(new StatusHistoryEntry
                 {
                     Index = statusHistory.Count + 1,
-                    Status = Constant.OrderStatus.Confirmed,
-                    OrderStatus = Constant.OrderStatus.Confirmed,
+                    Status = Constant.OrderStatus.Pending,
+                    OrderStatus = Constant.OrderStatus.Pending,
                     PaymentStatus = Constant.PaymentStatus.Completed,
                     DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
                     UpdatedBy = customerUserName,
@@ -1362,7 +1362,7 @@ public class OrderController : ControllerBase
                 });
 
                 order.PaymentStatus = Constant.PaymentStatus.Completed;
-                order.OrderStatus = Constant.OrderStatus.Confirmed;
+                order.OrderStatus = Constant.OrderStatus.Pending;
             }
             order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
 
