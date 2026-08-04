@@ -563,13 +563,6 @@
       return;
     }
 
-    if (!await _cartService.UsesServerCartAsync())
-    {
-      _snackbar.Add("Vui lòng đăng nhập để thêm vào giỏ hàng", Severity.Info);
-      _navigation.NavigateTo(RouterConfig.Customer.Login);
-      return;
-    }
-
     if (_quantity > EffectiveStock)
     {
       _snackbar.Add("Không đủ số lượng trong kho", Severity.Warning);
@@ -579,7 +572,18 @@
     _isSubmitting = true;
     StateHasChanged();
 
-    var result = await _cartService.AddItemAsync(_selectedVariant.Id, _quantity);
+    var guestInfo = new GuestCartItemInfo
+    {
+      ProductId = _product!.Id,
+      ProductName = _product.ProductName,
+      VariantName = _selectedVariant.VariantName ?? string.Empty,
+      Price = _selectedVariant.Price,
+      StockQuantity = _selectedVariant.StockQuantity,
+      ImageUrl = _activeImageUrl ?? _selectedVariant.MainImageUrl
+        ?? _galleryImages.FirstOrDefault()?.URL
+    };
+
+    var result = await _cartService.AddItemAsync(_selectedVariant.Id, _quantity, guestInfo);
 
     _isSubmitting = false;
     StateHasChanged();

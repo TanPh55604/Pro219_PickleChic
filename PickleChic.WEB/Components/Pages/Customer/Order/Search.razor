@@ -140,6 +140,17 @@
                                             </button>
                                         }
 
+                                        @if (CanCancelOrder(order))
+                                        {
+                                            <button type="button"
+                                                    @onclick="() => CancelGuestOrderAsync(order)"
+                                                    disabled="@_isCancelling"
+                                                    class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-red-200 !bg-red-50 !px-4 !py-2 text-sm font-black text-[#d71920] transition hover:!border-[#d71920] disabled:opacity-50">
+                                                <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" />
+                                                Hủy đơn
+                                            </button>
+                                        }
+
                                         <button type="button"
                                                 @onclick="() => SelectOrder(order)"
                                                 class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-4 !py-2 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920]">
@@ -162,7 +173,9 @@
     private string _name = string.Empty;
 
     private bool _isSearching;
+    private bool _isCancelling;
     private bool _hasSearched;
+    private string _lastLookupPhone = string.Empty;
     private List<UserOrderDetailResponse> _orders = new();
     private UserOrderDetailResponse? _selectedOrder;
 
@@ -195,6 +208,12 @@
         _isSearching = true;
         _hasSearched = true;
         _selectedOrder = null;
+
+        if (!string.IsNullOrWhiteSpace(_phoneNumber))
+        {
+            _lastLookupPhone = _phoneNumber.Trim();
+        }
+
         StateHasChanged();
 
         var result = await _customerOrderService.LookupOrdersAsync(
@@ -230,6 +249,126 @@
         _orders = new();
         _hasSearched = false;
         _selectedOrder = null;
+        _lastLookupPhone = string.Empty;
+    }
+
+    private static bool IsCancellableStatus(UserOrderDetailResponse order)
+    {
+        if (order.Status is Constant.OrderStatus.Code.Pending
+            or Constant.OrderStatus.Code.Processing
+            or Constant.OrderStatus.Code.WaitingForPayment)
+        {
+            return true;
+        }
+
+        return order.OrderStatus is Constant.OrderStatus.Pending
+            or Constant.OrderStatus.Processing
+            or Constant.OrderStatus.WaitingForPayment;
+    }
+
+    private static bool CanCancelOrder(UserOrderDetailResponse order) => IsCancellableStatus(order);
+
+    private string? ResolveCancelPhone(UserOrderDetailResponse order)
+    {
+        if (!string.IsNullOrWhiteSpace(_lastLookupPhone))
+        {
+            return _lastLookupPhone;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_phoneNumber))
+        {
+            return _phoneNumber.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(order.ReceiverPhone))
+        {
+            return order.ReceiverPhone.Trim();
+        }
+
+        return null;
+    }
+
+    private async Task CancelGuestOrderAsync(UserOrderDetailResponse order)
+    {
+        if (!CanCancelOrder(order) || _isCancelling)
+        {
+            return;
+        }
+
+        var phoneNumber = ResolveCancelPhone(order);
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+        {
+            _snackbar.Add("Vui lòng nhập số điện thoại đã dùng khi đặt hàng để hủy đơn", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<OrderCancelDialog>
+        {
+            { x => x.OrderCode, order.OrderCode },
+            { x => x.ReasonOptions, Constant.OrderCancelReason.Customer }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<OrderCancelDialog>(
+            "Hủy đơn hàng",
+            parameters,
+            options);
+
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled || dialogResult.Data is not CancelOrderDialogResult cancelData)
+        {
+            return;
+        }
+
+        _isCancelling = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await _customerOrderService.CancelGuestOrderAsync(new GuestCancelOrderRequest
+            {
+                OrderCode = order.OrderCode,
+                PhoneNumber = phoneNumber,
+                CancelReason = cancelData.CancelReason,
+                CancelDetail = cancelData.CancelDetail
+            });
+
+            if (!result.Success || result.Data is null)
+            {
+                _snackbar.Add(
+                    string.IsNullOrWhiteSpace(result.Message)
+                        ? "Không thể hủy đơn hàng"
+                        : result.Message,
+                    Severity.Error);
+                return;
+            }
+
+            _snackbar.Add("Đã hủy đơn hàng thành công", Severity.Success);
+
+            var updated = result.Data;
+            var index = _orders.FindIndex(x => x.Id == updated.Id || x.OrderCode == updated.OrderCode);
+            if (index >= 0)
+            {
+                _orders[index] = updated;
+            }
+
+            if (_selectedOrder is not null
+                && (_selectedOrder.Id == updated.Id || _selectedOrder.OrderCode == updated.OrderCode))
+            {
+                _selectedOrder = updated;
+            }
+        }
+        finally
+        {
+            _isCancelling = false;
+            StateHasChanged();
+        }
     }
 
     private void SelectOrder(UserOrderDetailResponse order)
@@ -373,6 +512,17 @@
                         class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-black !bg-black !px-6 !py-3 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920]">
                     <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Small" />
                     Thanh toán ngay
+                </button>
+            }
+
+            @if (CanCancelOrder(order))
+            {
+                <button type="button"
+                        @onclick="() => CancelGuestOrderAsync(order)"
+                        disabled="@_isCancelling"
+                        class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-red-200 !bg-red-50 !px-6 !py-3 text-sm font-black text-[#d71920] transition hover:!border-[#d71920] disabled:opacity-50">
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" Size="Size.Small" />
+                    Hủy đơn hàng
                 </button>
             }
         </div>

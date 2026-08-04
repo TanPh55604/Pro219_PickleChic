@@ -1,9 +1,11 @@
 using System.Text.Json;
 using PickleChic.WEB.Constant;
 using PickleChic.WEB.DTO.Customer;
+using PickleChic.WEB.Helpers;
 using PickleChic.WEB.Model;
 using PickleChic.WEB.Services.Api;
 using PickleChic.WEB.Services.Auth;
+using PickleChic.WEB.Services.Storage;
 
 namespace PickleChic.WEB.Services.Customer
 {
@@ -11,15 +13,18 @@ namespace PickleChic.WEB.Services.Customer
     {
         private readonly IApiProvider _apiProvider;
         private readonly IAuthStorageService _authStorageService;
+        private readonly ILocalStorageService _localStorageService;
 
         public event Action? CartChanged;
 
         public CustomerCartService(
             IApiProvider apiProvider,
-            IAuthStorageService authStorageService)
+            IAuthStorageService authStorageService,
+            ILocalStorageService localStorageService)
         {
             _apiProvider = apiProvider;
             _authStorageService = authStorageService;
+            _localStorageService = localStorageService;
         }
 
         public void NotifyCartChanged()
@@ -50,8 +55,8 @@ namespace PickleChic.WEB.Services.Customer
 
             if (customerId is null)
             {
-                // Guest cart: trả danh sách rỗng; sau này đọc từ localStorage tại đây.
-                return ApiResult<IReadOnlyList<CartLineModel>>.Ok(Array.Empty<CartLineModel>());
+                var guestItems = await LoadGuestCartAsync();
+                return ApiResult<IReadOnlyList<CartLineModel>>.Ok(guestItems);
             }
 
             var result = await _apiProvider.GetAsync<List<CartItemResponse>>(
@@ -84,20 +89,21 @@ namespace PickleChic.WEB.Services.Customer
             return result.Data.Sum(x => x.Quantity);
         }
 
-        public async Task<ApiResult<bool>> AddItemAsync(int productVariantId, int quantity = 1)
+        public async Task<ApiResult<bool>> AddItemAsync(
+            int productVariantId,
+            int quantity = 1,
+            GuestCartItemInfo? guestInfo = null)
         {
+            if (quantity < 1)
+            {
+                return ApiResult<bool>.Fail("Số lượng không hợp lệ");
+            }
+
             var customerId = await GetCustomerIdAsync();
 
             if (customerId is null)
             {
-                return ApiResult<bool>.Fail(
-                    message: "Vui lòng đăng nhập để thêm vào giỏ hàng",
-                    statusCode: 401);
-            }
-
-            if (quantity < 1)
-            {
-                return ApiResult<bool>.Fail("Số lượng không hợp lệ");
+                return await AddGuestItemAsync(productVariantId, quantity, guestInfo);
             }
 
             var request = new CartItemCreateRequest
@@ -125,15 +131,6 @@ namespace PickleChic.WEB.Services.Customer
 
         public async Task<ApiResult<bool>> UpdateQuantityAsync(CartLineModel line, int newQuantity)
         {
-            var customerId = await GetCustomerIdAsync();
-
-            if (customerId is null)
-            {
-                return ApiResult<bool>.Fail(
-                    message: "Vui lòng đăng nhập để cập nhật giỏ hàng",
-                    statusCode: 401);
-            }
-
             if (newQuantity < 1)
             {
                 return await RemoveItemAsync(line.Id);
@@ -142,6 +139,23 @@ namespace PickleChic.WEB.Services.Customer
             if (newQuantity > line.StockQuantity)
             {
                 return ApiResult<bool>.Fail("Không đủ số lượng trong kho");
+            }
+
+            var customerId = await GetCustomerIdAsync();
+
+            if (customerId is null)
+            {
+                var items = await LoadGuestCartAsync();
+                var existing = items.FirstOrDefault(x => x.Id == line.Id);
+                if (existing is null)
+                {
+                    return ApiResult<bool>.Fail("Không tìm thấy sản phẩm trong giỏ hàng");
+                }
+
+                existing.Quantity = newQuantity;
+                await SaveGuestCartAsync(items);
+                NotifyCartChanged();
+                return ApiResult<bool>.Ok(true);
             }
 
             var request = new CartItemUpdateRequest
@@ -174,9 +188,16 @@ namespace PickleChic.WEB.Services.Customer
 
             if (customerId is null)
             {
-                return ApiResult<bool>.Fail(
-                    message: "Vui lòng đăng nhập để xóa sản phẩm khỏi giỏ hàng",
-                    statusCode: 401);
+                var items = await LoadGuestCartAsync();
+                var remaining = items.Where(x => x.Id != cartItemId).ToList();
+                if (remaining.Count == items.Count)
+                {
+                    return ApiResult<bool>.Fail("Không tìm thấy sản phẩm trong giỏ hàng");
+                }
+
+                await SaveGuestCartAsync(remaining);
+                NotifyCartChanged();
+                return ApiResult<bool>.Ok(true);
             }
 
             var result = await _apiProvider.DeleteAsync<string>(
@@ -192,6 +213,97 @@ namespace PickleChic.WEB.Services.Customer
 
             NotifyCartChanged();
             return ApiResult<bool>.Ok(true);
+        }
+
+        private async Task<ApiResult<bool>> AddGuestItemAsync(
+            int productVariantId,
+            int quantity,
+            GuestCartItemInfo? guestInfo)
+        {
+            if (guestInfo is null
+                || string.IsNullOrWhiteSpace(guestInfo.ProductName)
+                || guestInfo.Price < 0)
+            {
+                return ApiResult<bool>.Fail("Thiếu thông tin sản phẩm để thêm vào giỏ");
+            }
+
+            var stockQuantity = guestInfo.StockQuantity > 0
+                ? guestInfo.StockQuantity
+                : Math.Max(quantity, 1);
+
+            if (quantity > stockQuantity)
+            {
+                return ApiResult<bool>.Fail("Không đủ số lượng trong kho");
+            }
+
+            var items = await LoadGuestCartAsync();
+            var existing = items.FirstOrDefault(x => x.ProductVariantId == productVariantId);
+            if (existing is not null)
+            {
+                var nextQty = existing.Quantity + quantity;
+                if (nextQty > stockQuantity)
+                {
+                    return ApiResult<bool>.Fail("Không đủ số lượng trong kho");
+                }
+
+                existing.Quantity = nextQty;
+                existing.Price = guestInfo.Price;
+                existing.StockQuantity = stockQuantity;
+                existing.Name = guestInfo.ProductName;
+                existing.Variant = string.IsNullOrWhiteSpace(guestInfo.VariantName)
+                    ? existing.Variant
+                    : guestInfo.VariantName;
+                existing.ImageUrl = MediaUrl.Resolve(guestInfo.ImageUrl) ?? existing.ImageUrl;
+            }
+            else
+            {
+                var nextId = items.Count == 0 ? -1 : items.Min(x => x.Id) - 1;
+                if (nextId >= 0)
+                {
+                    nextId = -1;
+                }
+
+                items.Add(new CartLineModel
+                {
+                    Id = nextId,
+                    CustomerId = -1,
+                    ProductVariantId = productVariantId,
+                    ProductId = guestInfo.ProductId,
+                    Name = guestInfo.ProductName,
+                    Variant = string.IsNullOrWhiteSpace(guestInfo.VariantName)
+                        ? string.Empty
+                        : guestInfo.VariantName,
+                    Price = guestInfo.Price,
+                    Quantity = quantity,
+                    StockQuantity = stockQuantity,
+                    ImageUrl = MediaUrl.Resolve(guestInfo.ImageUrl),
+                    ProductUrl = guestInfo.ProductId > 0
+                        ? RouterConfig.BuildRoute(RouterConfig.Customer.ProductDetail, guestInfo.ProductId)
+                        : RouterConfig.Customer.Products
+                });
+            }
+
+            await SaveGuestCartAsync(items);
+            NotifyCartChanged();
+            return ApiResult<bool>.Ok(true, message: "Đã thêm vào giỏ hàng");
+        }
+
+        private async Task<List<CartLineModel>> LoadGuestCartAsync()
+        {
+            try
+            {
+                var items = await _localStorageService.GetItemAsync<List<CartLineModel>>(PickleChic.WEB.Constant.Constant.GuestCart.StorageKey);
+                return items ?? new List<CartLineModel>();
+            }
+            catch
+            {
+                return new List<CartLineModel>();
+            }
+        }
+
+        private async Task SaveGuestCartAsync(List<CartLineModel> items)
+        {
+            await _localStorageService.SetItemAsync(PickleChic.WEB.Constant.Constant.GuestCart.StorageKey, items);
         }
 
         private static string NormalizeErrorMessage(string message)

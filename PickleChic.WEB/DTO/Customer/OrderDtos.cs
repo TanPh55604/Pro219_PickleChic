@@ -8,6 +8,8 @@ namespace PickleChic.WEB.DTO.Customer
 
         public int? AddressId { get; set; }
 
+        public AddressCreateRequest? AddressDTO { get; set; }
+
         public bool? UsePoints { get; set; }
 
         public bool? Bopis { get; set; }
@@ -166,6 +168,17 @@ namespace PickleChic.WEB.DTO.Customer
 
     public class CancelOrderRequest
     {
+        public string CancelReason { get; set; } = string.Empty;
+
+        public string? CancelDetail { get; set; }
+    }
+
+    public class GuestCancelOrderRequest
+    {
+        public string OrderCode { get; set; } = string.Empty;
+
+        public string PhoneNumber { get; set; } = string.Empty;
+
         public string CancelReason { get; set; } = string.Empty;
 
         public string? CancelDetail { get; set; }

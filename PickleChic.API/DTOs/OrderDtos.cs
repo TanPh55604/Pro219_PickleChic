@@ -180,6 +180,7 @@ public class OrderCalculationRequestDto
     public List<OrderItemCalculationDto> Items { get; set; } = null!;
     public string? DiscountCode { get; set; }
     public int? AddressId { get; set; }
+    public AddressCreateDto? AddressDTO { get; set; }
     public bool? UsePoints { get; set; }
     public bool? Bopis { get; set; }
 }

@@ -29,28 +29,7 @@
             </button>
         </div>
 
-        @if (_hasLoaded && !_usesServerCart)
-        {
-            <div class="flex min-h-0 flex-1 flex-col items-center justify-center !px-6 text-center">
-                <div class="flex !h-16 !w-16 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
-                    <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Large" />
-                </div>
-
-                <h3 class="!mt-5 text-xl font-black text-slate-950">
-                    Đăng nhập để xem giỏ hàng
-                </h3>
-
-                <p class="!mt-2 text-sm leading-6 text-slate-500">
-                    Giỏ hàng của bạn sẽ được lưu sau khi đăng nhập.
-                </p>
-
-                <a href="@RouterConfig.Customer.Login"
-                   class="!mt-6 inline-flex items-center justify-center !rounded-full !bg-black !px-7 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
-                    Đăng nhập
-                </a>
-            </div>
-        }
-        else if (_hasLoaded && !_cartItems.Any())
+        @if (_hasLoaded && !_cartItems.Any())
         {
             <div class="flex min-h-0 flex-1 flex-col items-center justify-center !px-6 text-center">
                 <div class="flex !h-16 !w-16 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
@@ -209,8 +188,6 @@
 
     private bool _hasLoaded;
 
-    private bool _usesServerCart;
-
     private bool IsBusy => _isLoading || _isUpdating;
 
     private decimal SubTotal => _cartItems.Sum(x => x.LineTotal);
@@ -245,17 +222,6 @@
     {
         _isLoading = true;
         StateHasChanged();
-
-        _usesServerCart = await _cartService.UsesServerCartAsync();
-
-        if (!_usesServerCart)
-        {
-            _cartItems = new List<CartLineModel>();
-            _isLoading = false;
-            _hasLoaded = true;
-            StateHasChanged();
-            return;
-        }
 
         var result = await _cartService.GetItemsAsync();
 
