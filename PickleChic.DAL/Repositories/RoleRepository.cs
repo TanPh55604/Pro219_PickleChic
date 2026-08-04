@@ -18,6 +18,15 @@ public class RoleRepository
         return await _context.Roles.ToListAsync();
     }
 
+    public async Task<bool> IsRoleNameExistsAsync(string name, int? excludeId = null)
+    {
+        if (excludeId.HasValue)
+        {
+            return await _context.Roles.AnyAsync(r => r.RoleName.ToLower() == name.ToLower() && r.Id != excludeId.Value);
+        }
+        return await _context.Roles.AnyAsync(r => r.RoleName.ToLower() == name.ToLower());
+    }
+
     public async Task<Role?> GetByIdAsync(int id)
     {
         return await _context.Roles.FindAsync(id);
