@@ -5,7 +5,9 @@ namespace PickleChic.WEB.Services.Customer
 {
     public interface ICustomerOrderService
     {
-        Task<ApiResult<OrderCalculationResult>> CalculateTotalAsync(OrderCalculationRequest request);
+        Task<ApiResult<OrderCalculationResult>> CalculateTotalAsync(
+            OrderCalculationRequest request,
+            bool requireAuth = true);
 
         Task<ApiResult<CheckoutResponse>> CheckoutAsync(
             CheckoutRequest request,
@@ -16,7 +18,8 @@ namespace PickleChic.WEB.Services.Customer
             int? voucherId = null,
             string? note = null,
             bool usePoints = false,
-            bool bopis = false);
+            bool bopis = false,
+            bool requireAuth = true);
 
         Task<ApiResult<PaymentCallbackOrderResponse>> ConfirmPaymentSuccessAsync(
             int orderId,
@@ -33,6 +36,8 @@ namespace PickleChic.WEB.Services.Customer
             int orderId,
             CancelOrderRequest request,
             bool requireAuth = true);
+
+        Task<ApiResult<UserOrderDetailResponse>> CancelGuestOrderAsync(GuestCancelOrderRequest request);
 
         Task<ApiResult<List<UserOrderDetailResponse>>> GetUserOrdersAsync();
 

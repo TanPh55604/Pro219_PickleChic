@@ -1,6 +1,7 @@
 ﻿@attribute [Route(RouterConfig.Customer.Checkout)]
 @layout MainLayout
 @using PickleChic.WEB.Components.Pages.Customer.Profile
+@using PickleChic.WEB.Model
 
 <PageTitle>PickleChic WEB - Checkout</PageTitle>
 
@@ -28,27 +29,6 @@
         {
             <div class="!mt-8 flex justify-center !py-16">
                 <MudProgressCircular Color="Color.Error" Indeterminate="true" />
-            </div>
-        }
-        else if (!_isAuthenticated)
-        {
-            <div class="!mt-8 !rounded-3xl !border !border-slate-200 !bg-white !p-10 text-center shadow-sm">
-                <div class="mx-auto flex !h-16 !w-16 items-center justify-center !rounded-full !bg-slate-100 text-slate-400">
-                    <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Large" />
-                </div>
-
-                <h2 class="!mt-5 text-2xl font-black text-slate-950">
-                    Đăng nhập để thanh toán
-                </h2>
-
-                <p class="!mt-2 text-sm text-slate-500">
-                    Vui lòng đăng nhập để tiếp tục đặt hàng.
-                </p>
-
-                <a href="@RouterConfig.Customer.Login"
-                   class="!mt-6 inline-flex items-center justify-center !rounded-full !bg-black !px-7 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
-                    Đăng nhập
-                </a>
             </div>
         }
         else if (!_cartItems.Any())
@@ -92,6 +72,14 @@
                        class="inline-flex items-center justify-center !rounded-full !bg-black !px-7 !py-3 text-sm font-black !text-white transition hover:!bg-[#d71920]">
                         Tiếp tục mua sắm
                     </a>
+
+                    @if (!_isAuthenticated)
+                    {
+                        <a href="@RouterConfig.Customer.SearchOrder"
+                           class="inline-flex items-center justify-center !rounded-full !border !border-slate-300 !bg-white !px-7 !py-3 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920]">
+                            Tra cứu / hủy đơn
+                        </a>
+                    }
                 </div>
             </div>
         }
@@ -275,16 +263,104 @@
                                         Địa chỉ giao hàng
                                     </h2>
 
-                                    <button type="button"
-                                            disabled="@IsBusy"
-                                            @onclick="OpenCreateAddressDialogAsync"
-                                            class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-4 !py-2 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
-                                        <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
-                                        Thêm địa chỉ
-                                    </button>
+                                    @if (_isAuthenticated)
+                                    {
+                                        <button type="button"
+                                                disabled="@IsBusy"
+                                                @onclick="OpenCreateAddressDialogAsync"
+                                                class="inline-flex items-center justify-center !gap-2 !rounded-full !border !border-slate-300 !bg-white !px-4 !py-2 text-sm font-black text-slate-900 transition hover:!border-[#d71920] hover:!text-[#d71920] disabled:opacity-50">
+                                            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                            Thêm địa chỉ
+                                        </button>
+                                    }
                                 </div>
 
-                                @if (!_addresses.Any())
+                                @if (!_isAuthenticated)
+                                {
+                                    <div class="!mt-5">
+                                        <MudForm @ref="_guestShippingForm"
+                                                 Model="@_guestAddress"
+                                                 Validation="@_guestShippingValidator.ValidateValue">
+                                            <div class="!space-y-3">
+                                                <div class="grid !gap-3 sm:grid-cols-2">
+                                                    <MudTextField Value="_guestAddress.FullName"
+                                                                  ValueChanged="@(async (string v) => await OnGuestFullNameChangedAsync(v))"
+                                                                  For="@(() => _guestAddress.FullName)"
+                                                                  Label="Họ tên"
+                                                                  Variant="Variant.Outlined"
+                                                                  Margin="Margin.Dense"
+                                                                  Required="true"
+                                                                  Immediate="true" />
+                                                    <MudTextField Value="_guestAddress.PhoneNumber"
+                                                                  ValueChanged="@(async (string v) => await OnGuestPhoneChangedAsync(v))"
+                                                                  For="@(() => _guestAddress.PhoneNumber)"
+                                                                  Label="Số điện thoại"
+                                                                  Variant="Variant.Outlined"
+                                                                  Margin="Margin.Dense"
+                                                                  MaxLength="10"
+                                                                  Required="true"
+                                                                  Immediate="true" />
+                                                </div>
+
+                                                <MudTextField Value="_guestAddress.DetailInfo"
+                                                              ValueChanged="@(async (string v) => await OnGuestDetailChangedAsync(v))"
+                                                              For="@(() => _guestAddress.DetailInfo)"
+                                                              Label="Địa chỉ chi tiết"
+                                                              Variant="Variant.Outlined"
+                                                              Margin="Margin.Dense"
+                                                              Required="true"
+                                                              Immediate="true" />
+
+                                                <div class="grid !gap-3 md:grid-cols-3">
+                                                    <MudSelect T="int?"
+                                                               Value="_guestAddress.ProvinceId"
+                                                               ValueChanged="OnGuestProvinceChangedAsync"
+                                                               For="@(() => _guestAddress.ProvinceId)"
+                                                               Label="Tỉnh/TP"
+                                                               Variant="Variant.Outlined"
+                                                               Margin="Margin.Dense"
+                                                               Required="true">
+                                                        @foreach (var p in _guestProvinces)
+                                                        {
+                                                            <MudSelectItem T="int?" Value="@p.Id">@p.Name</MudSelectItem>
+                                                        }
+                                                    </MudSelect>
+
+                                                    <MudSelect T="int?"
+                                                               Value="_guestAddress.DistrictId"
+                                                               ValueChanged="OnGuestDistrictChangedAsync"
+                                                               For="@(() => _guestAddress.DistrictId)"
+                                                               Label="Quận/Huyện"
+                                                               Variant="Variant.Outlined"
+                                                               Margin="Margin.Dense"
+                                                               Required="true"
+                                                               Disabled="@(!_guestAddress.ProvinceId.HasValue || !_guestDistricts.Any())">
+                                                        @foreach (var d in _guestDistricts)
+                                                        {
+                                                            <MudSelectItem T="int?" Value="@d.Id">@d.Name</MudSelectItem>
+                                                        }
+                                                    </MudSelect>
+
+                                                    <MudSelect T="int"
+                                                               Value="_guestAddress.WardId"
+                                                               ValueChanged="OnGuestWardChangedAsync"
+                                                               For="@(() => _guestAddress.WardId)"
+                                                               Label="Phường/Xã"
+                                                               Variant="Variant.Outlined"
+                                                               Margin="Margin.Dense"
+                                                               Required="true"
+                                                               Disabled="@(!_guestAddress.DistrictId.HasValue || !_guestWards.Any())">
+                                                        @foreach (var w in _guestWards)
+                                                        {
+                                                            <MudSelectItem Value="@w.Id">@w.Name</MudSelectItem>
+                                                        }
+                                                    </MudSelect>
+                                                </div>
+                                            </div>
+                                        </MudForm>
+                                    </div>
+                                }
+                                else if (!_addresses.Any())
                                 {
                                     <div class="!mt-5 !rounded-2xl !border !border-dashed !border-slate-300 !bg-slate-50 !p-6 text-center">
                                         <p class="text-sm font-semibold text-slate-500">
@@ -336,6 +412,38 @@
                                         </MudRadioGroup>
                                     </div>
                                 }
+                            </div>
+                        }
+                        else if (!_isAuthenticated)
+                        {
+                            <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                                <h2 class="text-lg font-black text-slate-950">
+                                    Thông tin liên hệ
+                                </h2>
+                                <p class="!mt-1 text-sm text-slate-500">
+                                    Dùng để tra cứu và hủy đơn khi nhận tại cửa hàng.
+                                </p>
+                                <div class="!mt-5">
+                                    <MudForm @ref="_guestContactForm"
+                                             Model="@_guestAddress"
+                                             Validation="@_guestContactValidator.ValidateValue">
+                                        <div class="grid !gap-4 md:grid-cols-2">
+                                            <MudTextField @bind-Value="_guestAddress.FullName"
+                                                          For="@(() => _guestAddress.FullName)"
+                                                          Label="Họ tên"
+                                                          Variant="Variant.Outlined"
+                                                          Required="true"
+                                                          Immediate="true" />
+                                            <MudTextField @bind-Value="_guestAddress.PhoneNumber"
+                                                          For="@(() => _guestAddress.PhoneNumber)"
+                                                          Label="Số điện thoại"
+                                                          Variant="Variant.Outlined"
+                                                          MaxLength="10"
+                                                          Required="true"
+                                                          Immediate="true" />
+                                        </div>
+                                    </MudForm>
+                                </div>
                             </div>
                         }
 
@@ -404,85 +512,88 @@
                         </h2>
 
                         <div class="!mt-5">
-                            <p class="!mb-2 text-sm font-black text-slate-950">
-                                Mã giảm giá
-                            </p>
-
-                            @if (string.IsNullOrWhiteSpace(_appliedCoupon))
+                            @if (_isAuthenticated)
                             {
-                                <div class="flex !gap-2">
-                                    <MudTextField @bind-Value="_couponCode"
-                                                  Placeholder="Nhập mã giảm giá"
-                                                  Variant="Variant.Outlined"
-                                                  Class="flex-1"
-                                                  Disabled="@IsBusy" />
+                                <p class="!mb-2 text-sm font-black text-slate-950">
+                                    Mã giảm giá
+                                </p>
 
-                                    <button type="button"
-                                            disabled="@IsBusy"
-                                            @onclick="ApplyCouponAsync"
-                                            class="inline-flex items-center justify-center !rounded-full !border !border-black !bg-black !px-5 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920]">
-                                        Áp dụng
-                                    </button>
-                                </div>
-
-                                @if (!string.IsNullOrWhiteSpace(_couponError))
+                                @if (string.IsNullOrWhiteSpace(_appliedCoupon))
                                 {
-                                    <p class="!mt-2 text-sm font-semibold text-[#d71920]">
-                                        @_couponError
-                                    </p>
-                                }
+                                    <div class="flex !gap-2">
+                                        <MudTextField @bind-Value="_couponCode"
+                                                      Placeholder="Nhập mã giảm giá"
+                                                      Variant="Variant.Outlined"
+                                                      Class="flex-1"
+                                                      Disabled="@IsBusy" />
 
-                                @if (_availableVouchers.Any())
-                                {
-                                    <div class="!mt-3 !space-y-2">
-                                        <p class="text-xs font-bold tracking-wide text-slate-400 uppercase">
-                                            Mã khả dụng
-                                        </p>
-
-                                        @foreach (var voucher in _availableVouchers.Take(3))
-                                        {
-                                            <button type="button"
-                                                    disabled="@IsBusy"
-                                                    @onclick="() => QuickApplyVoucherAsync(voucher)"
-                                                    class="flex w-full items-center justify-between !rounded-2xl !border !border-slate-200 !bg-slate-50 !px-3 !py-2 text-left transition hover:!border-[#d71920]">
-                                                <span class="text-sm font-black text-slate-950">
-                                                    @voucher.VoucherCode
-                                                </span>
-                                                <span class="text-xs font-semibold text-slate-500">
-                                                    @(voucher.IsPercentDiscount
-                                                        ? $"-{voucher.DiscountValue:0}%"
-                                                        : $"-{voucher.DiscountValue:N0} đ")
-                                                </span>
-                                            </button>
-                                        }
-                                    </div>
-                                }
-                            }
-                            else
-                            {
-                                <div class="flex items-center justify-between !gap-3 !rounded-2xl !border !border-red-100 !bg-red-50 !p-4">
-                                    <div>
-                                        <p class="text-sm font-black text-slate-950">
-                                            @_appliedCoupon
-                                        </p>
-
-                                        <p class="!mt-1 text-xs font-semibold text-slate-500">
-                                            Đã áp dụng giảm @FormatMoney(Discount)
-                                        </p>
+                                        <button type="button"
+                                                disabled="@IsBusy"
+                                                @onclick="ApplyCouponAsync"
+                                                class="inline-flex items-center justify-center !rounded-full !border !border-black !bg-black !px-5 text-sm font-black !text-white transition hover:!border-[#d71920] hover:!bg-[#d71920]">
+                                            Áp dụng
+                                        </button>
                                     </div>
 
-                                    <button type="button"
-                                            disabled="@IsBusy"
-                                            @onclick="RemoveCouponAsync"
-                                            class="flex !h-9 !w-9 items-center justify-center !rounded-full !bg-white text-slate-500 transition hover:!text-[#d71920]">
-                                        <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
-                                    </button>
-                                </div>
+                                    @if (!string.IsNullOrWhiteSpace(_couponError))
+                                    {
+                                        <p class="!mt-2 text-sm font-semibold text-[#d71920]">
+                                            @_couponError
+                                        </p>
+                                    }
+
+                                    @if (_availableVouchers.Any())
+                                    {
+                                        <div class="!mt-3 !space-y-2">
+                                            <p class="text-xs font-bold tracking-wide text-slate-400 uppercase">
+                                                Mã khả dụng
+                                            </p>
+
+                                            @foreach (var voucher in _availableVouchers.Take(3))
+                                            {
+                                                <button type="button"
+                                                        disabled="@IsBusy"
+                                                        @onclick="() => QuickApplyVoucherAsync(voucher)"
+                                                        class="flex w-full items-center justify-between !rounded-2xl !border !border-slate-200 !bg-slate-50 !px-3 !py-2 text-left transition hover:!border-[#d71920]">
+                                                    <span class="text-sm font-black text-slate-950">
+                                                        @voucher.VoucherCode
+                                                    </span>
+                                                    <span class="text-xs font-semibold text-slate-500">
+                                                        @(voucher.IsPercentDiscount
+                                                            ? $"-{voucher.DiscountValue:0}%"
+                                                            : $"-{voucher.DiscountValue:N0} đ")
+                                                    </span>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    <div class="flex items-center justify-between !gap-3 !rounded-2xl !border !border-red-100 !bg-red-50 !p-4">
+                                        <div>
+                                            <p class="text-sm font-black text-slate-950">
+                                                @_appliedCoupon
+                                            </p>
+
+                                            <p class="!mt-1 text-xs font-semibold text-slate-500">
+                                                Đã áp dụng giảm @FormatMoney(Discount)
+                                            </p>
+                                        </div>
+
+                                        <button type="button"
+                                                disabled="@IsBusy"
+                                                @onclick="RemoveCouponAsync"
+                                                class="flex !h-9 !w-9 items-center justify-center !rounded-full !bg-white text-slate-500 transition hover:!text-[#d71920]">
+                                            <MudIcon Icon="@Icons.Material.Filled.Close" Size="Size.Small" />
+                                        </button>
+                                    </div>
+                                }
                             }
                         </div>
 
                         <div class="!mt-6 !space-y-4">
-                            @if (_totalPoints > 0)
+                            @if (_isAuthenticated && _totalPoints > 0)
                             {
                                 <div class="flex w-full items-center justify-between !gap-3 !rounded-2xl !border !border-slate-200 !bg-slate-50 !p-4">
                                     <p class="min-w-0 flex-1 text-sm font-semibold text-slate-500">
@@ -512,7 +623,7 @@
                                     {
                                         <span>Miễn phí</span>
                                     }
-                                    else if (_selectedAddressId <= 0)
+                                    else if (!HasShippingAddressForCalculation)
                                     {
                                         <span class="text-slate-400">Chọn địa chỉ</span>
                                     }
@@ -606,17 +717,38 @@
     private bool _isBopis;
     private bool _usePoints;
 
+    private OfflinePosGuestAddress _guestAddress = new();
+
+    private MudForm? _guestShippingForm;
+    private MudForm? _guestContactForm;
+    private readonly GuestCheckoutAddressSchema.CreateUpdate _guestShippingValidator = new();
+    private readonly GuestCheckoutContactSchema.ContactOnly _guestContactValidator = new();
+
+    private List<ProvinceResponse> _guestProvinces = new();
+    private List<DistrictResponse> _guestDistricts = new();
+    private List<WardResponse> _guestWards = new();
+
     private bool IsBusy => _isLoading || _isUpdating || _isCalculating || _isPlacingOrder;
+
+    private bool HasShippingAddressForCalculation =>
+        _isBopis
+        || (_isAuthenticated && _selectedAddressId > 0)
+        || (!_isAuthenticated && IsGuestAddressComplete());
 
     private bool CanPlaceOrder =>
         _cartItems.Any()
-        && (_isBopis || _selectedAddressId > 0)
+        && (
+            (_isAuthenticated && (_isBopis || _selectedAddressId > 0))
+            || (!_isAuthenticated && (_isBopis ? IsGuestContactComplete() : IsGuestAddressComplete()))
+        )
         && !_isCalculating
         && !_isPlacingOrder;
 
     private int TotalQuantity => _cartItems.Sum(x => x.Quantity);
 
-    private decimal SubTotal => (_isBopis || _selectedAddressId > 0) ? _subTotal : _cartItems.Sum(x => x.LineTotal);
+    private decimal SubTotal => HasShippingAddressForCalculation || _isBopis
+        ? _subTotal
+        : _cartItems.Sum(x => x.LineTotal);
 
     private decimal ShippingFee => _isBopis ? 0 : _shippingFee;
 
@@ -628,7 +760,7 @@
     {
         get
         {
-            if (!_isBopis && _selectedAddressId <= 0)
+            if (!_isBopis && !HasShippingAddressForCalculation)
             {
                 return Math.Max(0, SubTotal - Discount - PointsDiscount);
             }
@@ -653,36 +785,38 @@
 
         _isAuthenticated = await _authStorageService.IsAuthenticatedAsync();
 
+        if (_isAuthenticated)
+        {
+            var customerId = await _cartService.GetCustomerIdAsync();
+
+            if (customerId is null)
+            {
+                _isAuthenticated = false;
+            }
+            else
+            {
+                _customerId = customerId.Value;
+
+                await Task.WhenAll(
+                    LoadCartInternalAsync(),
+                    LoadAddressesInternalAsync(),
+                    LoadVouchersInternalAsync(),
+                    LoadCustomerPointsInternalAsync());
+            }
+        }
+
         if (!_isAuthenticated)
         {
-            _hasLoaded = true;
-            _isLoading = false;
-            StateHasChanged();
-            return;
+            await Task.WhenAll(LoadCartInternalAsync(), LoadGuestProvincesAsync());
         }
 
-        var customerId = await _cartService.GetCustomerIdAsync();
-
-        if (customerId is null)
-        {
-            _isAuthenticated = false;
-            _hasLoaded = true;
-            _isLoading = false;
-            StateHasChanged();
-            return;
-        }
-
-        _customerId = customerId.Value;
-
-        await Task.WhenAll(
-            LoadCartInternalAsync(),
-            LoadAddressesInternalAsync(),
-            LoadVouchersInternalAsync(),
-            LoadCustomerPointsInternalAsync());
-
-        if (_cartItems.Any() && (_isBopis || _selectedAddressId > 0))
+        if (_cartItems.Any() && HasShippingAddressForCalculation)
         {
             await RecalculateTotalsAsync();
+        }
+        else if (_cartItems.Any())
+        {
+            ResetTotals();
         }
 
         _hasLoaded = true;
@@ -761,6 +895,149 @@
         }
 
         _availableVouchers = result.Data;
+    }
+
+    private async Task LoadGuestProvincesAsync()
+    {
+        var provinces = await _addressService.GetProvincesAsync();
+        _guestProvinces = provinces.Success && provinces.Data is not null
+            ? provinces.Data
+            : new List<ProvinceResponse>();
+    }
+
+    private async Task OnGuestFullNameChangedAsync(string value)
+    {
+        _guestAddress.FullName = value ?? string.Empty;
+        await OnGuestAddressChangedAsync();
+    }
+
+    private async Task OnGuestPhoneChangedAsync(string value)
+    {
+        _guestAddress.PhoneNumber = value ?? string.Empty;
+        await OnGuestAddressChangedAsync();
+    }
+
+    private async Task OnGuestDetailChangedAsync(string value)
+    {
+        _guestAddress.DetailInfo = value ?? string.Empty;
+        await OnGuestAddressChangedAsync();
+    }
+
+    private async Task OnGuestProvinceChangedAsync(int? provinceId)
+    {
+        _guestAddress.ProvinceId = provinceId;
+        _guestAddress.DistrictId = null;
+        _guestAddress.WardId = 0;
+        _guestDistricts = new();
+        _guestWards = new();
+
+        if (provinceId is > 0)
+        {
+            var result = await _addressService.GetDistrictsByProvinceAsync(provinceId.Value);
+            _guestDistricts = result.Success && result.Data is not null
+                ? result.Data
+                : new List<DistrictResponse>();
+        }
+
+        await OnGuestAddressChangedAsync();
+    }
+
+    private async Task OnGuestDistrictChangedAsync(int? districtId)
+    {
+        _guestAddress.DistrictId = districtId;
+        _guestAddress.WardId = 0;
+        _guestWards = new();
+
+        if (districtId is > 0)
+        {
+            var result = await _addressService.GetWardsByDistrictAsync(districtId.Value);
+            _guestWards = result.Success && result.Data is not null
+                ? result.Data
+                : new List<WardResponse>();
+        }
+
+        await OnGuestAddressChangedAsync();
+    }
+
+    private async Task OnGuestWardChangedAsync(int wardId)
+    {
+        _guestAddress.WardId = wardId;
+        await OnGuestAddressChangedAsync();
+    }
+
+    private async Task OnGuestAddressChangedAsync()
+    {
+        if (IsBusy)
+        {
+            return;
+        }
+
+        if (_isBopis)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        if (IsGuestAddressComplete())
+        {
+            await RecalculateTotalsAsync();
+        }
+        else
+        {
+            ResetTotals();
+            StateHasChanged();
+        }
+    }
+
+    private static bool IsGuestAddressComplete(OfflinePosGuestAddress? address) =>
+        address is not null
+        && !string.IsNullOrWhiteSpace(address.FullName)
+        && !string.IsNullOrWhiteSpace(address.PhoneNumber)
+        && !string.IsNullOrWhiteSpace(address.DetailInfo)
+        && address.ProvinceId is > 0
+        && address.DistrictId is > 0
+        && address.WardId > 0;
+
+    private bool IsGuestAddressComplete() => IsGuestAddressComplete(_guestAddress);
+
+    private bool IsGuestContactComplete() =>
+        !string.IsNullOrWhiteSpace(_guestAddress.FullName)
+        && System.Text.RegularExpressions.Regex.IsMatch(_guestAddress.PhoneNumber?.Trim() ?? string.Empty, @"^0\d{9}$");
+
+    private AddressCreateRequest? BuildGuestAddressDto()
+    {
+        if (_isBopis)
+        {
+            if (!IsGuestContactComplete())
+            {
+                return null;
+            }
+
+            return new AddressCreateRequest
+            {
+                CustomerId = -1,
+                FullName = _guestAddress.FullName.Trim(),
+                PhoneNumber = _guestAddress.PhoneNumber.Trim(),
+                DetailInfo = "Nhận tại cửa hàng",
+                WardId = 0,
+                Status = 0
+            };
+        }
+
+        if (!IsGuestAddressComplete())
+        {
+            return null;
+        }
+
+        return new AddressCreateRequest
+        {
+            CustomerId = -1,
+            FullName = _guestAddress.FullName.Trim(),
+            PhoneNumber = _guestAddress.PhoneNumber.Trim(),
+            DetailInfo = _guestAddress.DetailInfo.Trim(),
+            WardId = _guestAddress.WardId,
+            Status = 1
+        };
     }
 
     private async Task OnAddressChangedAsync(int addressId)
@@ -995,17 +1272,27 @@
             return false;
         }
 
-        var discountCode = discountCodeOverride
-            ?? (string.IsNullOrWhiteSpace(_appliedCoupon) ? null : _appliedCoupon);
+        if (!_isAuthenticated && !_isBopis && !IsGuestAddressComplete())
+        {
+            ResetTotals();
+            return true;
+        }
+
+        var discountCode = _isAuthenticated
+            ? discountCodeOverride ?? (string.IsNullOrWhiteSpace(_appliedCoupon) ? null : _appliedCoupon)
+            : null;
 
         _isCalculating = true;
         StateHasChanged();
 
+        var guestAddressDto = !_isAuthenticated && !_isBopis ? BuildGuestAddressDto() : null;
+
         var request = new OrderCalculationRequest
         {
-            AddressId = _isBopis || _selectedAddressId <= 0 ? null : _selectedAddressId,
+            AddressId = _isBopis || !_isAuthenticated || _selectedAddressId <= 0 ? null : _selectedAddressId,
+            AddressDTO = guestAddressDto,
             DiscountCode = discountCode,
-            UsePoints = _usePoints,
+            UsePoints = _isAuthenticated && _usePoints,
             Bopis = _isBopis,
             Items = _cartItems.Select(x => new OrderItemCalculationRequest
             {
@@ -1014,7 +1301,7 @@
             }).ToList()
         };
 
-        var result = await _customerOrderService.CalculateTotalAsync(request);
+        var result = await _customerOrderService.CalculateTotalAsync(request, requireAuth: _isAuthenticated);
 
         if (!result.Success || result.Data is null)
         {
@@ -1123,22 +1410,80 @@
             return;
         }
 
-        if (!_isBopis && _selectedAddressId <= 0)
+        if (!_isBopis && _isAuthenticated && _selectedAddressId <= 0)
         {
             _snackbar.Add("Vui lòng chọn địa chỉ giao hàng", Severity.Warning);
             return;
         }
 
-        // Ensure latest totals before checkout
+        if (!_isAuthenticated)
+        {
+            if (_isBopis)
+            {
+                if (_guestContactForm is null)
+                {
+                    _snackbar.Add("Vui lòng nhập đầy đủ thông tin liên hệ", Severity.Warning);
+                    return;
+                }
+
+                await _guestContactForm.ValidateAsync();
+                if (!_guestContactForm.IsValid)
+                {
+                    _snackbar.Add("Vui lòng nhập đầy đủ thông tin liên hệ", Severity.Warning);
+                    return;
+                }
+            }
+            else
+            {
+                if (_guestShippingForm is null)
+                {
+                    _snackbar.Add("Vui lòng nhập đầy đủ địa chỉ giao hàng", Severity.Warning);
+                    return;
+                }
+
+                await _guestShippingForm.ValidateAsync();
+                if (!_guestShippingForm.IsValid)
+                {
+                    _snackbar.Add("Vui lòng nhập đầy đủ địa chỉ giao hàng", Severity.Warning);
+                    return;
+                }
+            }
+        }
+
         var calculated = await RecalculateTotalsAsync();
 
-        if (!calculated || (!_isBopis && _selectedAddressId <= 0) || !_cartItems.Any())
+        if (!calculated || !_cartItems.Any())
+        {
+            return;
+        }
+
+        if (!_isBopis && _isAuthenticated && _selectedAddressId <= 0)
         {
             return;
         }
 
         _isPlacingOrder = true;
         StateHasChanged();
+
+        AddressCreateRequest? addressDto = null;
+        var checkoutAddressId = _isBopis ? -99 : _selectedAddressId;
+
+        if (!_isAuthenticated)
+        {
+            checkoutAddressId = -99;
+            addressDto = BuildGuestAddressDto();
+            if (addressDto is null)
+            {
+                _isPlacingOrder = false;
+                _snackbar.Add(
+                    _isBopis
+                        ? "Vui lòng nhập họ tên và số điện thoại"
+                        : "Vui lòng nhập đầy đủ địa chỉ giao hàng",
+                    Severity.Warning);
+                StateHasChanged();
+                return;
+            }
+        }
 
         var checkoutRequest = new CheckoutRequest
         {
@@ -1148,7 +1493,7 @@
                 Quantity = x.Quantity,
                 ProductName = x.Name
             }).ToList(),
-            AddressDTO = null
+            AddressDTO = addressDto
         };
 
         var result = await _customerOrderService.CheckoutAsync(
@@ -1156,11 +1501,12 @@
             discountAmount: Discount,
             shippingFee: ShippingFee,
             paymentMethodTypeId: _paymentMethodTypeId,
-            addressId: _isBopis ? -99 : _selectedAddressId,
-            voucherId: _appliedVoucherId,
+            addressId: checkoutAddressId,
+            voucherId: _isAuthenticated ? _appliedVoucherId : null,
             note: string.IsNullOrWhiteSpace(_note) ? null : _note.Trim(),
-            usePoints: _usePoints,
-            bopis: _isBopis);
+            usePoints: _isAuthenticated && _usePoints,
+            bopis: _isBopis,
+            requireAuth: _isAuthenticated);
 
         _isPlacingOrder = false;
 

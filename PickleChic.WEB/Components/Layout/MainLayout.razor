@@ -82,13 +82,6 @@
 
     private async Task RefreshCartCountAsync()
     {
-        if (!await _cartService.UsesServerCartAsync())
-        {
-            _cartItemCount = 0;
-            await InvokeAsync(StateHasChanged);
-            return;
-        }
-
         _cartItemCount = await _cartService.GetTotalQuantityAsync();
         await InvokeAsync(StateHasChanged);
     }

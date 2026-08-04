@@ -124,6 +124,11 @@ namespace PickleChic.WEB.Constant
             public const string Mine = "Mine";
         }
 
+        public static class GuestCart
+        {
+            public const string StorageKey = "picklechic_guest_cart";
+        }
+
         public static class OrderCancelReason
         {
             public const string Other = "Lý do khác";

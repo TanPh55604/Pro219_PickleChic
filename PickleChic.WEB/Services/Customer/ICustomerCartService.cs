@@ -15,7 +15,10 @@ namespace PickleChic.WEB.Services.Customer
 
         Task<int> GetTotalQuantityAsync();
 
-        Task<ApiResult<bool>> AddItemAsync(int productVariantId, int quantity = 1);
+        Task<ApiResult<bool>> AddItemAsync(
+            int productVariantId,
+            int quantity = 1,
+            GuestCartItemInfo? guestInfo = null);
 
         Task<ApiResult<bool>> UpdateQuantityAsync(CartLineModel line, int newQuantity);
 

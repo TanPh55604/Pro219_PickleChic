@@ -311,6 +311,8 @@
 
             public static string UserCancel(int orderId) => $"order/user/cancel/{orderId}";
 
+            public const string GuestCancel = "order/guest/cancel";
+
             public const string UserList = "order/user/list";
 
             public static string Lookup(
