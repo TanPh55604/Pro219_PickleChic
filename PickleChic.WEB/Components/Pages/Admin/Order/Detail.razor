@@ -195,6 +195,20 @@ else
                                 <span>Tạm tính</span>
                                 <span>@_model.ItemsTotal.ToString("N0")đ</span>
                             </div>
+                            @if (_model.DiscountAmount > 0)
+                            {
+                                <div class="flex w-full max-w-xs justify-between text-slate-600">
+                                    <span>Giảm giá</span>
+                                    <span class="text-[#d71920]">-@_model.DiscountAmount.ToString("N0")đ</span>
+                                </div>
+                            }
+                            @if (_model.PointsDiscount > 0)
+                            {
+                                <div class="flex w-full max-w-xs justify-between text-slate-600">
+                                    <span>Giảm từ điểm@(_model.PointsUsed > 0 ? $" ({_model.PointsUsed:N0} điểm)" : "")</span>
+                                    <span class="text-[#d71920]">-@_model.PointsDiscount.ToString("N0")đ</span>
+                                </div>
+                            }
                             <div class="flex w-full max-w-xs justify-between text-slate-600">
                                 <span>Phí vận chuyển</span>
                                 <span>@_model.ShippingFee.ToString("N0")đ</span>
@@ -460,8 +474,6 @@ else
         {
             { x => x.OrderCode, _model.OrderCode },
             { x => x.ReasonOptions, Constant.OrderCancelReason.Admin }
-            // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
-            // { x => x.ShowRestoreStockOption, true }
         };
 
         var options = new DialogOptions
@@ -485,10 +497,7 @@ else
         var reasons = Constant.OrderCancelReason.Format(cancelData.CancelReason, cancelData.CancelDetail);
         var (nextStatus, nextPaymentStatus) = ResolveNextStatus(CurrentStatus, "failed");
 
-        // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
-        // bool restoreStock = cancelData.RestoreStock;
-
-        await SubmitStatusUpdateAsync(nextStatus, nextPaymentStatus, reasons);
+        await SubmitStatusUpdateAsync(nextStatus, nextPaymentStatus, reasons, refundStock: true);
     }
 
     private (int Status, string PaymentStatus) ResolveNextStatus(int currentStatus, string? outcome)
@@ -544,7 +553,11 @@ else
         return (CurrentStatus, _model.PaymentStatus);
     }
 
-    private async Task SubmitStatusUpdateAsync(int nextStatus, string paymentStatus, string? reasons = null)
+    private async Task SubmitStatusUpdateAsync(
+        int nextStatus,
+        string paymentStatus,
+        string? reasons = null,
+        bool? refundStock = null)
     {
         var nextOrderStatusLabel = Constant.OrderStatus.GetLabel(nextStatus);
 
@@ -568,9 +581,8 @@ else
                 OrderStatus = nextOrderStatusLabel,
                 PaymentStatus = paymentStatus,
                 UpdateBy = updateBy,
-                Reasons = reasons
-                // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
-                // RestoreStock = restoreStock
+                Reasons = reasons,
+                RefundStock = refundStock
             };
 
             var result = await _adminOrderService.UpdateStatusAsync(Id, request);

@@ -550,6 +550,38 @@ public class OrderController : ControllerBase
 
     private static ManagementOrderResponseDto MapToManagementOrderDto(Order order)
     {
+        var orderItems = order.OrderItems?
+            .Where(oi => !oi.Delete)
+            .ToList()
+            ?? new List<OrderItem>();
+
+        decimal itemsTotal = orderItems.Sum(oi => oi.Subtotal);
+        decimal discountAmount = 0;
+
+        var pointsHistoryEntry = order.PointHistories?
+            .FirstOrDefault(ph => ph.Points < 0 && ph.TransactionType == "Dùng điểm");
+        int pointsUsed = pointsHistoryEntry != null ? Math.Abs(pointsHistoryEntry.Points) : 0;
+        decimal pointsDiscount = pointsUsed;
+
+        if (order.Voucher != null)
+        {
+            var voucher = order.Voucher;
+            if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+            {
+                discountAmount = itemsTotal * (voucher.DiscountValue / 100);
+                if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                {
+                    discountAmount = voucher.MaxDiscountAmount.Value;
+                }
+            }
+            else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+            {
+                discountAmount = voucher.DiscountValue;
+            }
+
+            discountAmount = Math.Min(discountAmount, itemsTotal);
+        }
+
         return new ManagementOrderResponseDto
         {
             Id = order.Id,
@@ -573,6 +605,10 @@ public class OrderController : ControllerBase
             StatusHistory = order.StatusHistory,
             UpdateBy = order.UpdateBy,
             InsertedAt = order.InsertedAt,
+            DiscountAmount = discountAmount,
+            PointsUsed = pointsUsed,
+            PointsDiscount = pointsDiscount,
+            FinalPrice = Math.Max(0, itemsTotal - discountAmount - pointsDiscount + order.ShippingFee),
             Customer = order.Customer is null
                 ? null
                 : new ManagementOrderCustomerDto
@@ -628,8 +664,7 @@ public class OrderController : ControllerBase
                     DiscountType = order.Voucher.DiscountType,
                     DiscountValue = order.Voucher.DiscountValue
                 },
-            OrderItems = order.OrderItems?
-                .Where(oi => !oi.Delete)
+            OrderItems = orderItems
                 .Select(oi => new ManagementOrderItemDto
                 {
                     Id = oi.Id,
@@ -656,7 +691,6 @@ public class OrderController : ControllerBase
                         }
                 })
                 .ToList()
-                ?? new List<ManagementOrderItemDto>()
         };
     }
 

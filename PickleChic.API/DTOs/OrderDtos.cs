@@ -92,6 +92,11 @@ public class ManagementOrderResponseDto
     public string? UpdateBy { get; set; }
     public DateTime InsertedAt { get; set; }
 
+    public decimal DiscountAmount { get; set; }
+    public int PointsUsed { get; set; }
+    public decimal PointsDiscount { get; set; }
+    public decimal FinalPrice { get; set; }
+
     public ManagementOrderCustomerDto? Customer { get; set; }
     public ManagementOrderAddressDto? Address { get; set; }
     public ManagementOrderPaymentMethodDto? PaymentMethod { get; set; }

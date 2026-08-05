@@ -140,6 +140,10 @@ namespace PickleChic.WEB.DTO.Customer
 
         public decimal DiscountAmount { get; set; }
 
+        public int PointsUsed { get; set; }
+
+        public decimal PointsDiscount { get; set; }
+
         public decimal FinalPrice { get; set; }
 
         public List<UserOrderItemDetailResponse> OrderItems { get; set; } = new();

@@ -15,8 +15,10 @@
     <div class="mx-auto max-w-7xl !px-4 !py-4">
         <div class="flex items-center justify-between !gap-3">
             <a href="@RouterConfig.Customer.Home" class="flex min-w-0 shrink items-center !gap-2 sm:!gap-3">
-                <div class="flex !h-10 !w-10 shrink-0 items-center justify-center !rounded-full !bg-[#d71920] text-base font-black !text-white sm:!h-11 sm:!w-11 sm:text-lg">
-                    P
+                <div class="flex h-12! !w-12 shrink-0 items-center justify-center overflow-hidden !rounded-full sm:!h-14 sm:!w-14">
+                    <img src="/images/logo.jpg"
+                         alt="PickleChic"
+                         class="!h-full !w-full object-contain" />
                 </div>
 
                 <div class="min-w-0">
@@ -208,7 +210,7 @@
                            @bind="_headerSearch"
                            @bind:event="oninput"
                            placeholder="Tìm sản phẩm..."
-                           class="w-40 !rounded-full !border !border-neutral-300 !bg-white !px-4 !py-2 text-sm font-semibold text-neutral-900 outline-none transition focus:!border-[#d71920] md:w-56" />
+                           class="w-40 !rounded-full !border !border-neutral-300 !bg-white !px-4 !py-2 text-sm font-semibold text-neutral-900 transition outline-none focus:!border-[#d71920] md:w-56" />
                     <button type="submit"
                             class="!rounded-full !border !border-neutral-300 !px-4 !py-2.5 text-sm font-black transition hover:!border-[#d71920] hover:!text-[#d71920]"
                             title="Tìm kiếm">

@@ -1345,10 +1345,10 @@ public class OrderController : ControllerBase
                 return BadRequest("Không thể tải thông tin đơn hàng đã tạo");
             }
 
-            // if (customerId != -1)
-            // {
-            //     await ProcessRewardPointsAsync(finalOrder);
-            // }
+            if (customerId != -1 && initialStatus == Constant.OrderStatus.Done)
+            {
+                await ProcessRewardPointsAsync(finalOrder);
+            }
 
             var orderDetailDto = MapToUserOrderDetailDto(finalOrder);
             return Ok(orderDetailDto);

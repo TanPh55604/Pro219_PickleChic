@@ -180,10 +180,23 @@
                             <span class="font-black text-slate-950">@FormatMoney(_order.TotalPrice)</span>
                         </div>
 
-                        <div class="flex items-center justify-between">
-                            <span class="font-semibold text-slate-500">Giảm giá</span>
-                            <span class="font-black text-[#d71920]">-@FormatMoney(_order.DiscountAmount)</span>
-                        </div>
+                        @if (_order.DiscountAmount > 0)
+                        {
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-slate-500">Giảm giá</span>
+                                <span class="font-black text-[#d71920]">-@FormatMoney(_order.DiscountAmount)</span>
+                            </div>
+                        }
+
+                        @if (_order.PointsDiscount > 0)
+                        {
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-slate-500">
+                                    Giảm từ điểm@(_order.PointsUsed > 0 ? $" ({_order.PointsUsed:N0} điểm)" : "")
+                                </span>
+                                <span class="font-black text-[#d71920]">-@FormatMoney(_order.PointsDiscount)</span>
+                            </div>
+                        }
 
                         <div class="flex items-center justify-between">
                             <span class="font-semibold text-slate-500">Phí vận chuyển</span>
