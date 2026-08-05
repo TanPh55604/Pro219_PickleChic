@@ -11,83 +11,102 @@
     </div>
 
     <nav class="min-h-0 flex-1 !space-y-6 overflow-y-auto !px-4 !py-5">
-        <div class="!space-y-1">
-            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                Tổng quan
-            </p>
+        @if (HasAnyRead(RouterConfig.Admin.Home, RouterConfig.Admin.Dashboard))
+        {
+            <div class="!space-y-1">
+                <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    Tổng quan
+                </p>
 
-            <AdminNavItem Href="@RouterConfig.Admin.Home"
-                          Icon="@Icons.Material.Filled.Home"
-                          Text="Trang chủ" />
+                <AdminNavItem Href="@RouterConfig.Admin.Home"
+                              Icon="@Icons.Material.Filled.Home"
+                              Text="Trang chủ" />
 
-            <AdminNavItem Href="@RouterConfig.Admin.Dashboard"
-                          Icon="@Icons.Material.Filled.Dashboard"
-                          Text="Thống kê" />
-        </div>
+                <AdminNavItem Href="@RouterConfig.Admin.Dashboard"
+                              Icon="@Icons.Material.Filled.Dashboard"
+                              Text="Thống kê" />
+            </div>
+        }
 
-        <div class="!space-y-1">
-            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                Quản lý hệ thống
-            </p>
+        @if (HasAnyRead(RouterConfig.Admin.Staffs, RouterConfig.Admin.Permissions))
+        {
+            <div class="!space-y-1">
+                <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    Quản lý hệ thống
+                </p>
 
-            <AdminNavItem Href="@RouterConfig.Admin.Staffs"
-                          Icon="@Icons.Material.Filled.ManageAccounts"
-                          Text="Quản trị viên" />
+                <AdminNavItem Href="@RouterConfig.Admin.Staffs"
+                              Icon="@Icons.Material.Filled.ManageAccounts"
+                              Text="Quản trị viên" />
 
-            <AdminNavItem Href="@RouterConfig.Admin.Permissions"
-                          Icon="@Icons.Material.Filled.Lock"
-                          Text="Phân quyền" />
-        </div>
+                <AdminNavItem Href="@RouterConfig.Admin.Permissions"
+                              Icon="@Icons.Material.Filled.Lock"
+                              Text="Phân quyền" />
+            </div>
+        }
 
-        <div class="!space-y-1">
-            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                Sản phẩm
-            </p>
+        @if (HasAnyRead(
+                RouterConfig.Admin.Products,
+                RouterConfig.Admin.Categories,
+                RouterConfig.Admin.Brands,
+                RouterConfig.Admin.Attributes))
+        {
+            <div class="!space-y-1">
+                <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    Sản phẩm
+                </p>
 
-            <AdminNavItem Href="@RouterConfig.Admin.Products"
-                          Icon="@Icons.Material.Filled.Inventory2"
-                          Text="Sản phẩm" />
+                <AdminNavItem Href="@RouterConfig.Admin.Products"
+                              Icon="@Icons.Material.Filled.Inventory2"
+                              Text="Sản phẩm" />
 
-            <AdminNavItem Href="@RouterConfig.Admin.Categories"
-                          Icon="@Icons.Material.Filled.Category"
-                          Text="Thể loại" />
+                <AdminNavItem Href="@RouterConfig.Admin.Categories"
+                              Icon="@Icons.Material.Filled.Category"
+                              Text="Thể loại" />
 
-            <AdminNavItem Href="@RouterConfig.Admin.Brands"
-                          Icon="@Icons.Material.Filled.LocalOffer"
-                          Text="Thương hiệu" />
+                <AdminNavItem Href="@RouterConfig.Admin.Brands"
+                              Icon="@Icons.Material.Filled.LocalOffer"
+                              Text="Thương hiệu" />
 
-            <AdminNavItem Href="@RouterConfig.Admin.Attributes"
-                          Icon="@Icons.Material.Filled.Extension"
-                          Text="Thuộc tính" />
-        </div>
+                <AdminNavItem Href="@RouterConfig.Admin.Attributes"
+                              Icon="@Icons.Material.Filled.Extension"
+                              Text="Thuộc tính" />
+            </div>
+        }
 
-        <div class="!space-y-1">
-            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                Khuyến mãi
-            </p>
+        @if (HasAnyRead(RouterConfig.Admin.Vouchers))
+        {
+            <div class="!space-y-1">
+                <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    Khuyến mãi
+                </p>
 
-            <AdminNavItem Href="@RouterConfig.Admin.Vouchers"
-                          Icon="@Icons.Material.Filled.ConfirmationNumber"
-                          Text="Mã giảm giá" />
+                <AdminNavItem Href="@RouterConfig.Admin.Vouchers"
+                              Icon="@Icons.Material.Filled.ConfirmationNumber"
+                              Text="Mã giảm giá" />
 
-            @* <AdminNavItem Href="@RouterConfig.Admin.Promotions"
-                          Icon="@Icons.Material.Filled.Sell"
-                          Text="Sản phẩm giảm giá" /> *@
-        </div>
+                @* <AdminNavItem Href="@RouterConfig.Admin.Promotions"
+                              Icon="@Icons.Material.Filled.Sell"
+                              Text="Sản phẩm giảm giá" /> *@
+            </div>
+        }
 
-        <div class="!space-y-1">
-            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                Bán hàng
-            </p>
+        @if (HasAnyRead(RouterConfig.Admin.Orders, RouterConfig.Admin.OfflineSales))
+        {
+            <div class="!space-y-1">
+                <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    Bán hàng
+                </p>
 
-            <AdminNavItem Href="@RouterConfig.Admin.Orders"
-                          Icon="@Icons.Material.Filled.ReceiptLong"
-                          Text="Đơn hàng" />
+                <AdminNavItem Href="@RouterConfig.Admin.Orders"
+                              Icon="@Icons.Material.Filled.ReceiptLong"
+                              Text="Đơn hàng" />
 
-            <AdminNavItem Href="@RouterConfig.Admin.OfflineSales"
-                          Icon="@Icons.Material.Filled.PointOfSale"
-                          Text="Bán hàng offline" />
-        </div>
+                <AdminNavItem Href="@RouterConfig.Admin.OfflineSales"
+                              Icon="@Icons.Material.Filled.PointOfSale"
+                              Text="Bán hàng offline" />
+            </div>
+        }
 
         @* <div class="!space-y-1">
             <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
@@ -100,22 +119,25 @@
 
         </div> *@
 
-        <div class="!space-y-1">
-            <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
-                Tương tác
-            </p>
+        @if (HasAnyRead(RouterConfig.Admin.Reviews, RouterConfig.Admin.Ranks))
+        {
+            <div class="!space-y-1">
+                <p class="!px-4 !pb-2 text-xs font-semibold tracking-wider text-slate-400 uppercase">
+                    Tương tác
+                </p>
 
-            <AdminNavItem Href="@RouterConfig.Admin.Reviews"
-                          Icon="@Icons.Material.Filled.RateReview"
-                          Text="Đánh giá" />
+                <AdminNavItem Href="@RouterConfig.Admin.Reviews"
+                              Icon="@Icons.Material.Filled.RateReview"
+                              Text="Đánh giá" />
 
-            <AdminNavItem Href="@RouterConfig.Admin.Ranks"
-                          Icon="@Icons.Material.Filled.WorkspacePremium"
-                          Text="Xếp hạng" />
-            @* <AdminNavItem Href="@RouterConfig.Admin.Qna"
-                          Icon="@Icons.Material.Filled.QuestionAnswer"
-                          Text="Câu hỏi Q&A" /> *@
-        </div>
+                <AdminNavItem Href="@RouterConfig.Admin.Ranks"
+                              Icon="@Icons.Material.Filled.WorkspacePremium"
+                              Text="Xếp hạng" />
+                @* <AdminNavItem Href="@RouterConfig.Admin.Qna"
+                              Icon="@Icons.Material.Filled.QuestionAnswer"
+                              Text="Câu hỏi Q&A" /> *@
+            </div>
+        }
     </nav>
 
     <div class="shrink-0 !border-t !border-slate-200 !bg-white !p-4">
@@ -132,7 +154,29 @@
 </aside>
 
 @code {
+    [CascadingParameter(Name = Constant.CascadingNameParams.Mine)]
+    public AuthModel? Mine { get; set; }
+
     private bool _isLoggingOut;
+
+    private bool HasAnyRead(params string[] hrefs)
+    {
+        foreach (var href in hrefs)
+        {
+            var pageCode = PermissionHelper.GetPageCode(href);
+            if (string.IsNullOrWhiteSpace(pageCode))
+            {
+                return true;
+            }
+
+            if (PermissionHelper.HasAccess(Mine, pageCode, Constant.ActionButton.Read))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     private async Task LogoutAsync()
     {
@@ -155,4 +199,3 @@
         }
     }
 }
-

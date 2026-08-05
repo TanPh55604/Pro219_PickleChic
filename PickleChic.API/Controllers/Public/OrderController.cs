@@ -227,6 +227,29 @@ public class OrderController : ControllerBase
                 return BadRequest("Địa chỉ nhận hàng không hợp lệ");
             }
         }
+        else if (request.AddressDTO != null && request.AddressDTO.WardId > 0)
+        {
+            phoneNumber = request.AddressDTO.PhoneNumber;
+
+            var ward = await _wardRepository.GetByIdAsync(request.AddressDTO.WardId);
+            var toDistrictCode = ward?.District?.Code;
+            var toWardCode = ward?.Code;
+
+            if (!string.IsNullOrEmpty(toDistrictCode) && !string.IsNullOrEmpty(toWardCode))
+            {
+                var feeItems = itemResults.Select(i => new FeeItemDTO
+                {
+                    Name = i.ProductName,
+                    Quantity = i.Quantity,
+                    Length = 30,
+                    Width = 40,
+                    Height = 5,
+                    Weight = 400
+                }).ToList();
+
+                shippingFee = await CalculateShippingFeeAsync(toDistrictCode, toWardCode, feeItems);
+            }
+        }
         else
         {
             return BadRequest("Địa chỉ nhận hàng không hợp lệ");
@@ -684,13 +707,41 @@ public class OrderController : ControllerBase
 
         if (isBopis)
         {
-            var pickup = await GetOrCreatePickupAddressAsync(customerId);
-            if (pickup == null)
+            var pickupTemplate = await GetOrCreatePickupAddressAsync(customerId);
+            if (pickupTemplate == null)
             {
                 return BadRequest("Không thể tạo địa chỉ nhận tại cửa hàng");
             }
-            address = pickup;
-            addressId = pickup.Id;
+
+            if (checkoutParam.AddressDTO != null
+                && !string.IsNullOrWhiteSpace(checkoutParam.AddressDTO.FullName)
+                && !string.IsNullOrWhiteSpace(checkoutParam.AddressDTO.PhoneNumber)
+                && customerId == -1)
+            {
+                address = new Address
+                {
+                    CustomerId = customerId,
+                    FullName = checkoutParam.AddressDTO.FullName.Trim(),
+                    PhoneNumber = checkoutParam.AddressDTO.PhoneNumber.Trim(),
+                    WardId = pickupTemplate.WardId > 0 ? pickupTemplate.WardId : 1,
+                    DetailInfo = "Nhận tại cửa hàng",
+                    IsDefault = false,
+                    Status = 0,
+                    InsertedAt = DateTime.Now,
+                    Delete = false
+                };
+                var resultAddress = await _addressRepository.AddAsync(address);
+                if (resultAddress == null)
+                {
+                    return BadRequest("Không thể lưu thông tin liên hệ nhận tại cửa hàng");
+                }
+                addressId = resultAddress.Id;
+            }
+            else
+            {
+                address = pickupTemplate;
+                addressId = pickupTemplate.Id;
+            }
         }
         else if (checkoutParam.AddressDTO != null && addressId == -99)
         {
@@ -1744,6 +1795,124 @@ public class OrderController : ControllerBase
         {
             return StatusCode(500, Constant.ErrorCode.OtherError);
         }
+    }
+
+    [HttpPost("guest/cancel")]
+    [AllowAnonymous]
+    public async Task<ActionResult<UserOrderDetailDto>> CancelGuestOrder([FromBody] GuestCancelOrderRequestDto? request)
+    {
+        try
+        {
+            if (request is null
+                || string.IsNullOrWhiteSpace(request.OrderCode)
+                || string.IsNullOrWhiteSpace(request.PhoneNumber)
+                || string.IsNullOrWhiteSpace(request.CancelReason))
+            {
+                return BadRequest("Vui lòng nhập mã đơn, số điện thoại và lý do hủy.");
+            }
+
+            var orderCode = request.OrderCode.Trim();
+            var phoneDigits = NormalizePhoneDigits(request.PhoneNumber);
+            if (phoneDigits.Length < 9)
+            {
+                return BadRequest("Số điện thoại không hợp lệ.");
+            }
+
+            var matches = await _orderRepository.LookupOrdersAsync(orderCode, null, request.PhoneNumber.Trim());
+            var order = matches.FirstOrDefault(o =>
+                string.Equals(o.OrderCode, orderCode, StringComparison.OrdinalIgnoreCase));
+
+            if (order is null || order.Delete)
+            {
+                return NotFound("Không tìm thấy đơn hàng khớp mã đơn và số điện thoại.");
+            }
+
+            var addressPhone = NormalizePhoneDigits(order.Address?.PhoneNumber);
+            var customerPhone = NormalizePhoneDigits(order.Customer?.PhoneNumber);
+            if (addressPhone != phoneDigits && customerPhone != phoneDigits)
+            {
+                return NotFound("Không tìm thấy đơn hàng khớp mã đơn và số điện thoại.");
+            }
+
+            if (order.OrderStatus == Constant.OrderStatus.Cancelled
+                || order.Status == Constant.OrderStatus.GetStatusInt(Constant.OrderStatus.Cancelled))
+            {
+                return Ok(MapToUserOrderDetailDto(order));
+            }
+
+            if (!CanCustomerCancelOrder(order))
+            {
+                return BadRequest("Chỉ có thể hủy đơn khi chưa được xác nhận");
+            }
+
+            var cancelReason = request.CancelReason.Trim();
+            var cancelDetail = request.CancelDetail?.Trim();
+            var reasons = string.IsNullOrWhiteSpace(cancelDetail)
+                ? cancelReason
+                : $"{cancelReason}: {cancelDetail}";
+
+            var statusHistory = ParseStatusHistory(order.StatusHistory);
+            statusHistory.Add(new StatusHistoryEntry
+            {
+                Index = statusHistory.Count + 1,
+                Status = Constant.OrderStatus.Cancelled,
+                OrderStatus = Constant.OrderStatus.Cancelled,
+                PaymentStatus = Constant.PaymentStatus.Cancelled,
+                DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
+                UpdatedBy = "Guest",
+                Reasons = reasons
+            });
+
+            order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
+            order.PaymentStatus = Constant.PaymentStatus.Cancelled;
+            order.OrderStatus = Constant.OrderStatus.Cancelled;
+            order.Status = Constant.OrderStatus.GetStatusInt(order.OrderStatus);
+            order.LastUpdate = DateTime.Now;
+            order.UpdateBy = "Guest";
+
+            var result = await _orderRepository.UpdateAsync(order);
+            if (result == null)
+            {
+                return BadRequest("Không thể hủy đơn hàng");
+            }
+
+            if (order.OrderItems != null && order.OrderItems.Any())
+            {
+                foreach (var orderItem in order.OrderItems)
+                {
+                    await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
+                }
+            }
+
+            if (order.VoucherId != null)
+            {
+                var voucher = await _voucherRepository.GetByIdAsync(order.VoucherId.Value);
+                if (voucher != null && voucher.UsedCount > 0)
+                {
+                    voucher.UsedCount--;
+                    await _voucherRepository.UpdateAsync(voucher);
+                }
+            }
+
+            await _pointHistoryRepository.RefundPointsForOrderAsync(order.Id);
+
+            var refreshed = await _orderRepository.GetByIdAsync(order.Id) ?? result;
+            return Ok(MapToUserOrderDetailDto(refreshed));
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, Constant.ErrorCode.OtherError);
+        }
+    }
+
+    private static string NormalizePhoneDigits(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+        {
+            return string.Empty;
+        }
+
+        return new string(phone.Where(char.IsDigit).ToArray());
     }
 
     private static bool CanCustomerCancelOrder(Order order)

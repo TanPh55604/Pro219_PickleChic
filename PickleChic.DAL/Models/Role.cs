@@ -13,5 +13,7 @@ public class Role
 
     public int Status { get; set; }
 
+    public bool IsEdit { get; set; } = true;
+
     public ICollection<Staff>? StaffMembers { get; set; }
 }

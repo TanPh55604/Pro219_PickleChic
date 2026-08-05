@@ -155,21 +155,25 @@
 
                 <MudTd DataLabel="Thao tác" Class="text-right">
                     <div class="inline-flex items-center !gap-1">
-                        <MudTooltip Text="@(context.IsVisible ? "Ẩn đánh giá" : "Hiện đánh giá")">
-                            <MudIconButton Icon="@(context.IsVisible ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
-                                           Color="@(context.IsVisible ? Color.Warning : Color.Success)"
-                                           Size="Size.Small"
-                                           Disabled="@_isUpdating"
-                                           OnClick="() => ToggleStatusAsync(context)" />
-                        </MudTooltip>
+                        <AuthorizeControl Action="@Constant.ActionButton.Edit">
+                            <MudTooltip Text="@(context.IsVisible ? "Ẩn đánh giá" : "Hiện đánh giá")">
+                                <MudIconButton Icon="@(context.IsVisible ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                                               Color="@(context.IsVisible ? Color.Warning : Color.Success)"
+                                               Size="Size.Small"
+                                               Disabled="@_isUpdating"
+                                               OnClick="() => ToggleStatusAsync(context)" />
+                            </MudTooltip>
+                        </AuthorizeControl>
 
-                        <MudTooltip Text="Xóa đánh giá">
-                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
-                                           Color="Color.Error"
-                                           Size="Size.Small"
-                                           Disabled="@_isUpdating"
-                                           OnClick="() => DeleteAsync(context)" />
-                        </MudTooltip>
+                        <AuthorizeControl Action="@Constant.ActionButton.Delete">
+                            <MudTooltip Text="Xóa đánh giá">
+                                <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                               Color="Color.Error"
+                                               Size="Size.Small"
+                                               Disabled="@_isUpdating"
+                                               OnClick="() => DeleteAsync(context)" />
+                            </MudTooltip>
+                        </AuthorizeControl>
                     </div>
                 </MudTd>
             </RowTemplate>

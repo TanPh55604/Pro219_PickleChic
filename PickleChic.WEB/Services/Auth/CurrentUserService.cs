@@ -51,7 +51,8 @@ namespace PickleChic.WEB.Services.Auth
                 RankId = result.Data.RankId ?? string.Empty,
                 RankName = result.Data.RankName ?? string.Empty,
                 TotalPoints = result.Data.TotalPoints,
-                MustChangePassword = mustChangePassword
+                MustChangePassword = mustChangePassword,
+                PagePermissions = result.Data.PagePermissions ?? new()
             };
 
             await _authStorageService.SaveUserAsync(user);

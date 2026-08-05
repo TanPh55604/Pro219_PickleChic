@@ -205,8 +205,15 @@ public partial class PickleChicDbContext : DbContext
         );
 
         modelBuilder.Entity<Role>().HasData(
-            new Role { Id = 1, RoleName = "Admin", Status = 1, Permissions = "Waiting for list permissions" },
-            new Role { Id = 2, RoleName = "Customer", Status = 1, Permissions = "Waiting for list permissions" }
+            new Role
+            {
+                Id = 1,
+                RoleName = "Admin",
+                Status = 1,
+                IsEdit = false,
+                Permissions = """[{"PageCode":"DASHBOARD","PagePermissions":"R"},{"PageCode":"STAFF","PagePermissions":"CRUD"},{"PageCode":"PERMISSIONS","PagePermissions":"CRUD"},{"PageCode":"PRODUCT","PagePermissions":"CRUD"},{"PageCode":"CATEGORY","PagePermissions":"CRUD"},{"PageCode":"BRAND","PagePermissions":"CRUD"},{"PageCode":"ATTRIBUTE","PagePermissions":"CRUD"},{"PageCode":"VOUCHER","PagePermissions":"CRUD"},{"PageCode":"ORDER","PagePermissions":"RA"},{"PageCode":"OFFLINE","PagePermissions":"CRUD"},{"PageCode":"REVIEW","PagePermissions":"CRUD"},{"PageCode":"RANK","PagePermissions":"CRUD"},{"PageCode":"CUSTOMER","PagePermissions":"CRUD"}]"""
+            },
+            new Role { Id = 2, RoleName = "Customer", Status = 1, IsEdit = false, Permissions = "[]" }
         );
 
         modelBuilder.Entity<Staff>().HasData(

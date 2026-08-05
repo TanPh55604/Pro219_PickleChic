@@ -53,6 +53,14 @@ public class CancelOrderRequestDto
     public string? CancelDetail { get; set; }
 }
 
+public class GuestCancelOrderRequestDto
+{
+    public string OrderCode { get; set; } = null!;
+    public string PhoneNumber { get; set; } = null!;
+    public string CancelReason { get; set; } = null!;
+    public string? CancelDetail { get; set; }
+}
+
 public class PaymentCallbackOrderDto
 {
     public int Id { get; set; }

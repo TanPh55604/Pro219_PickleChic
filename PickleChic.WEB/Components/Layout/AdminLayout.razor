@@ -12,19 +12,23 @@
 }
 else
 {
-    <div class="h-screen overflow-hidden !bg-[#f4f5f7] text-slate-900">
-        <div class="flex h-full min-h-0">
-            <AdminSidebar />
+    <CascadingValue Name="@Constant.CascadingNameParams.Mine" Value="_mine">
+        <div class="h-screen overflow-hidden !bg-[#f4f5f7] text-slate-900">
+            <div class="flex h-full min-h-0">
+                <AdminSidebar />
 
-            <main class="flex min-w-0 flex-1 flex-col">
-                <AdminHeader />
+                <main class="flex min-w-0 flex-1 flex-col">
+                    <AdminHeader />
 
-                <section class="min-h-0 flex-1 overflow-y-auto !p-6">
-                    @Body
-                </section>
-            </main>
+                    <section class="min-h-0 flex-1 overflow-y-auto !p-6">
+                        <PermissionGuard Mine="_mine">
+                            @Body
+                        </PermissionGuard>
+                    </section>
+                </main>
+            </div>
         </div>
-    </div>
+    </CascadingValue>
 }
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -36,6 +40,7 @@ else
 @code {
     private bool _isCheckingAuth = true;
     private bool _isRedirecting;
+    private AuthModel? _mine;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -84,7 +89,10 @@ else
         {
             _isRedirecting = true;
             _navigation.NavigateTo(RouterConfig.AccessDenied, replace: true);
+            return;
         }
+
+        _mine = result.Data;
     }
 
     private async Task EndAdminSessionAsync(string reason)

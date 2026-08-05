@@ -30,6 +30,17 @@
             public static string Delete(int id) => $"management/staff/delete/{id}";
         }
 
+        public static class Role
+        {
+            public const string GetAll = "management/role/get-all";
+            public const string Create = "management/role/create";
+            public const string Update = "management/role/update";
+
+            public static string GetById(int id) => $"management/role/get-by-id/{id}";
+
+            public static string Delete(int id) => $"management/role/delete/{id}";
+        }
+
         public static class PublicCategory
         {
             public const string GetAll = "category/get-all";
@@ -299,6 +310,8 @@
             public static string UserDetail(int orderId) => $"order/user/detail/{orderId}";
 
             public static string UserCancel(int orderId) => $"order/user/cancel/{orderId}";
+
+            public const string GuestCancel = "order/guest/cancel";
 
             public const string UserList = "order/user/list";
 
