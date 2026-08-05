@@ -801,8 +801,8 @@ public class OrderController : ControllerBase
                 statusHistory.Add(new StatusHistoryEntry
                 {
                     Index = statusHistory.Count + 1,
-                    Status = Constant.OrderStatus.Confirmed,
-                    OrderStatus = Constant.OrderStatus.Confirmed,
+                    Status = Constant.OrderStatus.Pending,
+                    OrderStatus = Constant.OrderStatus.Pending,
                     PaymentStatus = Constant.PaymentStatus.Completed,
                     DateTime = DateTime.Now.ToString("HH:mm dd/MM/yyyy"),
                     UpdatedBy = customerUserName,
