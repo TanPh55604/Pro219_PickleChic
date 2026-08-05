@@ -4,6 +4,7 @@ using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
 using PickleChic.API.Utilities;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
 
 namespace PickleChic.API.Controllers.Management;
 
@@ -13,11 +14,25 @@ public class OrderController : ControllerBase
 {
     private readonly OrderRepository _repository;
     private readonly ProductVariantRepository _productVariantRepository;
+    private readonly PointHistoryRepository _pointHistoryRepository;
+    private readonly CustomerRepository _customerRepository;
+    private readonly RankRepository _rankRepository;
+    private readonly IConfiguration _configuration;
 
-    public OrderController(OrderRepository repository, ProductVariantRepository productVariantRepository)
+    public OrderController(
+        OrderRepository repository, 
+        ProductVariantRepository productVariantRepository,
+        PointHistoryRepository pointHistoryRepository,
+        CustomerRepository customerRepository,
+        RankRepository rankRepository,
+        IConfiguration configuration)
     {
         _repository = repository;
         _productVariantRepository = productVariantRepository;
+        _pointHistoryRepository = pointHistoryRepository;
+        _customerRepository = customerRepository;
+        _rankRepository = rankRepository;
+        _configuration = configuration;
     }
 
     [HttpGet("get-all")]
@@ -271,6 +286,11 @@ public class OrderController : ControllerBase
 
             if (dto.OrderStatus == Constant.OrderStatus.Done)
             {
+                if (existingOrder.PaymentMethodId == 1)
+                {
+                    await ProcessRewardPointsAsync(existingOrder);
+                }
+
                 if (existingOrder.Customer != null && 
                     !string.IsNullOrWhiteSpace(existingOrder.Customer.Email) && 
                     existingOrder.Customer.Email != "guest@example.com")
@@ -643,6 +663,85 @@ public class OrderController : ControllerBase
         catch
         {
             return new List<StatusHistoryEntry>();
+        }
+    }
+
+    private async Task ProcessRewardPointsAsync(Order order)
+    {
+        if (order.CustomerId == -1)
+        {
+            return;
+        }
+
+        bool alreadyRewarded = order.PointHistories?
+            .Any(ph => ph.TransactionType == "Cộng điểm") ?? false;
+        if (alreadyRewarded)
+        {
+            return;
+        }
+
+        var customer = await _customerRepository.GetByIdAsync(order.CustomerId);
+        if (customer == null)
+        {
+            return;
+        }
+
+        decimal totalProductPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
+        decimal discountAmount = 0;
+
+        if (order.Voucher != null)
+        {
+            var voucher = order.Voucher;
+            if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+            {
+                discountAmount = totalProductPrice * (voucher.DiscountValue / 100);
+                if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                {
+                    discountAmount = voucher.MaxDiscountAmount.Value;
+                }
+            }
+            else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+            {
+                discountAmount = voucher.DiscountValue;
+            }
+            discountAmount = Math.Min(discountAmount, totalProductPrice);
+        }
+
+        decimal finalPaidAmount = Math.Max(0, totalProductPrice - discountAmount);
+
+        double percentReward = _configuration.GetValue<double?>("PercentReward") ?? _configuration.GetValue<double?>("RewardPercent") ?? 10.0;
+        int pointsToAdd = Math.Max(0, (int)Math.Round((double)finalPaidAmount * percentReward / 100.0));
+
+        if (pointsToAdd > 0)
+        {
+            var pointHistory = new PointHistory
+            {
+                CustomerId = customer.Id,
+                OrderId = order.Id,
+                Points = pointsToAdd,
+                TransactionType = "Cộng điểm",
+                Description = $"Cộng điểm từ đơn hàng {order.OrderCode}",
+                CreatedAt = DateTime.Now
+            };
+
+            await _pointHistoryRepository.AddAsync(pointHistory);
+
+            customer.TotalPoints += pointsToAdd;
+
+            decimal totalSpent = await _repository.GetTotalSpentInLast6MonthsAsync(customer.Id);
+
+            var ranks = await _rankRepository.GetAllAsync();
+            var qualifiedRank = ranks
+                .Where(r => totalSpent >= r.SpendAmount)
+                .OrderByDescending(r => r.SpendAmount)
+                .FirstOrDefault();
+
+            if (qualifiedRank != null && customer.RankId != qualifiedRank.Id)
+            {
+                customer.RankId = qualifiedRank.Id;
+            }
+
+            await _customerRepository.UpdateAsync(customer);
         }
     }
 }
