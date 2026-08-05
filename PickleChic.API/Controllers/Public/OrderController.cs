@@ -1345,10 +1345,10 @@ public class OrderController : ControllerBase
                 return BadRequest("Không thể tải thông tin đơn hàng đã tạo");
             }
 
-            if (customerId != -1)
-            {
-                await ProcessRewardPointsAsync(finalOrder);
-            }
+            // if (customerId != -1)
+            // {
+            //     await ProcessRewardPointsAsync(finalOrder);
+            // }
 
             var orderDetailDto = MapToUserOrderDetailDto(finalOrder);
             return Ok(orderDetailDto);
@@ -1427,10 +1427,10 @@ public class OrderController : ControllerBase
                 return BadRequest("Không thể cập nhật đơn hàng");
             }
 
-            if (isNewPaymentSuccess)
-            {
-                await ProcessRewardPointsAsync(order);
-            }
+            // if (isNewPaymentSuccess)
+            // {
+            //     await ProcessRewardPointsAsync(order);
+            // }
 
             return Ok(MapToPaymentCallbackDto(result));
         }
@@ -1581,7 +1581,7 @@ public class OrderController : ControllerBase
                 }
             }
 
-            await _pointHistoryRepository.RefundPointsForOrderAsync(order.Id);
+            //await _pointHistoryRepository.RefundPointsForOrderAsync(order.Id);
 
             return Ok(MapToPaymentCallbackDto(result));
         }

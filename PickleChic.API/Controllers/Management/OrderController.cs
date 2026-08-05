@@ -302,10 +302,8 @@ public class OrderController : ControllerBase
 
             if (dto.OrderStatus == Constant.OrderStatus.Done)
             {
-                if (existingOrder.PaymentMethodId == 1)
-                {
-                    await ProcessRewardPointsAsync(existingOrder);
-                }
+               
+                await ProcessRewardPointsAsync(existingOrder);             
 
                 if (existingOrder.Customer != null && 
                     !string.IsNullOrWhiteSpace(existingOrder.Customer.Email) && 
