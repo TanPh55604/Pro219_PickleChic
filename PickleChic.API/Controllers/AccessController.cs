@@ -288,8 +288,8 @@ namespace PickleChic.API.Controllers
             }
 
             UtilityFunc utilityFunc = new UtilityFunc();
-            //string newPassword = utilityFunc.GenerateRandomString(16);
-            string newPassword = "Customer12345@";
+            string newPassword = utilityFunc.GenerateRandomString(6);
+            //string newPassword = "Customer12345@";
 
             customer.PasswordHash = utilityFunc.HashPassword(newPassword);
             customer.LastLogin = null;
