@@ -845,7 +845,7 @@ public class OrderController : ControllerBase
             if (isZeroOrder)
             {
                 order.PaymentStatus = Constant.PaymentStatus.Completed;
-                order.OrderStatus = Constant.OrderStatus.Confirmed;
+                order.OrderStatus = Constant.OrderStatus.Pending;
             }
             else
             {
