@@ -18,6 +18,7 @@ public class OrderController : ControllerBase
     private readonly CustomerRepository _customerRepository;
     private readonly RankRepository _rankRepository;
     private readonly IConfiguration _configuration;
+    private readonly VoucherRepository _voucherRepository;
 
     public OrderController(
         OrderRepository repository, 
@@ -25,7 +26,8 @@ public class OrderController : ControllerBase
         PointHistoryRepository pointHistoryRepository,
         CustomerRepository customerRepository,
         RankRepository rankRepository,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        VoucherRepository voucherRepository)
     {
         _repository = repository;
         _productVariantRepository = productVariantRepository;
@@ -33,6 +35,7 @@ public class OrderController : ControllerBase
         _customerRepository = customerRepository;
         _rankRepository = rankRepository;
         _configuration = configuration;
+        _voucherRepository = voucherRepository;
     }
 
     [HttpGet("get-all")]
@@ -229,6 +232,9 @@ public class OrderController : ControllerBase
             if (existingOrder is null)
                 return NotFound("Đơn hàng không tồn tại");
 
+            bool isTransitionToCancel = (dto.OrderStatus == "Đã hủy(KH)" || dto.OrderStatus == "Đã hủy" || dto.PaymentStatus == "Đã hủy")
+                && !(existingOrder.OrderStatus == "Đã hủy(KH)" || existingOrder.OrderStatus == "Đã hủy" || existingOrder.PaymentStatus == "Đã hủy");
+
             var updatedBy = dto.UpdateBy;
             if (string.IsNullOrEmpty(updatedBy))
             {
@@ -267,7 +273,7 @@ public class OrderController : ControllerBase
             if (updated is null)
                 return BadRequest("Không thể cập nhật trạng thái đơn hàng");
 
-            if (dto.OrderStatus == "Đã hủy(KH)" || dto.OrderStatus == "Đã hủy" || dto.PaymentStatus == "Đã hủy")
+            if (isTransitionToCancel)
             {
                 var pointHistoryRepository = new PointHistoryRepository();
                 await pointHistoryRepository.RefundPointsForOrderAsync(existingOrder.Id);
@@ -280,6 +286,16 @@ public class OrderController : ControllerBase
                         {
                             await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
                         }
+                    }
+                }
+
+                if (existingOrder.VoucherId != null)
+                {
+                    var voucher = await _voucherRepository.GetByIdAsync(existingOrder.VoucherId.Value);
+                    if (voucher != null && voucher.UsedCount > 0)
+                    {
+                        voucher.UsedCount--;
+                        await _voucherRepository.UpdateAsync(voucher);
                     }
                 }
             }
