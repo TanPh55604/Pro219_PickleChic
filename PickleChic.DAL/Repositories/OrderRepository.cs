@@ -40,6 +40,7 @@ public class OrderRepository
             .Include(o => o.OrderItems!)
                 .ThenInclude(oi => oi.ProductVariant!)
                     .ThenInclude(pv => pv.Product)
+            .Include(o => o.PointHistories)
             .FirstOrDefaultAsync(o => o.Id == id && !o.Delete);
     }
 
@@ -132,6 +133,7 @@ public class OrderRepository
                     .ThenInclude(pv => pv.ProductVariantAttributes!)
                         .ThenInclude(pva => pva.AttributeValue!)
                             .ThenInclude(av => av.ProductAttribute)
+            .Include(o => o.PointHistories)
             .FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == customerId && !o.Delete);
     }
 
@@ -151,6 +153,7 @@ public class OrderRepository
                     .ThenInclude(pv => pv.ProductVariantAttributes!)
                         .ThenInclude(pva => pva.AttributeValue!)
                             .ThenInclude(av => av.ProductAttribute)
+            .Include(o => o.PointHistories)
             .Where(o => o.CustomerId == customerId && !o.Delete)
             .OrderByDescending(o => o.OrderDate)
             .ToListAsync();
@@ -216,6 +219,7 @@ public class OrderRepository
                     .ThenInclude(pv => pv.ProductVariantAttributes!)
                         .ThenInclude(pva => pva.AttributeValue!)
                             .ThenInclude(av => av.ProductAttribute)
+            .Include(o => o.PointHistories)
             .FirstOrDefaultAsync(o => o.Id == id && !o.Delete);
     }
 
@@ -240,6 +244,7 @@ public class OrderRepository
                     .ThenInclude(pv => pv.ProductVariantAttributes!)
                         .ThenInclude(pva => pva.AttributeValue!)
                             .ThenInclude(av => av.ProductAttribute)
+            .Include(o => o.PointHistories)
             .Where(o => !o.Delete);
 
         if (customerId.HasValue)

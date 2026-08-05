@@ -65,6 +65,7 @@ public class OrderStatusUpdateDto
     public string OrderStatus { get; set; } = null!;
     public string? UpdateBy { get; set; }
     public string? Reasons { get; set; }
+    public bool? RefundStock { get; set; } = false;
 }
 
 public class ManagementOrderResponseDto

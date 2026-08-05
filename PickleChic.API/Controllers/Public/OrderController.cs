@@ -1843,6 +1843,11 @@ public class OrderController : ControllerBase
         decimal totalPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
         decimal discountAmount = 0;
 
+        var pointsHistoryEntry = order.PointHistories?
+            .FirstOrDefault(ph => ph.Points < 0 && ph.TransactionType == "Dùng điểm");
+        int pointsUsed = pointsHistoryEntry != null ? Math.Abs(pointsHistoryEntry.Points) : 0;
+        decimal pointsDiscount = pointsUsed;
+
         if (order.Voucher != null)
         {
             var voucher = order.Voucher;
@@ -1918,7 +1923,9 @@ public class OrderController : ControllerBase
             FullAddress = fullAddress,
             TotalPrice = totalPrice,
             DiscountAmount = discountAmount,
-            FinalPrice = Math.Max(0, totalPrice - discountAmount + order.ShippingFee),
+            PointsUsed = pointsUsed,
+            PointsDiscount = pointsDiscount,
+            FinalPrice = Math.Max(0, totalPrice - discountAmount - pointsDiscount + order.ShippingFee),
             StatusHistory = order.StatusHistory,
             OrderItems = order.OrderItems?.Select(oi => new UserOrderItemDetailDto
             {

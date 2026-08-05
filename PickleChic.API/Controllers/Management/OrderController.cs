@@ -12,10 +12,12 @@ namespace PickleChic.API.Controllers.Management;
 public class OrderController : ControllerBase
 {
     private readonly OrderRepository _repository;
+    private readonly ProductVariantRepository _productVariantRepository;
 
-    public OrderController(OrderRepository repository)
+    public OrderController(OrderRepository repository, ProductVariantRepository productVariantRepository)
     {
         _repository = repository;
+        _productVariantRepository = productVariantRepository;
     }
 
     [HttpGet("get-all")]
@@ -254,6 +256,17 @@ public class OrderController : ControllerBase
             {
                 var pointHistoryRepository = new PointHistoryRepository();
                 await pointHistoryRepository.RefundPointsForOrderAsync(existingOrder.Id);
+                
+                if (dto.RefundStock == true)
+                {
+                    if (existingOrder.OrderItems != null && existingOrder.OrderItems.Any())
+                    {
+                        foreach (var orderItem in existingOrder.OrderItems.Where(oi => !oi.Delete))
+                        {
+                            await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
+                        }
+                    }
+                }
             }
 
             if (dto.OrderStatus == Constant.OrderStatus.Done)
@@ -289,7 +302,12 @@ public class OrderController : ControllerBase
                                 }
                                 discountAmount = Math.Min(discountAmount, totalPrice);
                             }
-                            decimal finalPrice = Math.Max(0, totalPrice - discountAmount + existingOrder.ShippingFee);
+                            var pointsHistoryEntry = existingOrder.PointHistories?
+                                .FirstOrDefault(ph => ph.Points < 0 && ph.TransactionType == "Dùng điểm");
+                            int pointsUsed = pointsHistoryEntry != null ? Math.Abs(pointsHistoryEntry.Points) : 0;
+                            decimal pointsDiscount = pointsUsed;
+
+                            decimal finalPrice = Math.Max(0, totalPrice - discountAmount - pointsDiscount + existingOrder.ShippingFee);
 
                             string fullAddress = "";
                             if (existingOrder.Address != null)
@@ -348,6 +366,16 @@ public class OrderController : ControllerBase
                                     <tr>
                                         <td style=""padding: 6px 0; font-size: 14px; color: #64748b;"">Giảm giá voucher:</td>
                                         <td style=""padding: 6px 0; font-size: 14px; color: #ef4444; text-align: right;"">-{discountAmount.ToString("#,##0")} ₫</td>
+                                    </tr>";
+                            }
+
+                            string pointDiscountRow = "";
+                            if (pointsDiscount > 0)
+                            {
+                                pointDiscountRow = $@"
+                                    <tr>
+                                        <td style=""padding: 6px 0; font-size: 14px; color: #64748b;"">Giảm giá điểm tích lũy:</td>
+                                        <td style=""padding: 6px 0; font-size: 14px; color: #ef4444; text-align: right;"">-{pointsDiscount.ToString("#,##0")} ₫</td>
                                     </tr>";
                             }
 
@@ -420,6 +448,7 @@ public class OrderController : ControllerBase
                                                                 <td style=""padding: 6px 0; font-size: 14px; color: #0f172a; text-align: right;"">{existingOrder.ShippingFee.ToString("#,##0")} ₫</td>
                                                             </tr>
                                                             {voucherDiscountRow}
+                                                            {pointDiscountRow}
                                                             <tr>
                                                                 <td style=""padding: 12px 0 0 0; font-size: 16px; font-weight: bold; color: #0f172a; border-top: 1px dashed #e2e8f0; margin-top: 10px;"">Tổng tiền thanh toán:</td>
                                                                 <td style=""padding: 12px 0 0 0; font-size: 20px; font-weight: 800; color: #A05AFF; text-align: right; border-top: 1px dashed #e2e8f0; margin-top: 10px;"">{finalPrice.ToString("#,##0")} ₫</td>
