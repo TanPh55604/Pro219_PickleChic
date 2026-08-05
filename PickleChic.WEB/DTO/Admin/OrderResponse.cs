@@ -44,6 +44,14 @@ namespace PickleChic.WEB.DTO.Admin
 
         public DateTime InsertedAt { get; set; }
 
+        public decimal DiscountAmount { get; set; }
+
+        public int PointsUsed { get; set; }
+
+        public decimal PointsDiscount { get; set; }
+
+        public decimal FinalPrice { get; set; }
+
         public OrderCustomerResponse? Customer { get; set; }
 
         public OrderAddressResponse? Address { get; set; }
@@ -56,7 +64,10 @@ namespace PickleChic.WEB.DTO.Admin
 
         public decimal ItemsTotal => OrderItems.Sum(i => i.Subtotal);
 
-        public decimal GrandTotal => ItemsTotal + ShippingFee;
+        public decimal GrandTotal =>
+            FinalPrice != 0 || DiscountAmount > 0 || PointsDiscount > 0
+                ? FinalPrice
+                : ItemsTotal + ShippingFee;
     }
 
     public class OrderCustomerResponse

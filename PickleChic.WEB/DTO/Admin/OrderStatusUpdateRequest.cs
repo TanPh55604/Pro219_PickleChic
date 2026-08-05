@@ -10,7 +10,6 @@ namespace PickleChic.WEB.DTO.Admin
 
         public string? Reasons { get; set; }
 
-        // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
-        // public bool? RestoreStock { get; set; }
+        public bool? RefundStock { get; set; }
     }
 }

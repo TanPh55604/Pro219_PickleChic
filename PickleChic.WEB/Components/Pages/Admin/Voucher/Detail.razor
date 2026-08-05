@@ -103,13 +103,6 @@ else
                     </div>
 
                     <div class="!rounded-xl !bg-slate-50 !p-4">
-                        <p class="text-sm text-slate-500">Hạng khách tối thiểu</p>
-                        <p class="!mt-2 text-base font-semibold text-slate-900">
-                            @GetRankName(_model.MinimumSpend)
-                        </p>
-                    </div>
-
-                    <div class="!rounded-xl !bg-slate-50 !p-4">
                         <p class="text-sm text-slate-500">Ngày bắt đầu</p>
                         <p class="!mt-2 text-base font-semibold text-slate-900">
                             @_model.StartDate.ToString("dd/MM/yyyy HH:mm")
@@ -154,28 +147,13 @@ else
 
     private VoucherResponse _model = new();
 
-    private List<RankResponse> _ranks = new();
-
     private bool _isLoading = true;
 
     private bool CanModify => _model.StartDate > DateTime.Now;
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(LoadRanksAsync(), LoadVoucherAsync());
-    }
-
-    private async Task LoadRanksAsync()
-    {
-        var result = await _adminRankService.GetAllAsync();
-
-        if (result.Success && result.Data is not null)
-        {
-            _ranks = result.Data
-                .Where(x => !x.Delete)
-                .OrderBy(x => x.SpendAmount)
-                .ToList();
-        }
+        await LoadVoucherAsync();
     }
 
     private async Task LoadVoucherAsync()
@@ -304,23 +282,6 @@ else
         }
 
         return voucher.IsActive ? "Đang diễn ra" : "Chưa diễn ra";
-    }
-
-    private string GetRankName(decimal? minimumSpend)
-    {
-        if (!minimumSpend.HasValue)
-        {
-            return "Không yêu cầu";
-        }
-
-        var rank = _ranks
-            .Where(x => x.SpendAmount <= minimumSpend.Value)
-            .OrderByDescending(x => x.SpendAmount)
-            .FirstOrDefault();
-
-        return rank is null
-            ? $"Chi tiêu từ {minimumSpend.Value:N0}đ"
-            : $"{rank.RankName} (chi tiêu từ {minimumSpend.Value:N0}đ)";
     }
 
     private static string ConvertVoucherErrorMessage(string message)

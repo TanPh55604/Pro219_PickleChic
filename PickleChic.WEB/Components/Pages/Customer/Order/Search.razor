@@ -1,5 +1,6 @@
 @attribute [Route(RouterConfig.Customer.SearchOrder)]
 @layout MainLayout
+@using System.Text.Json
 
 <PageTitle>PickleChic WEB - Tra cứu đơn hàng</PageTitle>
 
@@ -168,6 +169,11 @@
 </div>
 
 @code {
+    private static readonly JsonSerializerOptions StatusHistoryJsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     private string _orderCode = string.Empty;
     private string _phoneNumber = string.Empty;
     private string _name = string.Empty;
@@ -488,10 +494,22 @@
                         <span class="font-semibold text-slate-500">Tạm tính</span>
                         <span class="font-black text-slate-950">@FormatMoney(order.TotalPrice)</span>
                     </div>
-                    <div class="flex items-center justify-between">
-                        <span class="font-semibold text-slate-500">Giảm giá</span>
-                        <span class="font-black text-[#d71920]">-@FormatMoney(order.DiscountAmount)</span>
-                    </div>
+                    @if (order.DiscountAmount > 0)
+                    {
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-500">Giảm giá</span>
+                            <span class="font-black text-[#d71920]">-@FormatMoney(order.DiscountAmount)</span>
+                        </div>
+                    }
+                    @if (order.PointsDiscount > 0)
+                    {
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-500">
+                                Giảm từ điểm@(order.PointsUsed > 0 ? $" ({order.PointsUsed:N0} điểm)" : "")
+                            </span>
+                            <span class="font-black text-[#d71920]">-@FormatMoney(order.PointsDiscount)</span>
+                        </div>
+                    }
                     <div class="flex items-center justify-between">
                         <span class="font-semibold text-slate-500">Phí vận chuyển</span>
                         <span class="font-black text-slate-950">@FormatMoney(order.ShippingFee)</span>
@@ -504,6 +522,36 @@
                     </div>
                 </div>
             </div>
+
+            @{
+                var statusHistory = ParseStatusHistory(order.StatusHistory);
+            }
+            @if (statusHistory.Count > 0)
+            {
+                <div class="!rounded-3xl !border !border-slate-200 !bg-white !p-6 shadow-sm">
+                    <h2 class="text-lg font-black text-slate-950">Lịch sử đơn hàng</h2>
+
+                    <div class="!mt-4 !space-y-3">
+                        @foreach (var entry in statusHistory.OrderByDescending(e => e.Index))
+                        {
+                            <div class="flex flex-col !gap-1 !rounded-2xl !bg-slate-50 !p-4 md:flex-row md:items-start md:justify-between">
+                                <div class="!space-y-1">
+                                    <p class="font-black text-slate-950">@entry.OrderStatus</p>
+                                    <p class="text-sm text-slate-500">Thanh toán: @entry.PaymentStatus</p>
+                                    @if (ShouldShowCancelReason(entry) && !string.IsNullOrWhiteSpace(entry.Reasons))
+                                    {
+                                        <p class="text-sm text-slate-700">
+                                            <span class="font-semibold text-slate-500">Lý do:</span>
+                                            @entry.Reasons
+                                        </p>
+                                    }
+                                </div>
+                                <span class="shrink-0 text-sm text-slate-400">@entry.DateTime</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
 
             @if (CanPayOnline(order))
             {
@@ -554,4 +602,31 @@
     }
 
     private static string FormatMoney(decimal value) => $"{value:N0} đ";
+
+    private static bool ShouldShowCancelReason(StatusHistoryEntryResponse entry)
+    {
+        var status = string.IsNullOrWhiteSpace(entry.OrderStatus) ? entry.Status : entry.OrderStatus;
+        return status is Constant.OrderStatus.Cancelled
+            or "Đã hủy"
+            or "Cancelled"
+            or "Đã hủy bởi người dùng";
+    }
+
+    private static List<StatusHistoryEntryResponse> ParseStatusHistory(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new List<StatusHistoryEntryResponse>();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<List<StatusHistoryEntryResponse>>(json, StatusHistoryJsonOptions)
+                ?? new List<StatusHistoryEntryResponse>();
+        }
+        catch
+        {
+            return new List<StatusHistoryEntryResponse>();
+        }
+    }
 }
