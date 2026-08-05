@@ -31,7 +31,6 @@
     --color-emerald-700: oklch(50.8% 0.118 165.612);
     --color-sky-50: oklch(97.7% 0.013 236.62);
     --color-sky-700: oklch(50% 0.134 242.749);
-    --color-rose-600: oklch(58.6% 0.253 17.585);
     --color-slate-50: oklch(98.4% 0.003 247.858);
     --color-slate-100: oklch(96.8% 0.007 247.896);
     --color-slate-200: oklch(92.9% 0.013 255.508);
@@ -877,6 +876,9 @@
   .\!h-\[4\.75rem\] {
     height: 4.75rem !important;
   }
+  .\!h-full {
+    height: 100% !important;
+  }
   .\!h-px {
     height: 1px !important;
   }
@@ -903,6 +905,9 @@
   }
   .h-10 {
     height: calc(var(--spacing) * 10);
+  }
+  .h-12\! {
+    height: calc(var(--spacing) * 12) !important;
   }
   .h-14 {
     height: calc(var(--spacing) * 14);
@@ -3028,8 +3033,20 @@
     .sm\:\!h-11 {
       height: calc(var(--spacing) * 11) !important;
     }
+    .sm\:\!h-14 {
+      height: calc(var(--spacing) * 14) !important;
+    }
+    .sm\:\!h-20 {
+      height: calc(var(--spacing) * 20) !important;
+    }
     .sm\:\!w-11 {
       width: calc(var(--spacing) * 11) !important;
+    }
+    .sm\:\!w-14 {
+      width: calc(var(--spacing) * 14) !important;
+    }
+    .sm\:\!w-20 {
+      width: calc(var(--spacing) * 20) !important;
     }
     .sm\:w-32 {
       width: calc(var(--spacing) * 32);

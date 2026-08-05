@@ -72,23 +72,6 @@
                                      Disabled="@(!_model.IsPercentDiscount)"
                                      Immediate="true" />
 
-                    <MudSelect T="decimal?"
-                               @bind-Value="_model.MinimumSpend"
-                               For="@(() => _model.MinimumSpend)"
-                               Label="Hạng khách tối thiểu"
-                               Placeholder="Không yêu cầu"
-                               Variant="Variant.Outlined"
-                               Clearable="true"
-                               Disabled="@_isLoadingRanks">
-                        <MudSelectItem T="decimal?" Value="@((decimal?)null)">Không yêu cầu</MudSelectItem>
-                        @foreach (var rank in _ranks)
-                        {
-                            <MudSelectItem T="decimal?" Value="@((decimal?)rank.SpendAmount)">
-                                @rank.RankName (chi tiêu từ @rank.SpendAmount.ToString("N0")đ)
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
-
                     <div class="md:col-span-2">
                         <p class="!mb-2 text-sm font-medium text-slate-700">
                             Ngày bắt đầu <span class="text-red-600">*</span>
@@ -179,8 +162,6 @@
 
     private readonly VoucherSchema.CreateUpdate _validator = new();
 
-    private List<RankResponse> _ranks = new();
-
     private DateTime? _startDatePart;
     private TimeSpan? _startTimePart;
     private DateTime? _endDatePart;
@@ -193,46 +174,15 @@
     private bool _hasEndDateError => !string.IsNullOrWhiteSpace(_endDateError);
 
     private bool _isSubmitting;
-    private bool _isLoadingRanks;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         var defaultStart = DateTime.Now.AddMinutes(15);
         _model.StartDate = defaultStart;
         _model.EndDate = defaultStart.AddDays(7);
+        _model.MinimumSpend = null;
         SyncDateTimePartsFromModel();
         SyncIsActiveFromDates();
-        await LoadRanksAsync();
-    }
-
-    private async Task LoadRanksAsync()
-    {
-        _isLoadingRanks = true;
-
-        try
-        {
-            var result = await _adminRankService.GetAllAsync();
-
-            if (!result.Success)
-            {
-                _snackbar.Add(
-                    string.IsNullOrWhiteSpace(result.Message)
-                        ? "Không thể tải danh sách xếp hạng"
-                        : result.Message,
-                    Severity.Warning);
-                _ranks = new();
-                return;
-            }
-
-            _ranks = (result.Data ?? new())
-                .Where(x => !x.Delete)
-                .OrderBy(x => x.SpendAmount)
-                .ToList();
-        }
-        finally
-        {
-            _isLoadingRanks = false;
-        }
     }
 
     private void SyncDateTimePartsFromModel()
@@ -368,6 +318,7 @@
         UpdateStartDate();
         UpdateEndDate();
         SyncIsActiveFromDates();
+        _model.MinimumSpend = null;
 
         await _form.ValidateAsync();
         await ValidateDateFieldsAsync();
