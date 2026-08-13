@@ -39,7 +39,7 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("get-all")]
-    public async Task<ActionResult<List<ManagementOrderResponseDto>>> GetAll(string? keyword, int? status = null)
+    public async Task<ActionResult<List<ManagementOrderResponseDto>>> GetAll(string? keyword, int? status = null, bool? guestOrder = null, bool? isPos = null)
     {
         try
         {
@@ -51,12 +51,27 @@ public class OrderController : ControllerBase
                 result = result
                     .Where(o => o.OrderCode.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                     .ToList();
-            }
+            }   
             if(status != null)
             {
                 result = result
                     .Where(o => o.Status == status)
                     .ToList();
+            }
+            if (guestOrder != null)
+            {
+                if (guestOrder.Value)
+                {
+                    result = result.Where(o => o.CustomerId == -1).ToList();
+                }
+                else
+                {
+                    result = result.Where(o => o.CustomerId != -1).ToList();
+                }
+            }
+            if (isPos != null)
+            {
+                result = result.Where(o => o.IsOrderPOS == isPos.Value).ToList();
             }
 
             return Ok(result.Select(MapToManagementOrderDto).ToList());

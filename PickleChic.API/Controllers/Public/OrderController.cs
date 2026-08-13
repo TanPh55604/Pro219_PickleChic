@@ -1231,7 +1231,7 @@ public class OrderController : ControllerBase
         try
         {
             bool isShipping = (dto.AddressId.HasValue && dto.AddressId.Value > 0) || dto.AddressDTO != null;
-            string initialStatus = isShipping ? Constant.OrderStatus.Pending : Constant.OrderStatus.Done;
+            string initialStatus = isShipping ? Constant.OrderStatus.Confirmed : Constant.OrderStatus.Done;
 
             var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(customerUserName))
