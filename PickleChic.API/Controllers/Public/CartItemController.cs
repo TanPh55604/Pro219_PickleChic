@@ -200,6 +200,85 @@ public class CartItemController : ControllerBase
         }
     }
 
+    [HttpPost("merge/{customerId}")]
+    public async Task<ActionResult<List<CartItem>>> Merge(int customerId, [FromBody] List<CartItemCreateDto> dtos)
+    {
+        try
+        {
+            if (customerId <= 0)
+                return BadRequest("CustomerId không hợp lệ");
+
+            if (dtos is null || dtos.Count == 0)
+                return Ok(new List<CartItem>());
+
+            var existingItems = await _repository.GetByCustomerIdAsync(customerId);
+            var results = new List<CartItem>();
+
+            foreach (var dto in dtos)
+            {
+                var variant = await _variantRepository.GetVariantWithDetailsByIdAsync(dto.ProductVariantId);
+                if (variant is null 
+                    || variant.Status != 1 
+                    || variant.Product is null 
+                    || variant.Product.IsDeleted 
+                    || variant.Product.Status != 1)
+                {
+                    continue;
+                }
+
+                var existingItem = existingItems.FirstOrDefault(ci => ci.ProductVariantId == dto.ProductVariantId);
+                int targetQuantity = dto.Quantity;
+                if (existingItem is not null)
+                {
+                    targetQuantity += existingItem.Quantity;
+                }
+
+                if (targetQuantity <= 0)
+                    continue;
+
+                if (targetQuantity > variant.StockQuantity)
+                {
+                    targetQuantity = variant.StockQuantity;
+                }
+
+                if (targetQuantity <= 0)
+                    continue;
+
+                if (existingItem is not null)
+                {
+                    existingItem.Quantity = targetQuantity;
+                    var updated = await _repository.UpdateAsync(existingItem);
+                    if (updated is not null)
+                    {
+                        results.Add(updated);
+                    }
+                }
+                else
+                {
+                    var entity = new CartItem
+                    {
+                        CustomerId = customerId,
+                        ProductVariantId = dto.ProductVariantId,
+                        Quantity = targetQuantity,
+                        InsertedAt = DateTime.Now,
+                    };
+
+                    var created = await _repository.AddAsync(entity);
+                    if (created is not null)
+                    {
+                        results.Add(created);
+                    }
+                }
+            }
+
+            return Ok(results);
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
+
     [HttpPatch("update")]
     public async Task<ActionResult> Update([FromBody] CartItemUpdateDto dto)
     {

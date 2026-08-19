@@ -25,6 +25,7 @@ public class VoucherController : ControllerBase
     public async Task<ActionResult<List<Voucher>>> GetAvailable()
     {
         CustomerRepository _customerRepository = new CustomerRepository();
+        RankRepository rankRepository = new RankRepository();
         try
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.SerialNumber)?.Value);
@@ -32,8 +33,8 @@ public class VoucherController : ControllerBase
             
             if(user!=null)
             {
-                decimal spent6Months = await _orderRepository.GetTotalSpentInLast6MonthsAsync(user.Id);
-                var result = await _repository.GetAvailableByMinSpend(spent6Months);
+                decimal rankMiniumSpend = (await rankRepository.GetByIdAsync(user.RankId))?.SpendAmount ?? 0;
+                var result = await _repository.GetAvailableByMinSpend(rankMiniumSpend);
                 return Ok(result);
             } 
             return NotFound();
