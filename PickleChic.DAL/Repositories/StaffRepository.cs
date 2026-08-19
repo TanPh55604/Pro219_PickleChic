@@ -33,6 +33,15 @@ public class StaffRepository
 
     public async Task<Staff> AddAsync(Staff entity)
     {
+        if (await _context.Staff.AnyAsync(s => s.Status != -1 && s.UserName == entity.UserName))
+        {
+            throw new InvalidOperationException("Tên đăng nhập đã tồn tại");
+        }
+        if (await _context.Staff.AnyAsync(s => s.Status != -1 && s.Email == entity.Email))
+        {
+            throw new InvalidOperationException("Email đã tồn tại");
+        }
+
         _context.Staff.Add(entity);
         await _context.SaveChangesAsync();
         return entity;
@@ -40,6 +49,15 @@ public class StaffRepository
 
     public async Task<Staff?> UpdateAsync(Staff entity)
     {
+        if (await _context.Staff.AnyAsync(s => s.Status != -1 && s.UserName == entity.UserName && s.Id != entity.Id))
+        {
+            throw new InvalidOperationException("Tên đăng nhập đã tồn tại");
+        }
+        if (await _context.Staff.AnyAsync(s => s.Status != -1 && s.Email == entity.Email && s.Id != entity.Id))
+        {
+            throw new InvalidOperationException("Email đã tồn tại");
+        }
+
         try
         {
             var existing = await _context.Staff.FindAsync(entity.Id);
@@ -50,7 +68,10 @@ public class StaffRepository
             existing.UserName = entity.UserName;
             existing.Email = entity.Email;
             existing.PhoneNumber = entity.PhoneNumber;
-            existing.PasswordHash = entity.PasswordHash;
+            if (!string.IsNullOrEmpty(entity.PasswordHash) && entity.PasswordHash != "Admin12345@")
+            {
+                existing.PasswordHash = entity.PasswordHash;
+            }
             existing.RoleId = entity.RoleId;
             existing.LastLogin = entity.LastLogin;
             existing.Status = entity.Status;

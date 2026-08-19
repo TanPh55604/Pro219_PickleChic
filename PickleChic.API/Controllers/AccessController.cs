@@ -126,7 +126,8 @@ namespace PickleChic.API.Controllers
                 {
                     Token = new JwtSecurityTokenHandler().WriteToken(token),
                     Expiration = expirationGmt7,
-                    LoginSuccess = true
+                    LoginSuccess = true,
+                    FirstLogin = staff.LastLogin == null
                 });
             }
             else
@@ -379,6 +380,10 @@ namespace PickleChic.API.Controllers
                     return NotFound("CurrentPasswordNotMatch");
                 }
                 staff.PasswordHash = changePasswordDTO.NewHashPassword;
+                if (staff.LastLogin == null)
+                {
+                    staff.LastLogin = DateTime.Now;
+                }
                 var updatedStaff = await _staffRepository.UpdateAsync(staff);
                 if (updatedStaff == null)
                 {
