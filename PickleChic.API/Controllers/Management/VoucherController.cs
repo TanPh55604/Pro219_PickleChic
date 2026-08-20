@@ -82,6 +82,7 @@ public class VoucherController : ControllerBase
                 CustomerUsageLimit = dto.CustomerUsageLimit,
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
+                RankId = dto.RankId,
             };
 
             if (dto.IsForever)
@@ -159,6 +160,7 @@ public class VoucherController : ControllerBase
                 CustomerUsageLimit = dto.CustomerUsageLimit,
                 UsedCount = dto.UsedCount,
                 IsActive = dto.IsActive,
+                RankId = dto.RankId,
             };
 
             if (dto.IsForever)

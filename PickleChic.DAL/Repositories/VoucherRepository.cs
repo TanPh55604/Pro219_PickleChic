@@ -36,9 +36,11 @@ public class VoucherRepository
             .FirstOrDefaultAsync(x => x.VoucherCode.ToLower() == normalized.ToLower());
     }
 
-    public async Task<List<Voucher>> GetAvailableByMinSpend(decimal minSpend)
+    public async Task<List<Voucher>> GetAvailableByMinSpend(decimal minSpend, int? rankId = null)
     {
-        return await _context.Vouchers.Where(x => (x.MinimumSpend == null || x.MinimumSpend <= minSpend) && x.IsActive).ToListAsync();
+        return await _context.Vouchers.Where(x => (x.MinimumSpend == null || x.MinimumSpend <= minSpend) 
+                                                && (rankId == null || x.RankId == null || x.RankId == rankId) 
+                                                && x.IsActive).ToListAsync();
     }
 
     public async Task<bool> ExistsByCodeAsync(string code, int? excludeId = null)
@@ -79,6 +81,7 @@ public class VoucherRepository
             existing.CustomerUsageLimit = entity.CustomerUsageLimit;
             existing.UsedCount = entity.UsedCount;
             existing.IsActive = entity.IsActive;
+            existing.RankId = entity.RankId;
             await _context.SaveChangesAsync();
             return existing;
         }

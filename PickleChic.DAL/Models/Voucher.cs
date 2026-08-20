@@ -36,5 +36,10 @@ public class Voucher
 
     public bool IsActive { get; set; }
 
+    [ForeignKey(nameof(Rank))]
+    public int? RankId { get; set; } = null;
+
+    public Rank? Rank { get; set; }
+
     public ICollection<Order>? Orders { get; set; }
 }

@@ -1642,6 +1642,19 @@ public class OrderController : ControllerBase
             }
         }
 
+        if (voucher.RankId != null)
+        {
+            if (customerId <= 0)
+            {
+                return (0, "Voucher này yêu cầu hạng thành viên cụ thể");
+            }
+            var customer = await _customerRepository.GetByIdAsync(customerId);
+            if (customer == null || customer.RankId != voucher.RankId.Value)
+            {
+                return (0, "Hạng thành viên của bạn không đủ điều kiện để sử dụng voucher này");
+            }
+        }
+
         decimal discount = 0;
         if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
         {
