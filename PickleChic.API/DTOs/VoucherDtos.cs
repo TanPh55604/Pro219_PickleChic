@@ -15,6 +15,7 @@ public class VoucherCreateDto
     public int CustomerUsageLimit { get; set; }
     public int UsedCount { get; set; }
     public bool IsActive { get; set; }
+    public int? RankId { get; set; } = null;
 }
 
 public class VoucherUpdateDto : VoucherCreateDto
