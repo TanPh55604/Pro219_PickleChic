@@ -1453,6 +1453,9 @@ public class OrderController : ControllerBase
             return;
         }
 
+        bool alreadyRewarded = order.PointHistories?
+            .Any(ph => ph.TransactionType == "Cộng điểm") ?? false;
+
         decimal totalProductPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
         decimal discountAmount = 0;
 
@@ -1477,7 +1480,9 @@ public class OrderController : ControllerBase
         decimal finalPaidAmount = Math.Max(0, totalProductPrice - discountAmount);
 
         double percentReward = _configuration.GetValue<double?>("PercentReward") ?? _configuration.GetValue<double?>("RewardPercent") ?? 10.0;
-        int pointsToAdd = Math.Max(0, (int)Math.Round((double)finalPaidAmount * percentReward / 100.0));
+        int pointsToAdd = alreadyRewarded
+            ? 0
+            : Math.Max(0, (int)Math.Round((double)finalPaidAmount * percentReward / 100.0));
 
         if (pointsToAdd > 0)
         {
@@ -1492,24 +1497,22 @@ public class OrderController : ControllerBase
             };
 
             await _pointHistoryRepository.AddAsync(pointHistory);
-
             customer.TotalPoints += pointsToAdd;
-
-            decimal totalSpent = await _orderRepository.GetTotalSpentInLast6MonthsAsync(customer.Id);
-
-            var ranks = await _rankRepository.GetAllAsync();
-            var qualifiedRank = ranks
-                .Where(r => totalSpent >= r.SpendAmount)
-                .OrderByDescending(r => r.SpendAmount)
-                .FirstOrDefault();
-
-            if (qualifiedRank != null && customer.RankId != qualifiedRank.Id)
-            {
-                customer.RankId = qualifiedRank.Id;
-            }
-
-            await _customerRepository.UpdateAsync(customer);
         }
+
+        decimal totalSpent = await _orderRepository.GetTotalSpentInLast6MonthsAsync(customer.Id);
+        var ranks = await _rankRepository.GetAllAsync();
+        var qualifiedRank = ranks
+            .Where(r => totalSpent >= r.SpendAmount)
+            .OrderByDescending(r => r.SpendAmount)
+            .FirstOrDefault();
+
+        if (qualifiedRank != null && customer.RankId != qualifiedRank.Id)
+        {
+            customer.RankId = qualifiedRank.Id;
+        }
+
+        await _customerRepository.UpdateAsync(customer);
     }
 
     [HttpGet("PaymentCanceled")]
@@ -1633,23 +1636,25 @@ public class OrderController : ControllerBase
             }
         }
 
-        if (voucher.MinimumSpend != null)
-        {
-            decimal totalSpent = await _orderRepository.GetTotalSpentInLast6MonthsAsync(customerId);
-            if (totalSpent < voucher.MinimumSpend.Value)
-            {
-                return (0, "Chi tiêu tích lũy trong 6 tháng gần nhất của bạn chưa đủ điều kiện để sử dụng voucher này");
-            }
-        }
-
         if (voucher.RankId != null)
         {
             if (customerId <= 0)
             {
                 return (0, "Voucher này yêu cầu hạng thành viên cụ thể");
             }
+
             var customer = await _customerRepository.GetByIdAsync(customerId);
-            if (customer == null || customer.RankId != voucher.RankId.Value)
+            if (customer == null)
+            {
+                return (0, "Hạng thành viên của bạn không đủ điều kiện để sử dụng voucher này");
+            }
+
+            var voucherRank = await _rankRepository.GetByIdAsync(voucher.RankId.Value);
+            var customerRank = await _rankRepository.GetByIdAsync(customer.RankId);
+            var voucherRankSpend = voucherRank?.SpendAmount ?? 0;
+            var customerRankSpend = customerRank?.SpendAmount ?? 0;
+
+            if (voucherRankSpend > customerRankSpend)
             {
                 return (0, "Hạng thành viên của bạn không đủ điều kiện để sử dụng voucher này");
             }
@@ -1735,7 +1740,7 @@ public class OrderController : ControllerBase
 
             if (!CanCustomerCancelOrder(order))
             {
-                return BadRequest("Chỉ có thể hủy đơn khi chưa được xác nhận");
+                return BadRequest("Chỉ có thể hủy đơn khi đang chờ xử lý hoặc đã xác nhận (chưa giao hàng)");
             }
 
             var customerUserName = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -1855,7 +1860,7 @@ public class OrderController : ControllerBase
 
             if (!CanCustomerCancelOrder(order))
             {
-                return BadRequest("Chỉ có thể hủy đơn khi chưa được xác nhận");
+                return BadRequest("Chỉ có thể hủy đơn khi đang chờ xử lý hoặc đã xác nhận (chưa giao hàng)");
             }
 
             var cancelReason = request.CancelReason.Trim();
@@ -1931,7 +1936,7 @@ public class OrderController : ControllerBase
     private static bool CanCustomerCancelOrder(Order order)
     {
         var statusCode = order.Status ?? Constant.OrderStatus.GetStatusInt(order.OrderStatus);
-        if (statusCode is 1 or 2 or 3)
+        if (statusCode is 1 or 2 or 3 or 4)
         {
             return true;
         }
@@ -1939,9 +1944,11 @@ public class OrderController : ControllerBase
         return order.OrderStatus is Constant.OrderStatus.Pending
             or Constant.OrderStatus.Processing
             or Constant.OrderStatus.WaitingForPayment
+            or Constant.OrderStatus.Confirmed
             or "Pending"
             or "Processing"
-            or "WaitingForPayment";
+            or "WaitingForPayment"
+            or "Confirmed";
     }
 
     [HttpGet("user/list")]

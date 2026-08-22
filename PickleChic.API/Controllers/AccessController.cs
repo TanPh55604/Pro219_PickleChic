@@ -23,6 +23,7 @@ namespace PickleChic.API.Controllers
         CustomerRepository _customerRepository;
         StaffRepository _staffRepository;
         AddressRepository _addressRepository;
+        private readonly OrderRepository _orderRepository;
 
         private readonly IConfiguration _configuration;
         private readonly TimeZoneInfo _gmtPlus7 = TimeZoneInfo.CreateCustomTimeZone("GMT+7", TimeSpan.FromHours(7), "GMT+7", "GMT+7");
@@ -31,12 +32,14 @@ namespace PickleChic.API.Controllers
             IConfiguration configuration,
             CustomerRepository customerRepository,
             StaffRepository staffRepository,
-            AddressRepository addressRepository)
+            AddressRepository addressRepository,
+            OrderRepository orderRepository)
         {
             _configuration = configuration;
             _customerRepository = customerRepository;
             _staffRepository = staffRepository;
             _addressRepository = addressRepository;
+            _orderRepository = orderRepository;
         }
 
         [HttpPost("LoginCustomer")]
@@ -164,15 +167,31 @@ namespace PickleChic.API.Controllers
                         }
                     }
                 }
-                int rankId = string.IsNullOrEmpty(User.FindFirst(ClaimTypes.Surname)?.Value) ? -1 : int.Parse(User.FindFirst(ClaimTypes.Surname)?.Value);
-                string rankName = string.Empty;
-                if (rankId != -1)
-                {
-                    rankName = rankRepository.GetByIdAsync(rankId).Result.RankName;
-                }
-
-                var userId = int.Parse(User.FindFirst(ClaimTypes.SerialNumber)?.Value);
+                int userId = int.Parse(User.FindFirst(ClaimTypes.SerialNumber)?.Value);
                 var user = await _customerRepository.GetByIdAsync(userId);
+
+                int rankId = -1;
+                string rankName = string.Empty;
+                if (user != null)
+                {
+                    // Đồng bộ hạng theo chi tiêu 6 tháng (Status = Hoàn thành)
+                    decimal totalSpent = await _orderRepository.GetTotalSpentInLast6MonthsAsync(user.Id);
+                    var ranks = await rankRepository.GetAllAsync();
+                    var qualifiedRank = ranks
+                        .Where(r => totalSpent >= r.SpendAmount)
+                        .OrderByDescending(r => r.SpendAmount)
+                        .FirstOrDefault();
+
+                    if (qualifiedRank != null && user.RankId != qualifiedRank.Id)
+                    {
+                        user.RankId = qualifiedRank.Id;
+                        await _customerRepository.UpdateAsync(user);
+                    }
+
+                    rankId = user.RankId;
+                    var rank = await rankRepository.GetByIdAsync(rankId);
+                    rankName = rank?.RankName ?? string.Empty;
+                }
 
                 var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
                 int targetRoleId = -1;
@@ -216,7 +235,7 @@ namespace PickleChic.API.Controllers
                     email = User.FindFirst(ClaimTypes.Email)?.Value,
                     fullName = User.FindFirst(ClaimTypes.Name)?.Value,
                     phoneNumber = User.FindFirst(ClaimTypes.MobilePhone)?.Value,
-                    rankId = User.FindFirst(ClaimTypes.Surname)?.Value,
+                    rankId = rankId > 0 ? rankId.ToString() : null,
                     rankName = rankName,
                     totalpoints = user != null ? user.TotalPoints : 0,
                     expirationTime = expirationTime,

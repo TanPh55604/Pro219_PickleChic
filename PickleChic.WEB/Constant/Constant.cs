@@ -154,6 +154,16 @@ namespace PickleChic.WEB.Constant
                 Other
             ];
 
+            public static readonly string[] DeliveryFailed =
+            [
+                "Không liên hệ được khách",
+                "Khách từ chối nhận hàng",
+                "Sai / không tìm thấy địa chỉ",
+                "Hàng hỏng / thất lạc khi giao",
+                "Shipper giao không thành công",
+                Other
+            ];
+
             public static string Format(string reason, string? detail)
             {
                 var selected = reason.Trim();

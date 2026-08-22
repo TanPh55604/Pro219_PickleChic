@@ -65,6 +65,7 @@ else
                         var statusClass = statusLabel switch
                         {
                             "Đang diễn ra" => "!bg-green-50 !text-green-700",
+                            "Vĩnh viễn" => "!bg-green-50 !text-green-700",
                             "Chưa diễn ra" => "!bg-sky-50 !text-sky-700",
                             _ => "!bg-slate-100 !text-slate-700"
                         };
@@ -103,23 +104,30 @@ else
                     </div>
 
                     <div class="!rounded-xl !bg-slate-50 !p-4">
+                        <p class="text-sm text-slate-500">Hạng khách yêu cầu</p>
+                        <p class="!mt-2 text-base font-semibold text-slate-900">
+                            @GetRankName(_model.RankId)
+                        </p>
+                    </div>
+
+                    <div class="!rounded-xl !bg-slate-50 !p-4">
                         <p class="text-sm text-slate-500">Ngày bắt đầu</p>
                         <p class="!mt-2 text-base font-semibold text-slate-900">
-                            @_model.StartDate.ToString("dd/MM/yyyy HH:mm")
+                            @FormatStartDate(_model)
                         </p>
                     </div>
 
                     <div class="!rounded-xl !bg-slate-50 !p-4">
                         <p class="text-sm text-slate-500">Ngày kết thúc</p>
                         <p class="!mt-2 text-base font-semibold text-slate-900">
-                            @_model.EndDate.ToString("dd/MM/yyyy HH:mm")
+                            @FormatEndDate(_model)
                         </p>
                     </div>
 
                     <div class="!rounded-xl !bg-slate-50 !p-4">
                         <p class="text-sm text-slate-500">Số lượng phát hành</p>
                         <p class="!mt-2 text-base font-semibold text-slate-900">
-                            @_model.UsageLimit
+                            @FormatUsageLimit(_model)
                         </p>
                     </div>
 
@@ -147,13 +155,35 @@ else
 
     private VoucherResponse _model = new();
 
+    private List<RankResponse> _ranks = new();
+
     private bool _isLoading = true;
 
     private bool CanModify => _model.StartDate > DateTime.Now;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadVoucherAsync();
+        await Task.WhenAll(LoadRanksAsync(), LoadVoucherAsync());
+    }
+
+    private async Task LoadRanksAsync()
+    {
+        var result = await _adminRankService.GetAllAsync();
+        if (result.Success && result.Data is not null)
+        {
+            _ranks = result.Data;
+        }
+    }
+
+    private string GetRankName(int? rankId)
+    {
+        if (rankId is null)
+        {
+            return "Không yêu cầu";
+        }
+
+        return _ranks.FirstOrDefault(x => x.Id == rankId.Value)?.RankName
+            ?? $"Hạng #{rankId.Value}";
     }
 
     private async Task LoadVoucherAsync()
@@ -267,8 +297,37 @@ else
         return $"Đơn tối thiểu {voucher.MinOrderValue:N0}đ · {FormatDiscountValue(voucher)}";
     }
 
+    private static bool IsForeverVoucher(VoucherResponse voucher) =>
+        VoucherModel.IsForeverEndDate(voucher.EndDate)
+        || VoucherModel.IsUnlimitedUsage(voucher.UsageLimit);
+
+    private static string FormatStartDate(VoucherResponse voucher)
+    {
+        if (IsForeverVoucher(voucher) && voucher.StartDate.Year <= 1)
+        {
+            return "Vĩnh viễn";
+        }
+
+        return voucher.StartDate.ToString("dd/MM/yyyy HH:mm");
+    }
+
+    private static string FormatEndDate(VoucherResponse voucher) =>
+        IsForeverVoucher(voucher)
+            ? "Vĩnh viễn"
+            : voucher.EndDate.ToString("dd/MM/yyyy HH:mm");
+
+    private static string FormatUsageLimit(VoucherResponse voucher) =>
+        IsForeverVoucher(voucher) || VoucherModel.IsUnlimitedUsage(voucher.UsageLimit)
+            ? "Không giới hạn"
+            : voucher.UsageLimit.ToString("N0");
+
     private static string GetScheduleStatusLabel(VoucherResponse voucher)
     {
+        if (IsForeverVoucher(voucher))
+        {
+            return voucher.IsActive ? "Vĩnh viễn" : "Chưa diễn ra";
+        }
+
         var now = DateTime.Now;
 
         if (now < voucher.StartDate)

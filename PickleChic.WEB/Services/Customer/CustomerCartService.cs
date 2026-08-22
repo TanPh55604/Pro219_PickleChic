@@ -215,6 +215,53 @@ namespace PickleChic.WEB.Services.Customer
             return ApiResult<bool>.Ok(true);
         }
 
+        public async Task<ApiResult<bool>> MergeGuestCartAsync(int customerId)
+        {
+            if (customerId <= 0)
+            {
+                return ApiResult<bool>.Fail("CustomerId không hợp lệ");
+            }
+
+            var guestItems = await LoadGuestCartAsync();
+            if (guestItems.Count == 0)
+            {
+                return ApiResult<bool>.Ok(true);
+            }
+
+            var request = guestItems
+                .Where(x => x.ProductVariantId > 0 && x.Quantity > 0)
+                .Select(x => new CartItemCreateRequest
+                {
+                    CustomerId = customerId,
+                    ProductVariantId = x.ProductVariantId,
+                    Quantity = x.Quantity
+                })
+                .ToList();
+
+            if (request.Count == 0)
+            {
+                await ClearGuestCartAsync();
+                NotifyCartChanged();
+                return ApiResult<bool>.Ok(true);
+            }
+
+            var result = await _apiProvider.PostAsync<List<CartItemCreateRequest>, List<CartItemResponse>>(
+                EndPointConfig.Cart.Merge(customerId),
+                request,
+                requireAuth: true);
+
+            if (!result.Success)
+            {
+                return ApiResult<bool>.Fail(
+                    message: NormalizeErrorMessage(result.Message),
+                    statusCode: result.StatusCode);
+            }
+
+            await ClearGuestCartAsync();
+            NotifyCartChanged();
+            return ApiResult<bool>.Ok(true);
+        }
+
         private async Task<ApiResult<bool>> AddGuestItemAsync(
             int productVariantId,
             int quantity,
@@ -304,6 +351,11 @@ namespace PickleChic.WEB.Services.Customer
         private async Task SaveGuestCartAsync(List<CartLineModel> items)
         {
             await _localStorageService.SetItemAsync(PickleChic.WEB.Constant.Constant.GuestCart.StorageKey, items);
+        }
+
+        private async Task ClearGuestCartAsync()
+        {
+            await _localStorageService.RemoveItemAsync(PickleChic.WEB.Constant.Constant.GuestCart.StorageKey);
         }
 
         private static string NormalizeErrorMessage(string message)

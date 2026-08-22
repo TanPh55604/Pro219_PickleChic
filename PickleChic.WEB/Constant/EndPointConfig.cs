@@ -190,6 +190,8 @@
 
             public static string GetByUser(int customerId) => $"cart-item/get-by-user/{customerId}";
 
+            public static string Merge(int customerId) => $"cart-item/merge/{customerId}";
+
             public static string Delete(int id) => $"cart-item/delete/{id}";
         }
 
@@ -293,7 +295,41 @@
 
         public static class Order
         {
-            public const string GetAll = "management/order/get-all";
+            public static string GetAll(
+                string? keyword = null,
+                IEnumerable<int>? status = null,
+                bool? guestOrder = null,
+                bool? isPos = null)
+            {
+                var queryParts = new List<string>();
+
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    queryParts.Add($"keyword={Uri.EscapeDataString(keyword.Trim())}");
+                }
+
+                if (status is not null)
+                {
+                    foreach (var s in status.Distinct())
+                    {
+                        queryParts.Add($"status={s}");
+                    }
+                }
+
+                if (guestOrder.HasValue)
+                {
+                    queryParts.Add($"guestOrder={guestOrder.Value.ToString().ToLowerInvariant()}");
+                }
+
+                if (isPos.HasValue)
+                {
+                    queryParts.Add($"isPos={isPos.Value.ToString().ToLowerInvariant()}");
+                }
+
+                return queryParts.Count == 0
+                    ? "management/order/get-all"
+                    : $"management/order/get-all?{string.Join("&", queryParts)}";
+            }
 
             public const string CalculateTotal = "order/CalculateTotal";
 

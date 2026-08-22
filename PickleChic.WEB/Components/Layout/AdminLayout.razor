@@ -92,7 +92,26 @@ else
             return;
         }
 
+        if (result.Data.MustChangePassword && !IsCurrentPath(RouterConfig.Admin.AdminChangePassword))
+        {
+            _navigation.NavigateTo(RouterConfig.Admin.AdminChangePassword, replace: true);
+            return;
+        }
+
         _mine = result.Data;
+    }
+
+    private bool IsCurrentPath(string route)
+    {
+        var currentPath = "/" + _navigation.ToBaseRelativePath(_navigation.Uri).Trim('/');
+        currentPath = currentPath.Split('?')[0].Split('#')[0];
+
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            currentPath = "/";
+        }
+
+        return currentPath.Equals(route, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task EndAdminSessionAsync(string reason)

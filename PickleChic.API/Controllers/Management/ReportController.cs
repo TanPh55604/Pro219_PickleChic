@@ -92,6 +92,7 @@ public class ReportController : ControllerBase
         var status = order.OrderStatus.Trim();
         return string.Equals(status, "Đã hủy(KH)", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(status, "Đã hủy", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(status, "Giao thất bại", StringComparison.OrdinalIgnoreCase) ||
                string.Equals(status, "Cancelled", StringComparison.OrdinalIgnoreCase);
     }
 

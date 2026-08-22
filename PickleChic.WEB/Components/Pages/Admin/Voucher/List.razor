@@ -61,6 +61,7 @@
                 <MudTh>Mã voucher</MudTh>
                 <MudTh>Loại giảm</MudTh>
                 <MudTh>Giá trị</MudTh>
+                <MudTh>Hạng yêu cầu</MudTh>
                 <MudTh>Thời gian</MudTh>
                 <MudTh>Phát hành</MudTh>
                 <MudTh>Đã dùng</MudTh>
@@ -94,15 +95,28 @@
                     </span>
                 </MudTd>
 
+                <MudTd DataLabel="Hạng yêu cầu">
+                    <span class="text-sm text-slate-600">
+                        @GetRankName(context.RankId)
+                    </span>
+                </MudTd>
+
                 <MudTd DataLabel="Thời gian">
                     <div class="text-sm text-slate-600">
-                        <p>@context.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
-                        <p class="text-slate-400">→ @context.EndDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        @if (IsForeverVoucher(context))
+                        {
+                            <p>Vĩnh viễn</p>
+                        }
+                        else
+                        {
+                            <p>@context.StartDate.ToString("dd/MM/yyyy HH:mm")</p>
+                            <p class="text-slate-400">→ @context.EndDate.ToString("dd/MM/yyyy HH:mm")</p>
+                        }
                     </div>
                 </MudTd>
 
                 <MudTd DataLabel="Phát hành">
-                    <span class="text-sm text-slate-600">@context.UsageLimit</span>
+                    <span class="text-sm text-slate-600">@FormatUsageLimit(context)</span>
                 </MudTd>
 
                 <MudTd DataLabel="Đã dùng">
@@ -146,9 +160,31 @@
 
     private List<VoucherResponse> _vouchers = new();
 
+    private List<RankResponse> _ranks = new();
+
     protected override async Task OnInitializedAsync()
     {
-        await LoadVouchersAsync();
+        await Task.WhenAll(LoadRanksAsync(), LoadVouchersAsync());
+    }
+
+    private async Task LoadRanksAsync()
+    {
+        var result = await _adminRankService.GetAllAsync();
+        if (result.Success && result.Data is not null)
+        {
+            _ranks = result.Data;
+        }
+    }
+
+    private string GetRankName(int? rankId)
+    {
+        if (rankId is null)
+        {
+            return "Không yêu cầu";
+        }
+
+        return _ranks.FirstOrDefault(x => x.Id == rankId.Value)?.RankName
+            ?? $"Hạng #{rankId.Value}";
     }
 
     private async Task LoadVouchersAsync()
@@ -230,8 +266,22 @@
         return $"{voucher.DiscountValue:N0}đ";
     }
 
+    private static bool IsForeverVoucher(VoucherResponse voucher) =>
+        VoucherModel.IsForeverEndDate(voucher.EndDate)
+        || VoucherModel.IsUnlimitedUsage(voucher.UsageLimit);
+
+    private static string FormatUsageLimit(VoucherResponse voucher) =>
+        IsForeverVoucher(voucher) || VoucherModel.IsUnlimitedUsage(voucher.UsageLimit)
+            ? "Không giới hạn"
+            : voucher.UsageLimit.ToString("N0");
+
     private static string GetScheduleStatusLabel(VoucherResponse voucher)
     {
+        if (IsForeverVoucher(voucher))
+        {
+            return voucher.IsActive ? "Vĩnh viễn" : "Chưa diễn ra";
+        }
+
         var now = DateTime.Now;
 
         if (now < voucher.StartDate)
@@ -252,6 +302,7 @@
         return GetScheduleStatusLabel(voucher) switch
         {
             "Đang diễn ra" => Color.Success,
+            "Vĩnh viễn" => Color.Success,
             "Chưa diễn ra" => Color.Info,
             _ => Color.Default
         };

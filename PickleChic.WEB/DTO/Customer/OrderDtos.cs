@@ -193,8 +193,14 @@ namespace PickleChic.WEB.DTO.Customer
         public string CancelReason { get; set; } = string.Empty;
 
         public string? CancelDetail { get; set; }
+    }
 
-        // TODO: hoàn trả số lượng tồn kho khi hủy đơn (chưa làm)
-        // public bool RestoreStock { get; set; }
+    public class DeliveryFailedDialogResult
+    {
+        public string Reason { get; set; } = string.Empty;
+
+        public string? Detail { get; set; }
+
+        public bool RefundStock { get; set; } = true;
     }
 }

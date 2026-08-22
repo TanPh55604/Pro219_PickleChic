@@ -161,6 +161,12 @@ else
             return;
         }
 
+        if (result.Data.MustChangePassword)
+        {
+            _navigation.NavigateTo(RouterConfig.Admin.AdminChangePassword, replace: true);
+            return;
+        }
+
         _navigation.NavigateTo(RouterConfig.Admin.Home, replace: true);
     }
 

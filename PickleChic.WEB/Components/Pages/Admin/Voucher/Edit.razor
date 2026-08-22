@@ -78,6 +78,18 @@ else
                                          Disabled="@(!_model.IsPercentDiscount)"
                                          Immediate="true" />
 
+                        <MudSelect T="int?"
+                                   @bind-Value="_model.RankId"
+                                   Label="Hạng khách yêu cầu"
+                                   Variant="Variant.Outlined"
+                                   Clearable="true"
+                                   Placeholder="Không yêu cầu hạng">
+                            @foreach (var rank in _ranks)
+                            {
+                                <MudSelectItem T="int?" Value="@((int?)rank.Id)">@rank.RankName</MudSelectItem>
+                            }
+                        </MudSelect>
+
                         <div class="md:col-span-2">
                             <p class="!mb-2 text-sm font-medium text-slate-700">
                                 Ngày bắt đầu <span class="text-red-600">*</span>
@@ -99,32 +111,48 @@ else
                         </div>
 
                         <div class="md:col-span-2">
+                            <MudCheckBox T="bool"
+                                         Value="_model.IsForever"
+                                         ValueChanged="OnForeverChangedAsync"
+                                         Label="Voucher vĩnh viễn (không hết hạn, không giới hạn số phát hành)"
+                                         Color="Color.Primary"
+                                         Class="!ml-[-8px]" />
+                        </div>
+
+                        <div class="md:col-span-2">
                             <p class="!mb-2 text-sm font-medium text-slate-700">
-                                Ngày kết thúc <span class="text-red-600">*</span>
+                                Ngày kết thúc
+                                @if (!_model.IsForever)
+                                {
+                                    <span class="text-red-600">*</span>
+                                }
                             </p>
                             <div class="grid !gap-3 md:grid-cols-2">
                                 <MudDatePicker @bind-Date="_endDatePart"
                                                @bind-Date:after="OnEndDateTimeChanged"
                                                Label="Chọn ngày"
                                                Variant="Variant.Outlined"
+                                               Disabled="@_model.IsForever"
                                                Error="@_hasEndDateError"
                                                ErrorText="@_endDateError" />
                                 <MudTimePicker @bind-Time="_endTimePart"
                                                @bind-Time:after="OnEndDateTimeChanged"
                                                Label="Chọn giờ"
                                                Variant="Variant.Outlined"
+                                               Disabled="@_model.IsForever"
                                                Error="@_hasEndDateError"
                                                ErrorText="@_endDateError" />
                             </div>
                         </div>
 
-                        <MudNumericField T="int"
+                        <MudNumericField T="int?"
                                          @bind-Value="_model.UsageLimit"
                                          For="@(() => _model.UsageLimit)"
                                          Label="Số lượng phát hành"
-                                         Placeholder="Nhập số lượng phát hành"
+                                         Placeholder="@(_model.IsForever ? "Không giới hạn" : "Nhập số lượng phát hành")"
                                          Variant="Variant.Outlined"
                                          Min="1"
+                                         Disabled="@_model.IsForever"
                                          Immediate="true" />
 
                         <MudNumericField T="int"
@@ -170,6 +198,8 @@ else
 
     private readonly VoucherSchema.CreateUpdate _validator = new(isEdit: true);
 
+    private List<RankResponse> _ranks = new();
+
     private DateTime? _startDatePart;
     private TimeSpan? _startTimePart;
     private DateTime? _endDatePart;
@@ -186,7 +216,16 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadVoucherAsync();
+        await Task.WhenAll(LoadRanksAsync(), LoadVoucherAsync());
+    }
+
+    private async Task LoadRanksAsync()
+    {
+        var result = await _adminRankService.GetAllAsync();
+        if (result.Success && result.Data is not null)
+        {
+            _ranks = result.Data.OrderBy(x => x.SpendAmount).ToList();
+        }
     }
 
     private async Task LoadVoucherAsync()
@@ -227,6 +266,9 @@ else
 
     private static VoucherModel MapToModel(VoucherResponse response)
     {
+        var isForever = VoucherModel.IsForeverEndDate(response.EndDate)
+            || VoucherModel.IsUnlimitedUsage(response.UsageLimit);
+
         return new VoucherModel
         {
             Id = response.Id,
@@ -236,12 +278,14 @@ else
             MinOrderValue = response.MinOrderValue,
             MaxDiscountAmount = response.MaxDiscountAmount,
             MinimumSpend = response.MinimumSpend,
+            RankId = response.RankId,
             StartDate = response.StartDate,
-            EndDate = response.EndDate,
-            UsageLimit = response.UsageLimit,
+            EndDate = isForever ? null : response.EndDate,
+            UsageLimit = isForever ? null : response.UsageLimit,
             CustomerUsageLimit = response.CustomerUsageLimit,
             UsedCount = response.UsedCount,
             IsActive = response.IsActive,
+            IsForever = isForever,
             OriginalStartDate = response.StartDate
         };
     }
@@ -254,11 +298,15 @@ else
             _startTimePart = _model.StartDate.Value.TimeOfDay;
         }
 
-        if (_model.EndDate.HasValue)
+        if (_model.IsForever || !_model.EndDate.HasValue)
         {
-            _endDatePart = _model.EndDate.Value.Date;
-            _endTimePart = _model.EndDate.Value.TimeOfDay;
+            _endDatePart = null;
+            _endTimePart = null;
+            return;
         }
+
+        _endDatePart = _model.EndDate.Value.Date;
+        _endTimePart = _model.EndDate.Value.TimeOfDay;
     }
 
     private void UpdateStartDate()
@@ -275,13 +323,63 @@ else
     private void OnStartDateTimeChanged()
     {
         UpdateStartDate();
+        if (!_model.IsForever && _model.StartDate.HasValue)
+        {
+            ApplyDefaultEndDateFromStart();
+        }
+
         SyncIsActiveFromDates();
         _startDateError = null;
         _endDateError = null;
     }
 
+    private async Task OnForeverChangedAsync(bool value)
+    {
+        _model.IsForever = value;
+
+        if (value)
+        {
+            _model.EndDate = null;
+            _endDatePart = null;
+            _endTimePart = null;
+            _model.UsageLimit = null;
+            _endDateError = null;
+            _model.IsActive = true;
+        }
+        else
+        {
+            _model.UsageLimit = 100;
+            UpdateStartDate();
+            if (_model.StartDate.HasValue)
+            {
+                ApplyDefaultEndDateFromStart();
+            }
+
+            SyncIsActiveFromDates();
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private void ApplyDefaultEndDateFromStart()
+    {
+        if (!_model.StartDate.HasValue)
+        {
+            return;
+        }
+
+        _model.EndDate = _model.StartDate.Value.AddDays(7);
+        _endDatePart = _model.EndDate.Value.Date;
+        _endTimePart = _model.EndDate.Value.TimeOfDay;
+    }
+
     private void OnEndDateTimeChanged()
     {
+        if (_model.IsForever)
+        {
+            return;
+        }
+
         UpdateEndDate();
         SyncIsActiveFromDates();
         _endDateError = null;
@@ -289,6 +387,12 @@ else
 
     private void UpdateEndDate()
     {
+        if (_model.IsForever)
+        {
+            _model.EndDate = null;
+            return;
+        }
+
         if (!_endDatePart.HasValue || !_endTimePart.HasValue)
         {
             _model.EndDate = null;
@@ -301,7 +405,10 @@ else
     private async Task ValidateDateFieldsAsync()
     {
         UpdateStartDate();
-        UpdateEndDate();
+        if (!_model.IsForever)
+        {
+            UpdateEndDate();
+        }
 
         var result = await _validator.ValidateAsync(_model);
 
@@ -309,9 +416,11 @@ else
             .FirstOrDefault(e => e.PropertyName == nameof(VoucherModel.StartDate))
             ?.ErrorMessage;
 
-        _endDateError = result.Errors
-            .FirstOrDefault(e => e.PropertyName == nameof(VoucherModel.EndDate))
-            ?.ErrorMessage;
+        _endDateError = _model.IsForever
+            ? null
+            : result.Errors
+                .FirstOrDefault(e => e.PropertyName == nameof(VoucherModel.EndDate))
+                ?.ErrorMessage;
     }
 
     private void OnDiscountTypeChanged(string discountType)
@@ -337,6 +446,12 @@ else
 
     private void SyncIsActiveFromDates()
     {
+        if (_model.IsForever)
+        {
+            _model.IsActive = true;
+            return;
+        }
+
         if (!_model.StartDate.HasValue || !_model.EndDate.HasValue)
         {
             _model.IsActive = false;
@@ -349,6 +464,11 @@ else
 
     private string GetScheduleStatusText()
     {
+        if (_model.IsForever)
+        {
+            return "Vĩnh viễn — đang hoạt động";
+        }
+
         if (!_model.StartDate.HasValue || !_model.EndDate.HasValue)
         {
             return "Chưa đủ thời gian — chưa kích hoạt";
@@ -377,7 +497,11 @@ else
         }
 
         UpdateStartDate();
-        UpdateEndDate();
+        if (!_model.IsForever)
+        {
+            UpdateEndDate();
+        }
+
         SyncIsActiveFromDates();
         _model.MinimumSpend = null;
 
