@@ -24,6 +24,8 @@ namespace PickleChic.WEB.Services.Customer
 
         Task<ApiResult<bool>> RemoveItemAsync(int cartItemId);
 
+        Task<ApiResult<bool>> MergeGuestCartAsync(int customerId);
+
         void NotifyCartChanged();
     }
 }

@@ -49,6 +49,13 @@ else
                         }
                         else if (CurrentStatus == Constant.OrderStatus.Code.Confirmed)
                         {
+                            <MudButton Variant="Variant.Filled"
+                                       Disabled="@_isUpdateStatus"
+                                       Color="Color.Error"
+                                       OnClick="HandleCancelOrderAsync"
+                                       Class="!rounded-xl !normal-case">
+                                Hủy
+                            </MudButton>
                             @if (_model.BOPIS == true)
                             {
                                 <MudButton Variant="Variant.Filled"
@@ -92,7 +99,7 @@ else
                             <MudButton Variant="Variant.Filled"
                                        Color="Color.Error"
                                        Disabled="@_isUpdateStatus"
-                                       OnClick="@(() => HandleStatusUpdateAsync(Constant.OrderStatus.Code.Shipping, "failed"))"
+                                       OnClick="HandleDeliveryFailedAsync"
                                        Class="!rounded-xl !normal-case">
                                 Giao thất bại
                             </MudButton>
@@ -129,7 +136,7 @@ else
                                          Size="Size.Small"
                                          Color="@GetOrderStatusColor(CurrentStatus)"
                                          Variant="Variant.Filled">
-                                    @Constant.OrderStatus.GetLabel(CurrentStatus)
+                                    @_model.OrderStatus
                                 </MudChip>
                                 <MudChip T="string"
                                          Size="Size.Small"
@@ -464,7 +471,7 @@ else
 
     private async Task HandleCancelOrderAsync()
     {
-        if (!IsPendingGroup(CurrentStatus))
+        if (!IsPendingGroup(CurrentStatus) && CurrentStatus != Constant.OrderStatus.Code.Confirmed)
         {
             _snackbar.Add("Trạng thái đơn đã thay đổi, vui lòng tải lại trang", Severity.Warning);
             return;
@@ -500,6 +507,49 @@ else
         await SubmitStatusUpdateAsync(nextStatus, nextPaymentStatus, reasons, refundStock: true);
     }
 
+    private async Task HandleDeliveryFailedAsync()
+    {
+        if (CurrentStatus != Constant.OrderStatus.Code.Shipping)
+        {
+            _snackbar.Add("Trạng thái đơn đã thay đổi, vui lòng tải lại trang", Severity.Warning);
+            return;
+        }
+
+        var parameters = new DialogParameters<OrderDeliveryFailedDialog>
+        {
+            { x => x.OrderCode, _model.OrderCode },
+            { x => x.ReasonOptions, Constant.OrderCancelReason.DeliveryFailed }
+        };
+
+        var options = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Small,
+            FullWidth = true
+        };
+
+        var dialog = await _dialogService.ShowAsync<OrderDeliveryFailedDialog>(
+            "Giao hàng thất bại",
+            parameters,
+            options);
+
+        var dialogResult = await dialog.Result;
+        if (dialogResult is null || dialogResult.Canceled || dialogResult.Data is not DeliveryFailedDialogResult failedData)
+        {
+            return;
+        }
+
+        var reasons = Constant.OrderCancelReason.Format(failedData.Reason, failedData.Detail);
+        var (nextStatus, nextPaymentStatus) = ResolveNextStatus(Constant.OrderStatus.Code.Shipping, "failed");
+
+        await SubmitStatusUpdateAsync(
+            nextStatus,
+            nextPaymentStatus,
+            reasons,
+            refundStock: failedData.RefundStock,
+            orderStatusLabel: Constant.OrderStatus.DeliveryFailed);
+    }
+
     private (int Status, string PaymentStatus) ResolveNextStatus(int currentStatus, string? outcome)
     {
         if (IsPendingGroup(currentStatus))
@@ -518,6 +568,11 @@ else
 
         if (currentStatus == Constant.OrderStatus.Code.Confirmed)
         {
+            if (outcome == "failed")
+            {
+                return (Constant.OrderStatus.Code.Cancelled, Constant.PaymentStatus.Cancelled);
+            }
+
             if (_model.BOPIS == true)
             {
                 return (Constant.OrderStatus.Code.AwaitingPickup, _model.PaymentStatus);
@@ -557,11 +612,16 @@ else
         int nextStatus,
         string paymentStatus,
         string? reasons = null,
-        bool? refundStock = null)
+        bool? refundStock = null,
+        string? orderStatusLabel = null)
     {
-        var nextOrderStatusLabel = Constant.OrderStatus.GetLabel(nextStatus);
+        var nextOrderStatusLabel = string.IsNullOrWhiteSpace(orderStatusLabel)
+            ? Constant.OrderStatus.GetLabel(nextStatus)
+            : orderStatusLabel;
 
-        if (nextStatus == CurrentStatus && paymentStatus == _model.PaymentStatus)
+        if (nextStatus == CurrentStatus
+            && paymentStatus == _model.PaymentStatus
+            && string.Equals(nextOrderStatusLabel, _model.OrderStatus, StringComparison.Ordinal))
         {
             _snackbar.Add("Trạng thái không thay đổi", Severity.Info);
             return;
@@ -627,6 +687,7 @@ else
         // DATN cũ: StatusCanceledByUser = 3 → tương đương trạng thái hủy ở PickleChic
         var status = string.IsNullOrWhiteSpace(entry.OrderStatus) ? entry.Status : entry.OrderStatus;
         return status is Constant.OrderStatus.Cancelled
+            or Constant.OrderStatus.DeliveryFailed
             or "Đã hủy"
             or "Cancelled"
             or "Đã hủy bởi người dùng";

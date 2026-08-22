@@ -14,6 +14,8 @@ namespace PickleChic.WEB.DTO.Admin
 
         public decimal? MinimumSpend { get; set; }
 
+        public int? RankId { get; set; }
+
         public DateTime StartDate { get; set; }
 
         public DateTime EndDate { get; set; }
@@ -25,5 +27,7 @@ namespace PickleChic.WEB.DTO.Admin
         public int UsedCount { get; set; }
 
         public bool IsActive { get; set; }
+
+        public bool IsForever { get; set; }
     }
 }

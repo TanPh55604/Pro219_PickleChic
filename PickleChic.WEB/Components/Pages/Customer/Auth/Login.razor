@@ -151,6 +151,12 @@
                 return;
             }
 
+            var userResult = await _currentUserService.CheckCurrentUserAsync();
+            if (userResult.Success && userResult.Data is not null)
+            {
+                await _cartService.MergeGuestCartAsync(userResult.Data.Id);
+            }
+
             _snackbar.Add("Đăng nhập thành công", Severity.Success);
 
             if (result.Data?.FirstLogin == true)

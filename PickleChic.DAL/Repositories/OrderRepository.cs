@@ -161,14 +161,16 @@ public class OrderRepository
 
     public async Task<decimal> GetTotalSpentInLast6MonthsAsync(int customerId)
     {
+        const int orderStatusDone = 7; // Hoàn thành
+
         var sixMonthsAgo = DateTime.Now.AddMonths(-6);
         var orders = await _context.Orders
             .Include(o => o.OrderItems)
             .Include(o => o.Voucher)
-            .Where(o => o.CustomerId == customerId 
-                        && o.OrderDate >= sixMonthsAgo 
-                        && !o.Delete 
-                        && (o.PaymentStatus == "Đã thanh toán" || o.PaymentStatus == "Completed"))
+            .Where(o => o.CustomerId == customerId
+                        && o.OrderDate >= sixMonthsAgo
+                        && !o.Delete
+                        && o.Status == orderStatusDone)
             .ToListAsync();
 
         decimal totalSpent = 0;

@@ -13,14 +13,57 @@
 
     <div class="!rounded-2xl !border !border-slate-200 !bg-white !p-5 shadow-sm">
         <div class="!mb-4 flex flex-col !gap-3 md:flex-row md:items-center md:justify-between">
-            <div class="flex w-full flex-col !gap-2 md:max-w-xl md:flex-row">
+            <div class="flex w-full flex-col !gap-2 xl:flex-row xl:flex-wrap">
                 <MudTextField @bind-Value="_searchText"
                               Placeholder="Tìm kiếm theo mã đơn hàng..."
                               Variant="Variant.Outlined"
                               Adornment="Adornment.Start"
                               AdornmentIcon="@Icons.Material.Filled.Search"
                               OnKeyDown="HandleSearchKeyDown"
-                              Class="flex-1" />
+                              Class="min-w-[220px] flex-1" />
+
+                <MudSelect T="int"
+                           MultiSelection="true"
+                           SelectedValues="_statusFilters"
+                           SelectedValuesChanged="OnStatusFiltersChanged"
+                           MultiSelectionTextFunc="GetStatusMultiSelectionText"
+                           Placeholder="Trạng thái đơn"
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           Disabled="@_isLoading"
+                           Class="md:!min-w-[220px] md:!w-[260px]">
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.Pending">@Constant.OrderStatus.Pending</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.Processing">@Constant.OrderStatus.Processing</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.WaitingForPayment">@Constant.OrderStatus.WaitingForPayment</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.Confirmed">@Constant.OrderStatus.Confirmed</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.Shipping">@Constant.OrderStatus.Shipping</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.AwaitingPickup">@Constant.OrderStatus.AwaitingPickup</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.Done">@Constant.OrderStatus.Done</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.Cancelled">@Constant.OrderStatus.Cancelled</MudSelectItem>
+                    <MudSelectItem T="int" Value="@Constant.OrderStatus.Code.Expired">@Constant.OrderStatus.Expired</MudSelectItem>
+                </MudSelect>
+
+                <MudSelect T="bool?"
+                           @bind-Value="_guestOrderFilter"
+                           Placeholder="Loại khách"
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           Disabled="@_isLoading"
+                           Class="md:!w-[160px]">
+                    <MudSelectItem T="bool?" Value="@((bool?)true)">Vãng lai</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="@((bool?)false)">Thành viên</MudSelectItem>
+                </MudSelect>
+
+                <MudSelect T="bool?"
+                           @bind-Value="_isPosFilter"
+                           Placeholder="Kênh bán"
+                           Variant="Variant.Outlined"
+                           Clearable="true"
+                           Disabled="@_isLoading"
+                           Class="md:!w-[160px]">
+                    <MudSelectItem T="bool?" Value="@((bool?)true)">Tại quầy</MudSelectItem>
+                    <MudSelectItem T="bool?" Value="@((bool?)false)">Online</MudSelectItem>
+                </MudSelect>
 
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
@@ -162,6 +205,10 @@
 @code {
     private string _searchText = string.Empty;
 
+    private IReadOnlyCollection<int> _statusFilters = Array.Empty<int>();
+    private bool? _guestOrderFilter;
+    private bool? _isPosFilter;
+
     private bool _isLoading = true;
 
     private List<OrderResponse> _orders = new();
@@ -177,7 +224,13 @@
 
         try
         {
-            var result = await _adminOrderService.GetAllAsync(_searchText);
+            var statuses = _statusFilters.Count > 0 ? _statusFilters : null;
+
+            var result = await _adminOrderService.GetAllAsync(
+                _searchText,
+                statuses,
+                _guestOrderFilter,
+                _isPosFilter);
 
             if (!result.Success)
             {
@@ -185,9 +238,7 @@
                 return;
             }
 
-            _orders = (result.Data ?? new())
-                .OrderByDescending(o => o.OrderDate)
-                .ToList();
+            _orders = result.Data ?? new();
         }
         finally
         {
@@ -203,7 +254,27 @@
     private async Task ResetSearchAsync()
     {
         _searchText = string.Empty;
+        _statusFilters = Array.Empty<int>();
+        _guestOrderFilter = null;
+        _isPosFilter = null;
         await LoadOrdersAsync();
+    }
+
+    private void OnStatusFiltersChanged(IEnumerable<int> values)
+    {
+        _statusFilters = values?.ToArray() ?? Array.Empty<int>();
+    }
+
+    private static string GetStatusMultiSelectionText(IReadOnlyList<string> selectedValues)
+    {
+        if (selectedValues is null || selectedValues.Count == 0)
+        {
+            return "Trạng thái đơn";
+        }
+
+        return selectedValues.Count == 1
+            ? selectedValues[0]
+            : $"Đã chọn {selectedValues.Count} trạng thái";
     }
 
     private async Task HandleSearchKeyDown(KeyboardEventArgs args)

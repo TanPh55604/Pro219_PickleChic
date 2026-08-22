@@ -262,14 +262,16 @@
     {
         if (order.Status is Constant.OrderStatus.Code.Pending
             or Constant.OrderStatus.Code.Processing
-            or Constant.OrderStatus.Code.WaitingForPayment)
+            or Constant.OrderStatus.Code.WaitingForPayment
+            or Constant.OrderStatus.Code.Confirmed)
         {
             return true;
         }
 
         return order.OrderStatus is Constant.OrderStatus.Pending
             or Constant.OrderStatus.Processing
-            or Constant.OrderStatus.WaitingForPayment;
+            or Constant.OrderStatus.WaitingForPayment
+            or Constant.OrderStatus.Confirmed;
     }
 
     private static bool CanCancelOrder(UserOrderDetailResponse order) => IsCancellableStatus(order);
@@ -607,6 +609,7 @@
     {
         var status = string.IsNullOrWhiteSpace(entry.OrderStatus) ? entry.Status : entry.OrderStatus;
         return status is Constant.OrderStatus.Cancelled
+            or Constant.OrderStatus.DeliveryFailed
             or "Đã hủy"
             or "Cancelled"
             or "Đã hủy bởi người dùng";

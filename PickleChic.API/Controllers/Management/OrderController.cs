@@ -39,7 +39,11 @@ public class OrderController : ControllerBase
     }
 
     [HttpGet("get-all")]
-    public async Task<ActionResult<List<ManagementOrderResponseDto>>> GetAll(string? keyword, int? status = null, bool? guestOrder = null, bool? isPos = null)
+    public async Task<ActionResult<List<ManagementOrderResponseDto>>> GetAll(
+        string? keyword,
+        [FromQuery] int[]? status = null,
+        bool? guestOrder = null,
+        bool? isPos = null)
     {
         try
         {
@@ -51,11 +55,11 @@ public class OrderController : ControllerBase
                 result = result
                     .Where(o => o.OrderCode.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                     .ToList();
-            }   
-            if(status != null)
+            }
+            if (status is { Length: > 0 })
             {
                 result = result
-                    .Where(o => o.Status == status)
+                    .Where(o => o.Status.HasValue && status.Contains(o.Status.Value))
                     .ToList();
             }
             if (guestOrder != null)
@@ -247,8 +251,14 @@ public class OrderController : ControllerBase
             if (existingOrder is null)
                 return NotFound("Đơn hàng không tồn tại");
 
-            bool isTransitionToCancel = (dto.OrderStatus == "Đã hủy(KH)" || dto.OrderStatus == "Đã hủy" || dto.PaymentStatus == "Đã hủy")
-                && !(existingOrder.OrderStatus == "Đã hủy(KH)" || existingOrder.OrderStatus == "Đã hủy" || existingOrder.PaymentStatus == "Đã hủy");
+            bool isTransitionToCancel = (dto.OrderStatus == "Đã hủy(KH)"
+                    || dto.OrderStatus == "Đã hủy"
+                    || dto.OrderStatus == "Giao thất bại"
+                    || dto.PaymentStatus == "Đã hủy")
+                && !(existingOrder.OrderStatus == "Đã hủy(KH)"
+                    || existingOrder.OrderStatus == "Đã hủy"
+                    || existingOrder.OrderStatus == "Giao thất bại"
+                    || existingOrder.PaymentStatus == "Đã hủy");
 
             var updatedBy = dto.UpdateBy;
             if (string.IsNullOrEmpty(updatedBy))
@@ -738,10 +748,6 @@ public class OrderController : ControllerBase
 
         bool alreadyRewarded = order.PointHistories?
             .Any(ph => ph.TransactionType == "Cộng điểm") ?? false;
-        if (alreadyRewarded)
-        {
-            return;
-        }
 
         var customer = await _customerRepository.GetByIdAsync(order.CustomerId);
         if (customer == null)
@@ -773,7 +779,9 @@ public class OrderController : ControllerBase
         decimal finalPaidAmount = Math.Max(0, totalProductPrice - discountAmount);
 
         double percentReward = _configuration.GetValue<double?>("PercentReward") ?? _configuration.GetValue<double?>("RewardPercent") ?? 10.0;
-        int pointsToAdd = Math.Max(0, (int)Math.Round((double)finalPaidAmount * percentReward / 100.0));
+        int pointsToAdd = alreadyRewarded
+            ? 0
+            : Math.Max(0, (int)Math.Round((double)finalPaidAmount * percentReward / 100.0));
 
         if (pointsToAdd > 0)
         {
@@ -788,23 +796,21 @@ public class OrderController : ControllerBase
             };
 
             await _pointHistoryRepository.AddAsync(pointHistory);
-
             customer.TotalPoints += pointsToAdd;
-
-            decimal totalSpent = await _repository.GetTotalSpentInLast6MonthsAsync(customer.Id);
-
-            var ranks = await _rankRepository.GetAllAsync();
-            var qualifiedRank = ranks
-                .Where(r => totalSpent >= r.SpendAmount)
-                .OrderByDescending(r => r.SpendAmount)
-                .FirstOrDefault();
-
-            if (qualifiedRank != null && customer.RankId != qualifiedRank.Id)
-            {
-                customer.RankId = qualifiedRank.Id;
-            }
-
-            await _customerRepository.UpdateAsync(customer);
         }
+
+        decimal totalSpent = await _repository.GetTotalSpentInLast6MonthsAsync(customer.Id);
+        var ranks = await _rankRepository.GetAllAsync();
+        var qualifiedRank = ranks
+            .Where(r => totalSpent >= r.SpendAmount)
+            .OrderByDescending(r => r.SpendAmount)
+            .FirstOrDefault();
+
+        if (qualifiedRank != null && customer.RankId != qualifiedRank.Id)
+        {
+            customer.RankId = qualifiedRank.Id;
+        }
+
+        await _customerRepository.UpdateAsync(customer);
     }
 }
