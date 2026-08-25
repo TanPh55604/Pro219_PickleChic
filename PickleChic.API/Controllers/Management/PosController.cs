@@ -162,7 +162,7 @@ public class PosController : ControllerBase
                 return NotFound("Không tìm thấy khách hàng");
 
             var spent6Months = await _orderRepository.GetTotalSpentInLast6MonthsAsync(customerId);
-            var vouchers = await _voucherRepository.GetAvailableByMinSpend(spent6Months);
+            var vouchers = await _voucherRepository.GetAvailableByMinSpend(spent6Months, customer.RankId);
 
             var result = vouchers.Select(v => new VoucherUpdateDto
             {
@@ -179,6 +179,7 @@ public class PosController : ControllerBase
                 CustomerUsageLimit = v.CustomerUsageLimit,
                 UsedCount = v.UsedCount,
                 IsActive = v.IsActive,
+                RankId = v.RankId,
                 IsForever = false
             }).ToList();
 
