@@ -183,7 +183,6 @@ public class PosController : ControllerBase
                 CustomerUsageLimit = v.CustomerUsageLimit,
                 UsedCount = v.UsedCount,
                 IsActive = v.IsActive,
-                RankId = v.RankId,
                 IsForever = false
             }).ToList();
 
