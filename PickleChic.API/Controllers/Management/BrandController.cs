@@ -10,10 +10,12 @@ namespace PickleChic.API.Controllers.Management;
 public class BrandController : ControllerBase
 {
     private readonly BrandRepository _repository;
+    private readonly ProductRepository _productRepository;
 
-    public BrandController(BrandRepository repository)
+    public BrandController(BrandRepository repository, ProductRepository productRepository)
     {
         _repository = repository;
+        _productRepository = productRepository;
     }
 
     [HttpGet("get-all")]
@@ -91,6 +93,14 @@ public class BrandController : ControllerBase
             if (await _repository.ExistsByNameAsync(dto.Name, dto.Id))
                 return BadRequest("Tên thương hiệu đã tồn tại");
 
+            if (dto.Status != 1)
+            {
+                if (await _productRepository.HasActiveProductsByBrandIdAsync(dto.Id))
+                {
+                    return BadRequest("Không thể vô hiệu hóa thương hiệu này vì vẫn còn sản phẩm đang hoạt động.");
+                }
+            }
+
             var entity = new Brand
             {
                 Id = dto.Id,
@@ -118,6 +128,11 @@ public class BrandController : ControllerBase
     {
         try
         {
+            if (await _productRepository.HasActiveProductsByBrandIdAsync(id))
+            {
+                return BadRequest("Không thể xóa thương hiệu này vì vẫn còn sản phẩm đang hoạt động.");
+            }
+
             var success = await _repository.SoftDeleteAsync(id);
             if (!success)
                 return NotFound();

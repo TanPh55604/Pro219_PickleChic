@@ -345,5 +345,15 @@ public class ProductRepository
 
         return attributeValueGroups.All(group => group.Any(id => valueIds.Contains(id)));
     }
+
+    public async Task<bool> HasActiveProductsByBrandIdAsync(int brandId)
+    {
+        return await _context.Products.AnyAsync(p => p.BrandId == brandId && !p.IsDeleted);
+    }
+
+    public async Task<bool> HasActiveProductsByCategoryIdAsync(int categoryId)
+    {
+        return await _context.Products.AnyAsync(p => p.CategoryId == categoryId && !p.IsDeleted && p.Status == 1);
+    }
 }
 

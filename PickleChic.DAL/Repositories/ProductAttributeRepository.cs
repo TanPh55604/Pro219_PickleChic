@@ -141,4 +141,13 @@ public class ProductAttributeRepository
         await _context.SaveChangesAsync();
         return true;
     }
+
+    public async Task<bool> IsAttributeInUseAsync(int attributeId)
+    {
+        return await _context.ProductVariantAttributes
+            .AnyAsync(pva => pva.AttributeValue != null 
+                             && pva.AttributeValue.AttributeId == attributeId
+                             && _context.ProductVariants.Any(pv => pv.Id == pva.ProductVariantId 
+                                 && _context.Products.Any(p => p.Id == pv.ProductId && !p.IsDeleted)));
+    }
 }

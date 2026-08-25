@@ -478,4 +478,9 @@ public class ProductVariantRepository
         }
         return false;
     }
+
+    public async Task<bool> HasActiveVariantsByProductIdAsync(int productId)
+    {
+        return await _context.ProductVariants.AnyAsync(pv => pv.ProductId == productId && pv.Status == 1);
+    }
 }

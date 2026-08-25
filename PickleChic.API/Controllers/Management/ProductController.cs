@@ -10,10 +10,12 @@ namespace PickleChic.API.Controllers.Management;
 public class ProductController : ControllerBase
 {
     private readonly ProductRepository _repository;
+    private readonly ProductVariantRepository _variantRepository;
 
-    public ProductController(ProductRepository repository)
+    public ProductController(ProductRepository repository, ProductVariantRepository variantRepository)
     {
         _repository = repository;
+        _variantRepository = variantRepository;
     }
 
     [HttpGet("get-all")]
@@ -328,6 +330,11 @@ public class ProductController : ControllerBase
     {
         try
         {
+            if (await _variantRepository.HasActiveVariantsByProductIdAsync(id))
+            {
+                return BadRequest("Không thể xóa sản phẩm này vì vẫn còn biến thể đang hoạt động.");
+            }
+
             var success = await _repository.DeleteAsync(id);
             if (!success)
                 return NotFound();

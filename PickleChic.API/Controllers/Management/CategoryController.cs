@@ -12,13 +12,16 @@ public class CategoryController : ControllerBase
 {
     private readonly CategoryRepository _repository;
     private readonly LocalImageFileService _fileService;
+    private readonly ProductRepository _productRepository;
 
     public CategoryController(
         CategoryRepository repository,
-        LocalImageFileService fileService)
+        LocalImageFileService fileService,
+        ProductRepository productRepository)
     {
         _repository = repository;
         _fileService = fileService;
+        _productRepository = productRepository;
     }
 
     [HttpGet("get-all")]
@@ -195,6 +198,11 @@ public class CategoryController : ControllerBase
             var category = await _repository.GetByIdAsync(id);
             if (category is null)
                 return NotFound();
+
+            if (await _productRepository.HasActiveProductsByCategoryIdAsync(id))
+            {
+                return BadRequest("Không thể xóa thể loại này vì vẫn còn sản phẩm đang hoạt động.");
+            }
 
             _fileService.DeleteCategoryImageByPublicUrl(category.LinkImage);
 

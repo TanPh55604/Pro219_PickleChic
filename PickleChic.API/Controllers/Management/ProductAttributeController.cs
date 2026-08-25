@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using PickleChic.API.DTOs;
 using PickleChic.DAL.Models;
 using PickleChic.DAL.Repositories;
@@ -202,6 +202,11 @@ public class ProductAttributeController : ControllerBase
     {
         try
         {
+            if (await _repository.IsAttributeInUseAsync(id))
+            {
+                return BadRequest("Không thể xóa thuộc tính này vì đang được sử dụng bởi sản phẩm hoạt động.");
+            }
+
             var success = await _repository.DeleteAsync(id);
             if (!success)
                 return NotFound();
