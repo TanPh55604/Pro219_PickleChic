@@ -20,7 +20,7 @@ public static class Constant
             Processing or "Processing" => 2,
             WaitingForPayment or "WaitingForPayment" => 3,
             Confirmed or "Confirmed" => 4,
-            Cancelled or "Cancelled" or "Đã hủy" => -1,
+            Cancelled or "Cancelled" or "Đã hủy" or "Giao thất bại" => -1,
             Expired or "Expired" or "Đã hết hạn" or "Hết hạn thanh toán" => -2,
             AwaitingPickup or "AwaitingPickup" => 6,
             Shiping or "Shiping" or "Shipping" or "Đang giao hàng" => 5,

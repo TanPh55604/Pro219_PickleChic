@@ -33,8 +33,8 @@ public class VoucherController : ControllerBase
             
             if(user!=null)
             {
-                decimal rankMiniumSpend = (await rankRepository.GetByIdAsync(user.RankId))?.SpendAmount ?? 0;
-                var result = await _repository.GetAvailableByMinSpend(rankMiniumSpend, user.RankId);
+                decimal customerRankSpendAmount = (await rankRepository.GetByIdAsync(user.RankId))?.SpendAmount ?? 0;
+                var result = await _repository.GetAvailableByMinSpend(customerRankSpendAmount, user.RankId);
                 return Ok(result);
             } 
             return NotFound();

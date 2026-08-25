@@ -65,6 +65,14 @@ namespace PickleChic.WEB.Services.Admin
 
         private static VoucherCreateRequest MapToCreateRequest(VoucherModel model)
         {
+            var startDate = model.StartDate!.Value;
+            var endDate = model.IsForever
+                ? DateTime.MaxValue
+                : model.EndDate!.Value;
+            var usageLimit = model.IsForever
+                ? int.MaxValue
+                : model.UsageLimit ?? 100;
+
             return new VoucherCreateRequest
             {
                 VoucherCode = model.VoucherCode.Trim(),
@@ -75,12 +83,14 @@ namespace PickleChic.WEB.Services.Admin
                     ? null
                     : model.MaxDiscountAmount,
                 MinimumSpend = model.MinimumSpend,
-                StartDate = model.StartDate!.Value,
-                EndDate = model.EndDate!.Value,
-                UsageLimit = model.UsageLimit,
+                RankId = model.RankId,
+                StartDate = startDate,
+                EndDate = endDate,
+                UsageLimit = usageLimit,
                 CustomerUsageLimit = model.CustomerUsageLimit,
                 UsedCount = model.UsedCount,
-                IsActive = IsWithinActivePeriod(model.StartDate!.Value, model.EndDate!.Value)
+                IsForever = model.IsForever,
+                IsActive = model.IsForever || IsWithinActivePeriod(startDate, endDate)
             };
         }
 
@@ -97,12 +107,14 @@ namespace PickleChic.WEB.Services.Admin
                 MinOrderValue = request.MinOrderValue,
                 MaxDiscountAmount = request.MaxDiscountAmount,
                 MinimumSpend = request.MinimumSpend,
+                RankId = request.RankId,
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
                 UsageLimit = request.UsageLimit,
                 CustomerUsageLimit = request.CustomerUsageLimit,
                 UsedCount = model.UsedCount,
-                IsActive = request.IsActive
+                IsActive = request.IsActive,
+                IsForever = request.IsForever
             };
         }
 

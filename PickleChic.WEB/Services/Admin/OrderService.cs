@@ -13,20 +13,17 @@ namespace PickleChic.WEB.Services.Admin
             _apiProvider = apiProvider;
         }
 
-        public async Task<ApiResult<List<OrderResponse>>> GetAllAsync(string? keyword = null)
+        public async Task<ApiResult<List<OrderResponse>>> GetAllAsync(
+            string? keyword = null,
+            IEnumerable<int>? status = null,
+            bool? guestOrder = null,
+            bool? isPos = null)
         {
-            var url = EndPointConfig.Order.GetAll;
+            var url = EndPointConfig.Order.GetAll(keyword, status, guestOrder, isPos);
 
-            if (!string.IsNullOrWhiteSpace(keyword))
-            {
-                url += $"?keyword={Uri.EscapeDataString(keyword.Trim())}";
-            }
-
-            var result =  await _apiProvider.GetAsync<List<OrderResponse>>(
+            return await _apiProvider.GetAsync<List<OrderResponse>>(
                 url,
                 requireAuth: true);
-
-            return result;
         }
 
         public async Task<ApiResult<OrderResponse>> GetByIdAsync(int id)

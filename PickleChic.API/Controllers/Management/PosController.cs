@@ -13,17 +13,20 @@ public class PosController : ControllerBase
     private readonly CustomerRepository _customerRepository;
     private readonly VoucherRepository _voucherRepository;
     private readonly OrderRepository _orderRepository;
+    private readonly RankRepository _rankRepository;
 
     public PosController(
         ProductVariantRepository productVariantRepository,
         CustomerRepository customerRepository,
         VoucherRepository voucherRepository,
-        OrderRepository orderRepository)
+        OrderRepository orderRepository,
+        RankRepository rankRepository)
     {
         _productVariantRepository = productVariantRepository;
         _customerRepository = customerRepository;
         _voucherRepository = voucherRepository;
         _orderRepository = orderRepository;
+        _rankRepository = rankRepository;
     }
 
     [HttpGet("products")]
@@ -161,8 +164,8 @@ public class PosController : ControllerBase
             if (customer is null || customer.Status <= 0)
                 return NotFound("Không tìm thấy khách hàng");
 
-            var spent6Months = await _orderRepository.GetTotalSpentInLast6MonthsAsync(customerId);
-            var vouchers = await _voucherRepository.GetAvailableByMinSpend(spent6Months, customer.RankId);
+            decimal customerRankSpendAmount = (await _rankRepository.GetByIdAsync(customer.RankId))?.SpendAmount ?? 0;
+            var vouchers = await _voucherRepository.GetAvailableByMinSpend(customerRankSpendAmount, customer.RankId);
 
             var result = vouchers.Select(v => new VoucherUpdateDto
             {
@@ -173,6 +176,7 @@ public class PosController : ControllerBase
                 MinOrderValue = v.MinOrderValue,
                 MaxDiscountAmount = v.MaxDiscountAmount,
                 MinimumSpend = v.MinimumSpend,
+                RankId = v.RankId,
                 StartDate = v.StartDate,
                 EndDate = v.EndDate,
                 UsageLimit = v.UsageLimit,

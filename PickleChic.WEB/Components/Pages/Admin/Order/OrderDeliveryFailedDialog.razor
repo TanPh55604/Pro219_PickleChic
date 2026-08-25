@@ -1,0 +1,122 @@
+@using PickleChic.WEB.DTO.Customer
+
+<MudDialog>
+    <DialogContent>
+        <div class="!space-y-4">
+            <p class="text-base font-semibold text-slate-900">
+                Xác nhận giao hàng thất bại?
+            </p>
+
+            <div class="!rounded-xl !bg-slate-50 !p-4">
+                <p class="text-sm text-slate-500">
+                    Mã đơn:
+                    <span class="font-bold text-slate-900">@OrderCode</span>
+                </p>
+            </div>
+
+            <MudSelect T="string"
+                       @bind-Value="_selectedReason"
+                       Label="Lý do giao thất bại"
+                       Variant="Variant.Outlined"
+                       Required="true"
+                       RequiredError="Vui lòng chọn lý do"
+                       Class="!w-full"
+                       AnchorOrigin="Origin.BottomCenter"
+                       TransformOrigin="Origin.TopCenter">
+                @foreach (var reason in ReasonOptions)
+                {
+                    <MudSelectItem T="string" Value="@reason">@reason</MudSelectItem>
+                }
+            </MudSelect>
+
+            <MudTextField T="string"
+                          @bind-Value="_cancelDetail"
+                          Label="@(IsOtherReason ? "Lý do chi tiết *" : "Lý do chi tiết")"
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          Counter="500"
+                          MaxLength="500"
+                          HelperText="@(IsOtherReason ? "Vui lòng nhập lý do chi tiết" : "Không bắt buộc")"
+                          Class="!w-full" />
+
+            <MudCheckBox T="bool"
+                         @bind-Value="_refundStock"
+                         Label="Hoàn hàng vào kho"
+                         Color="Color.Primary"
+                         Class="!ml-[-8px]" />
+
+            <p class="text-xs text-slate-500">
+                Bỏ tick nếu hàng bị mất, hỏng hoặc không nhập lại kho.
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(_validationError))
+            {
+                <p class="text-sm text-[#d71920]">@_validationError</p>
+            }
+        </div>
+    </DialogContent>
+
+    <DialogActions>
+        <div class="flex w-full justify-end !gap-3">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Default"
+                       OnClick="Cancel"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Đóng
+            </MudButton>
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.LocalShipping"
+                       OnClick="Confirm"
+                       Class="!rounded-xl !px-4 !normal-case">
+                Giao thất bại
+            </MudButton>
+        </div>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string OrderCode { get; set; } = string.Empty;
+
+    [Parameter]
+    public IReadOnlyList<string> ReasonOptions { get; set; } = Constant.OrderCancelReason.DeliveryFailed;
+
+    private string? _selectedReason;
+    private string? _cancelDetail;
+    private string? _validationError;
+    private bool _refundStock = true;
+
+    private bool IsOtherReason =>
+        string.Equals(_selectedReason, Constant.OrderCancelReason.Other, StringComparison.Ordinal);
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Confirm()
+    {
+        _validationError = null;
+
+        if (string.IsNullOrWhiteSpace(_selectedReason))
+        {
+            _validationError = "Vui lòng chọn lý do giao thất bại.";
+            return;
+        }
+
+        if (IsOtherReason && string.IsNullOrWhiteSpace(_cancelDetail))
+        {
+            _validationError = "Vui lòng nhập lý do chi tiết.";
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(new DeliveryFailedDialogResult
+        {
+            Reason = _selectedReason.Trim(),
+            Detail = string.IsNullOrWhiteSpace(_cancelDetail) ? null : _cancelDetail.Trim(),
+            RefundStock = _refundStock
+        }));
+    }
+}

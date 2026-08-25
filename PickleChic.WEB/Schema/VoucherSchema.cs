@@ -46,21 +46,26 @@ namespace PickleChic.WEB.Schema
 
                 RuleFor(x => x.EndDate)
                     .NotNull()
+                    .When(x => !x.IsForever)
                     .WithMessage("Vui lòng chọn ngày và giờ kết thúc");
 
                 RuleFor(x => x.EndDate)
                     .GreaterThanOrEqualTo(x => x.StartDate)
-                    .When(x => x.StartDate.HasValue && x.EndDate.HasValue)
+                    .When(x => !x.IsForever && x.StartDate.HasValue && x.EndDate.HasValue)
                     .WithMessage("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu");
 
                 RuleFor(x => x.UsageLimit)
-                    .GreaterThan(0).WithMessage("Số lượng phát hành phải lớn hơn 0");
+                    .NotNull()
+                    .GreaterThan(0)
+                    .When(x => !x.IsForever)
+                    .WithMessage("Số lượng phát hành phải lớn hơn 0");
 
                 RuleFor(x => x.CustomerUsageLimit)
                     .GreaterThan(0).WithMessage("Số lần dùng tối đa mỗi khách phải lớn hơn 0");
 
                 RuleFor(x => x.CustomerUsageLimit)
-                    .LessThanOrEqualTo(x => x.UsageLimit)
+                    .LessThanOrEqualTo(x => x.UsageLimit!.Value)
+                    .When(x => !x.IsForever && x.UsageLimit.HasValue)
                     .WithMessage("Số lần dùng tối đa mỗi khách không được vượt quá số lượng phát hành");
             }
 
