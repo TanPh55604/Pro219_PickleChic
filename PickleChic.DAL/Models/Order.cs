@@ -53,6 +53,11 @@ public class Order
 
     public int? Status { get; set; }
 
+    public bool StockDeducted { get; set; } = false;
+
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? PaidAmount { get; set; }
+
     public DateTime InsertedAt { get; set; }
 
     public DateTime? DeleteAt { get; set; }

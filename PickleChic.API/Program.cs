@@ -99,6 +99,7 @@ builder.Services.AddScoped<ReviewRepository>();
 builder.Services.AddScoped<PagePermissionRepository>();
 
 builder.Services.AddScoped<PickleChic.API.Services.OrderManagerService>();
+builder.Services.AddScoped<PickleChic.API.Services.OrderStockService>();
 
 builder.Services.AddSingleton(sp =>
 {

@@ -13,17 +13,20 @@ public class OrderManagerService
     private readonly ProductVariantRepository _productVariantRepository;
     private readonly VoucherRepository _voucherRepository;
     private readonly PointHistoryRepository _pointHistoryRepository;
+    private readonly OrderStockService _orderStockService;
 
     public OrderManagerService(
         OrderRepository orderRepository, 
         ProductVariantRepository productVariantRepository,
         VoucherRepository voucherRepository,
-        PointHistoryRepository pointHistoryRepository)
+        PointHistoryRepository pointHistoryRepository,
+        OrderStockService orderStockService)
     {
         _orderRepository = orderRepository;
         _productVariantRepository = productVariantRepository;
         _voucherRepository = voucherRepository;
         _pointHistoryRepository = pointHistoryRepository;
+        _orderStockService = orderStockService;
     }
 
     public async Task CancelExpiredOrderAsync(int orderId)
@@ -39,13 +42,7 @@ public class OrderManagerService
 
             await _orderRepository.UpdateAsync(order);
 
-            if (order.OrderItems != null && order.OrderItems.Any())
-            {
-                foreach (var orderItem in order.OrderItems)
-                {
-                    await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
-                }
-            }
+            await _orderStockService.RefundStockForOrderIfDeductedAsync(order);
 
             if (order.VoucherId != null)
             {

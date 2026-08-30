@@ -30,6 +30,7 @@ public class OrderController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly PointHistoryRepository _pointHistoryRepository;
     private readonly WardRepository _wardRepository;
+    private readonly OrderStockService _orderStockService;
 
     private static readonly JsonSerializerOptions _camelCaseJsonOptions = new()
     {
@@ -49,7 +50,8 @@ public class OrderController : ControllerBase
         RankRepository rankRepository,
         IConfiguration configuration,
         PointHistoryRepository pointHistoryRepository,
-        WardRepository wardRepository)
+        WardRepository wardRepository,
+        OrderStockService orderStockService)
     {
         _orderRepository = orderRepository;
         _orderItemRepository = orderItemRepository;
@@ -63,6 +65,7 @@ public class OrderController : ControllerBase
         _configuration = configuration;
         _pointHistoryRepository = pointHistoryRepository;
         _wardRepository = wardRepository;
+        _orderStockService = orderStockService;
     }   
 
     [HttpGet("get-by-id/{id}")]
@@ -935,7 +938,7 @@ public class OrderController : ControllerBase
             PaymentType = PaymentMethodTypeId
         };
 
-        if (isZeroOrder)
+        if (isZeroOrder&&order.PaymentMethodId!=1)
         {
             checkoutDTO.URLPayment = null;
 
@@ -947,6 +950,8 @@ public class OrderController : ControllerBase
                     return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
                 }
             }
+            order.StockDeducted = true;
+            await _orderRepository.UpdateAsync(order);
             return Ok(checkoutDTO);
         }
 
@@ -987,6 +992,7 @@ public class OrderController : ControllerBase
 
                 order.PaymentExpiration = DateTime.Now.AddMinutes(15);
                 order.PaymentLink = createPayment.checkoutUrl;
+                order.StockDeducted = true;
                 await _orderRepository.UpdateAsync(order);
 
                 _backgroundJobClient.Schedule<OrderManagerService>(
@@ -1005,14 +1011,14 @@ public class OrderController : ControllerBase
         {
             checkoutDTO.URLPayment = null;
 
-            foreach (var product in checkoutParam.ListItemCheckout)
-            {
-                var decreased = await _productVariantRepository.DecreaseStockAsync(product.ProductVariantId, product.Quantity);
-                if (!decreased)
-                {
-                    return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
-                }
-            }
+            //foreach (var product in checkoutParam.ListItemCheckout)
+            //{
+            //    var decreased = await _productVariantRepository.DecreaseStockAsync(product.ProductVariantId, product.Quantity);
+            //    if (!decreased)
+            //    {
+            //        return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
+            //    }
+            //}
             return Ok(checkoutDTO);
         }
 
@@ -1320,13 +1326,19 @@ public class OrderController : ControllerBase
                 }
             }
 
-            foreach (var product in dto.ListItemCheckout)
+           
+            if(order.PaymentMethodId != 1)
             {
-                var decreased = await _productVariantRepository.DecreaseStockAsync(product.ProductVariantId, product.Quantity);
-                if (!decreased)
+                foreach (var product in dto.ListItemCheckout)
                 {
-                    return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
+                    var decreased = await _productVariantRepository.DecreaseStockAsync(product.ProductVariantId, product.Quantity);
+                    if (!decreased)
+                    {
+                        return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
+                    }
                 }
+                order.StockDeducted = true;
+                await _orderRepository.UpdateAsync(order);
             }
 
             if (dto.VoucherId != null && discountAmount > 0)
@@ -1420,6 +1432,29 @@ public class OrderController : ControllerBase
             order.StatusHistory = JsonSerializer.Serialize(statusHistory, _camelCaseJsonOptions);
             order.LastUpdate = DateTime.Now;
             order.UpdateBy = customerUserName;
+
+            decimal totalProductPrice = order.OrderItems?.Sum(oi => oi.Subtotal) ?? 0;
+            decimal voucherDiscount = 0;
+            if (order.Voucher != null)
+            {
+                var voucher = order.Voucher;
+                if (voucher.DiscountType.StartsWith("Percent", StringComparison.OrdinalIgnoreCase))
+                {
+                    voucherDiscount = totalProductPrice * (voucher.DiscountValue / 100);
+                    if (voucher.MaxDiscountAmount.HasValue && voucherDiscount > voucher.MaxDiscountAmount.Value)
+                    {
+                        voucherDiscount = voucher.MaxDiscountAmount.Value;
+                    }
+                }
+                else if (voucher.DiscountType.StartsWith("Fixed", StringComparison.OrdinalIgnoreCase))
+                {
+                    voucherDiscount = voucher.DiscountValue;
+                }
+                voucherDiscount = Math.Min(voucherDiscount, totalProductPrice);
+            }
+            var pointsHistoryEntry = order.PointHistories?.FirstOrDefault(ph => ph.Points < 0 && ph.TransactionType == "Dùng điểm");
+            int pointsUsed = pointsHistoryEntry != null ? Math.Abs(pointsHistoryEntry.Points) : 0;
+            order.PaidAmount = Math.Max(0, totalProductPrice - voucherDiscount - pointsUsed + order.ShippingFee);
 
             var result = await _orderRepository.UpdateAsync(order);
             if (result == null)
@@ -1566,13 +1601,7 @@ public class OrderController : ControllerBase
                 return BadRequest("Không thể cập nhật đơn hàng");
             }
 
-            if (order.OrderItems != null && order.OrderItems.Any())
-            {
-                foreach (var orderItem in order.OrderItems)
-                {
-                    await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
-                }
-            }
+            await _orderStockService.RefundStockForOrderIfDeductedAsync(order);
 
             if (order.VoucherId != null)
             {
@@ -1784,13 +1813,7 @@ public class OrderController : ControllerBase
                 return BadRequest("Không thể hủy đơn hàng");
             }
 
-            if (order.OrderItems != null && order.OrderItems.Any())
-            {
-                foreach (var orderItem in order.OrderItems)
-                {
-                    await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
-                }
-            }
+            await _orderStockService.RefundStockForOrderIfDeductedAsync(order);
 
             if (order.VoucherId != null)
             {
@@ -1894,13 +1917,7 @@ public class OrderController : ControllerBase
                 return BadRequest("Không thể hủy đơn hàng");
             }
 
-            if (order.OrderItems != null && order.OrderItems.Any())
-            {
-                foreach (var orderItem in order.OrderItems)
-                {
-                    await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
-                }
-            }
+            await _orderStockService.RefundStockForOrderIfDeductedAsync(order);
 
             if (order.VoucherId != null)
             {

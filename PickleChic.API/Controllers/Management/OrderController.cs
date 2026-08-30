@@ -5,6 +5,7 @@ using PickleChic.DAL.Repositories;
 using PickleChic.API.Utilities;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
+using PickleChic.API.Services;
 
 namespace PickleChic.API.Controllers.Management;
 
@@ -19,6 +20,7 @@ public class OrderController : ControllerBase
     private readonly RankRepository _rankRepository;
     private readonly IConfiguration _configuration;
     private readonly VoucherRepository _voucherRepository;
+    private readonly OrderStockService _orderStockService;
 
     public OrderController(
         OrderRepository repository, 
@@ -27,7 +29,8 @@ public class OrderController : ControllerBase
         CustomerRepository customerRepository,
         RankRepository rankRepository,
         IConfiguration configuration,
-        VoucherRepository voucherRepository)
+        VoucherRepository voucherRepository,
+        OrderStockService orderStockService)
     {
         _repository = repository;
         _productVariantRepository = productVariantRepository;
@@ -36,6 +39,7 @@ public class OrderController : ControllerBase
         _rankRepository = rankRepository;
         _configuration = configuration;
         _voucherRepository = voucherRepository;
+        _orderStockService = orderStockService;
     }
 
     [HttpGet("get-all")]
@@ -251,6 +255,18 @@ public class OrderController : ControllerBase
             if (existingOrder is null)
                 return NotFound("Đơn hàng không tồn tại");
 
+            bool isTransitionToConfirmed = (dto.OrderStatus == Constant.OrderStatus.Confirmed || dto.OrderStatus == "Confirmed")
+                && !existingOrder.StockDeducted;
+
+            if (isTransitionToConfirmed)
+            {
+                var deductResult = await _orderStockService.DeductStockForOrderAsync(existingOrder);
+                if (!deductResult.Success)
+                {
+                    return BadRequest(deductResult.Message);
+                }
+            }
+
             bool isTransitionToCancel = (dto.OrderStatus == "Đã hủy(KH)"
                     || dto.OrderStatus == "Đã hủy"
                     || dto.OrderStatus == "Giao thất bại"
@@ -305,13 +321,7 @@ public class OrderController : ControllerBase
                 
                 if (dto.RefundStock == true)
                 {
-                    if (existingOrder.OrderItems != null && existingOrder.OrderItems.Any())
-                    {
-                        foreach (var orderItem in existingOrder.OrderItems.Where(oi => !oi.Delete))
-                        {
-                            await _productVariantRepository.IncreaseStockAsync(orderItem.ProductVariantId, orderItem.Quantity);
-                        }
-                    }
+                    await _orderStockService.RefundStockForOrderIfDeductedAsync(existingOrder);
                 }
 
                 if (existingOrder.VoucherId != null)

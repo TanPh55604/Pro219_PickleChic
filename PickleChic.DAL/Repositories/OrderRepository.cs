@@ -78,6 +78,8 @@ public class OrderRepository
             existing.PaymentLink = entity.PaymentLink;
             existing.PaymentExpiration = entity.PaymentExpiration;
             existing.UpdateBy = entity.UpdateBy;
+            existing.StockDeducted = entity.StockDeducted;
+            existing.PaidAmount = entity.PaidAmount;
             existing.LastUpdate = entity.LastUpdate ?? DateTime.Now;
             await _context.SaveChangesAsync();
             return existing;
