@@ -1326,20 +1326,16 @@ public class OrderController : ControllerBase
                 }
             }
 
-           
-            if(order.PaymentMethodId != 1)
+            foreach (var product in dto.ListItemCheckout)
             {
-                foreach (var product in dto.ListItemCheckout)
+                var decreased = await _productVariantRepository.DecreaseStockAsync(product.ProductVariantId, product.Quantity);
+                if (!decreased)
                 {
-                    var decreased = await _productVariantRepository.DecreaseStockAsync(product.ProductVariantId, product.Quantity);
-                    if (!decreased)
-                    {
-                        return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
-                    }
+                    return BadRequest("Số lượng kho không đủ hoặc sản phẩm không tồn tại");
                 }
-                order.StockDeducted = true;
-                await _orderRepository.UpdateAsync(order);
             }
+            order.StockDeducted = true;
+            await _orderRepository.UpdateAsync(order);
 
             if (dto.VoucherId != null && discountAmount > 0)
             {

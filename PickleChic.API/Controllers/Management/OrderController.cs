@@ -256,6 +256,8 @@ public class OrderController : ControllerBase
                 return NotFound("Đơn hàng không tồn tại");
 
             bool isTransitionToConfirmed = (dto.OrderStatus == Constant.OrderStatus.Confirmed || dto.OrderStatus == "Confirmed")
+                && !existingOrder.IsOrderPOS
+                && existingOrder.PaymentMethodId == 1
                 && !existingOrder.StockDeducted;
 
             if (isTransitionToConfirmed)
