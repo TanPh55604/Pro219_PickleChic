@@ -61,20 +61,42 @@ namespace PickleChic.API.Utilities
         {
             if (count < 1) return string.Empty;
 
-            const string normalChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            const string specialChars = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+            const string upperChars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+            const string lowerChars = "abcdefghijkmnopqrstuvwxyz";
+            const string digitChars = "23456789";
+            const string specialChars = "!@#$%^*_+-=";
+            const string allChars = upperChars + lowerChars + digitChars + specialChars;
 
-            Random random = new Random();
-            char[] result = new char[count];
-
-            result[0] = specialChars[random.Next(specialChars.Length)];
-
-            for (int i = 1; i < count; i++)
+            using var rng = RandomNumberGenerator.Create();
+            char Pick(string source)
             {
-                result[i] = normalChars[random.Next(normalChars.Length)];
+                var bytes = new byte[4];
+                rng.GetBytes(bytes);
+                var index = BitConverter.ToUInt32(bytes, 0) % (uint)source.Length;
+                return source[(int)index];
             }
 
-            return new string(result.OrderBy(x => random.Next()).ToArray());
+            var result = new char[count];
+            var guaranteed = Math.Min(count, 4);
+            if (guaranteed >= 1) result[0] = Pick(upperChars);
+            if (guaranteed >= 2) result[1] = Pick(lowerChars);
+            if (guaranteed >= 3) result[2] = Pick(digitChars);
+            if (guaranteed >= 4) result[3] = Pick(specialChars);
+
+            for (int i = guaranteed; i < count; i++)
+            {
+                result[i] = Pick(allChars);
+            }
+
+            for (int i = result.Length - 1; i > 0; i--)
+            {
+                var bytes = new byte[4];
+                rng.GetBytes(bytes);
+                var j = (int)(BitConverter.ToUInt32(bytes, 0) % (uint)(i + 1));
+                (result[i], result[j]) = (result[j], result[i]);
+            }
+
+            return new string(result);
         }
 
     }
