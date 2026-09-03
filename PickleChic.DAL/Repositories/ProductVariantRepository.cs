@@ -297,6 +297,119 @@ public class ProductVariantRepository
         return await query.ToListAsync();
     }
 
+    public async Task<List<ProductVariant>> GetNewestInStockAsync(int limit = 4)
+    {
+        if (limit <= 0)
+        {
+            return new List<ProductVariant>();
+        }
+
+        var productIds = await ActiveInStockVariants()
+            .Select(pv => new
+            {
+                pv.ProductId,
+                pv.Product!.CreatedAt
+            })
+            .Distinct()
+            .OrderByDescending(x => x.CreatedAt)
+            .ThenByDescending(x => x.ProductId)
+            .Take(limit)
+            .Select(x => x.ProductId)
+            .ToListAsync();
+
+        var variants = await ActiveInStockVariantsWithDetails()
+            .Where(pv => productIds.Contains(pv.ProductId))
+            .ToListAsync();
+
+        return productIds
+            .Select(productId => variants
+                .Where(pv => pv.ProductId == productId)
+                .OrderByDescending(HasMainImage)
+                .ThenByDescending(pv => pv.StockQuantity)
+                .ThenBy(pv => pv.Id)
+                .FirstOrDefault())
+            .Where(pv => pv is not null)
+            .Select(pv => pv!)
+            .ToList();
+    }
+
+    public async Task<List<ProductVariant>> GetBestSellingInStockAsync(int limit = 4)
+    {
+        if (limit <= 0)
+        {
+            return new List<ProductVariant>();
+        }
+
+        var salesByProduct = await _context.OrderItems
+            .AsNoTracking()
+            .Where(oi => !oi.Delete
+                && oi.Order != null
+                && !oi.Order.Delete
+                && oi.Order.OrderStatus == "Hoàn thành"
+                && oi.Order.PaymentStatus == "Đã thanh toán"
+                && oi.ProductVariant != null
+                && oi.ProductVariant.StockQuantity > 0
+                && oi.ProductVariant.Status == 1
+                && oi.ProductVariant.Product != null
+                && !oi.ProductVariant.Product.IsDeleted
+                && oi.ProductVariant.Product.Status == 1
+                && oi.ProductVariant.Product.Category != null
+                && !oi.ProductVariant.Product.Category.Delete
+                && oi.ProductVariant.Product.Category.Status == 1
+                && oi.ProductVariant.Product.Brand != null
+                && !oi.ProductVariant.Product.Brand.Delete
+                && oi.ProductVariant.Product.Brand.Status == 1)
+            .GroupBy(oi => oi.ProductVariant!.ProductId)
+            .Select(group => new
+            {
+                ProductId = group.Key,
+                QuantitySold = group.Sum(oi => oi.Quantity)
+            })
+            .OrderByDescending(x => x.QuantitySold)
+            .ThenByDescending(x => x.ProductId)
+            .Take(limit)
+            .ToListAsync();
+
+        if (salesByProduct.Count == 0)
+        {
+            return new List<ProductVariant>();
+        }
+
+        var productIds = salesByProduct.Select(x => x.ProductId).ToList();
+        var variants = await ActiveInStockVariantsWithDetails()
+            .Where(pv => productIds.Contains(pv.ProductId))
+            .ToListAsync();
+
+        var salesByVariant = await _context.OrderItems
+            .AsNoTracking()
+            .Where(oi => !oi.Delete
+                && oi.Order != null
+                && !oi.Order.Delete
+                && oi.Order.OrderStatus == "Hoàn thành"
+                && oi.Order.PaymentStatus == "Đã thanh toán"
+                && oi.ProductVariant != null
+                && productIds.Contains(oi.ProductVariant.ProductId))
+            .GroupBy(oi => oi.ProductVariantId)
+            .Select(group => new
+            {
+                VariantId = group.Key,
+                QuantitySold = group.Sum(oi => oi.Quantity)
+            })
+            .ToDictionaryAsync(x => x.VariantId, x => x.QuantitySold);
+
+        return salesByProduct
+            .Select(sale => variants
+                .Where(pv => pv.ProductId == sale.ProductId)
+                .OrderByDescending(pv => salesByVariant.GetValueOrDefault(pv.Id))
+                .ThenByDescending(HasMainImage)
+                .ThenByDescending(pv => pv.StockQuantity)
+                .ThenBy(pv => pv.Id)
+                .FirstOrDefault())
+            .Where(pv => pv is not null)
+            .Select(pv => pv!)
+            .ToList();
+    }
+
     public async Task<PagedResult<ProductVariant>> SearchForPosAsync(
         string? keyword,
         int? brandId,
@@ -482,5 +595,46 @@ public class ProductVariantRepository
     public async Task<bool> HasActiveVariantsByProductIdAsync(int productId)
     {
         return await _context.ProductVariants.AnyAsync(pv => pv.ProductId == productId && pv.Status == 1);
+    }
+
+    private IQueryable<ProductVariant> ActiveInStockVariants()
+    {
+        return _context.ProductVariants
+            .AsNoTracking()
+            .Where(pv => pv.StockQuantity > 0
+                && pv.Status == 1
+                && pv.Product != null
+                && !pv.Product.IsDeleted
+                && pv.Product.Status == 1
+                && pv.Product.Category != null
+                && !pv.Product.Category.Delete
+                && pv.Product.Category.Status == 1
+                && pv.Product.Brand != null
+                && !pv.Product.Brand.Delete
+                && pv.Product.Brand.Status == 1
+                && (pv.ProductVariantAttributes == null
+                    || !pv.ProductVariantAttributes.Any()
+                    || !pv.ProductVariantAttributes.Any(pva =>
+                        pva.AttributeValue == null
+                        || pva.AttributeValue.ProductAttribute == null)));
+    }
+
+    private IQueryable<ProductVariant> ActiveInStockVariantsWithDetails()
+    {
+        return ActiveInStockVariants()
+            .Include(pv => pv.ProductVariantImages)
+            .Include(pv => pv.ProductVariantAttributes!)
+                .ThenInclude(pva => pva.AttributeValue)
+                    .ThenInclude(av => av!.ProductAttribute)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Category)
+            .Include(pv => pv.Product)
+                .ThenInclude(p => p!.Brand)
+            .AsSplitQuery();
+    }
+
+    private static bool HasMainImage(ProductVariant variant)
+    {
+        return variant.ProductVariantImages?.Any(image => image.IsMain) == true;
     }
 }

@@ -135,35 +135,61 @@
 
     <section id="new-products" class="bg-white py-16 text-neutral-950 lg:py-20">
         <div class="mx-auto max-w-7xl px-4">
-            @SectionHeading("New arrivals", "Sản phẩm mới", "Xem tất cả", "/products/new")
+            @SectionHeading("New arrivals", "Sản phẩm mới", "Xem tất cả", RouterConfig.Customer.Products)
 
-            <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                @foreach (var product in _newProducts)
-                {
-                    <CustomerProductCard Item="@ToProductCard(product)"
-                                         ShowStockStatus="false" />
-                }
-            </div>
+            @if (_isLoadingHomeProducts)
+            {
+                <ProductListSkeleton Count="4" />
+            }
+            else if (_newProducts.Count == 0)
+            {
+                <p class="!rounded-3xl !border !border-neutral-200 !bg-neutral-50 !p-8 text-center font-semibold text-neutral-500">
+                    Chưa có sản phẩm mới.
+                </p>
+            }
+            else
+            {
+                <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach (var product in _newProducts)
+                    {
+                        <CustomerProductCard Item="@ProductCardModel.FromVariant(product)"
+                                             ShowStockStatus="false" />
+                    }
+                </div>
+            }
         </div>
     </section>
 
     <section id="best-sellers" class="bg-neutral-950 !py-16 !text-white lg:!py-20">
         <div class="mx-auto max-w-7xl !px-4">
-            @SectionHeading("Best sellers", "Sản phẩm bán chạy", "Xem tất cả", "/products/best-sellers")
+            @SectionHeading("Best sellers", "Sản phẩm bán chạy", "Xem tất cả", RouterConfig.Customer.Products)
 
-            <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                @foreach (var product in _bestSellerProducts)
-                {
-                    <CustomerProductCard Item="@ToProductCard(product)"
-                                         ShowStockStatus="false" />
-                }
-            </div>
+            @if (_isLoadingHomeProducts)
+            {
+                <ProductListSkeleton Count="4" />
+            }
+            else if (_bestSellerProducts.Count == 0)
+            {
+                <p class="!rounded-3xl !border !border-white/10 !bg-white/5 !p-8 text-center font-semibold !text-neutral-400">
+                    Chưa có sản phẩm bán chạy.
+                </p>
+            }
+            else
+            {
+                <div class="grid !gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach (var product in _bestSellerProducts)
+                    {
+                        <CustomerProductCard Item="@ProductCardModel.FromVariant(product)"
+                                             ShowStockStatus="false" />
+                    }
+                </div>
+            }
         </div>
     </section>
 
     <section id="team-picklechic" class="bg-neutral-100 !py-16 lg:!py-24">
         <div class="mx-auto max-w-7xl !px-4">
-            @SectionHeading("Athletes", "TEAM PICKLECHIC", "Xem tất cả", "/team")
+            @SectionHeading("Athletes", "TEAM PICKLECHIC", "Xem tất cả", "#")
 
             <div class="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
                 @foreach (var member in _teamMembers)
@@ -192,7 +218,7 @@
 
     <section class="bg-white !py-16 lg:!py-24">
         <div class="mx-auto max-w-7xl !px-4">
-            @SectionHeading("PickleChic News", "Blog - Tin tức", "Xem tất cả", "/blog")
+            @SectionHeading("PickleChic News", "Blog - Tin tức", "Xem tất cả", "#")
 
             <div class="grid gap-6 md:grid-cols-3">
                 @foreach (var post in _blogPosts)
@@ -280,30 +306,6 @@
         }
     }
 
-    private class ProductItem
-    {
-        public string Name { get; set; }
-        public string ImageUrl { get; set; }
-        public string Price { get; set; }
-        public string OldPrice { get; set; }
-        public int Discount { get; set; }
-        public int Reviews { get; set; }
-        public string Tag { get; set; }
-        public string Url { get; set; }
-
-        public ProductItem(string name, string imageUrl, string price, string oldPrice, int discount, int reviews, string tag, string url)
-        {
-            Name = name;
-            ImageUrl = imageUrl;
-            Price = price;
-            OldPrice = oldPrice;
-            Discount = discount;
-            Reviews = reviews;
-            Tag = tag;
-            Url = url;
-        }
-    }
-
     private class TeamMember
     {
         public string Name { get; set; }
@@ -345,21 +347,21 @@
             "Phiên bản giới hạn cho người chơi tốc độ",
             "Thiết kế đậm chất thể thao, hiệu suất cao và khác biệt trên sân đấu",
             "https://joola.com.vn/images/1629/thumbs/razer-va-joola-ra-mat-vot-pickleball-phien-ban-gioi-han-trong-su-kien-ket-hop-choi-game-dau-tien-tren-the-gioi-w900.webp",
-            "/products/limited"
+            "#"
         ),
         new HeroSlide(
             "Pro IV Series",
             "Công nghệ mới cho cú đánh mạnh hơn",
             "Dòng vợt Pro IV với các hình dáng Hyperion, Perseus, Magnus và Scorpeus",
             "https://joola.com.vn/images/1102/thumbs/joola-ra-mat-vot-pickleball-pro-iv-va-agassi-pro-duoc-chung-nhan-kep-w900.webp",
-            "/products/pro-iv"
+            "#"
         ),
         new HeroSlide(
             "Vietnam Colorway",
             "Bản sắc Việt trong từng đường bóng",
             "Phiên bản phối màu nổi bật, tối ưu sức mạnh, kiểm soát và độ xoáy",
             "https://joola.com.vn/images/1510/thumbs/magnus-pro-iv-16mm-vietnam-colorway-dtc-850x850xcrop.webp",
-            "/products/vietnam-colorway"
+            "#"
         )
     };
 
@@ -379,21 +381,11 @@
         new CategoryItem("Balls", "Bóng Pickleball", 4)
     };
 
-    private ProductItem[] _newProducts = new ProductItem[]
-    {
-        new ProductItem("Hyperion Pro V Ben Johns Bolt Blue 16mm", "https://joola.com.vn/images/1807/thumbs/hyperion-pro-v-ben-johns-bolt-blue-16mm-250x250xcrop.webp", "7,890,000 đ", "", 0, 7, "Sẵn hàng", "/products/hyperion-pro-v"),
-        new ProductItem("Perseus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1372/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 10, "Sale", "/products/perseus-pro-iv-vietnam"),
-        new ProductItem("Magnus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1510/thumbs/magnus-pro-iv-16mm-vietnam-colorway-dtc-850x850xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 12, "New", "/products/magnus-pro-iv-vietnam"),
-        new ProductItem("Perseus Pro IV 16mm - Asia Colorway", "https://joola.com.vn/images/1373/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 8, "Hot", "/products/perseus-pro-iv-asia")
-    };
+    private bool _isLoadingHomeProducts = true;
 
-    private ProductItem[] _bestSellerProducts = new ProductItem[]
-    {
-        new ProductItem("Perseus Pro IV 14mm - Asia Colorway", "https://joola.com.vn/images/1373/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 18, "Best", "/products/perseus-pro-iv-asia"),
-        new ProductItem("Magnus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1510/thumbs/magnus-pro-iv-16mm-vietnam-colorway-dtc-850x850xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 16, "Best", "/products/magnus-pro-iv-vietnam"),
-        new ProductItem("Hyperion Pro V Ben Johns Bolt Blue 16mm", "https://joola.com.vn/images/1807/thumbs/hyperion-pro-v-ben-johns-bolt-blue-16mm-250x250xcrop.webp", "7,890,000 đ", "", 0, 9, "Pro V", "/products/hyperion-pro-v"),
-        new ProductItem("Perseus Pro IV 16mm - Vietnam Colorway", "https://joola.com.vn/images/1372/thumbs/perseus-pro-iv-16mm-vietnam-colorway-dtc-250x250xcrop.webp", "6,000,000 đ", "7,790,000 đ", 23, 14, "Pro IV", "/products/perseus-pro-iv-vietnam")
-    };
+    private List<ProductVariantSearchResponse> _newProducts = new();
+
+    private List<ProductVariantSearchResponse> _bestSellerProducts = new();
 
     private TeamMember[] _teamMembers = new TeamMember[]
     {
@@ -411,7 +403,7 @@
             "Nov 19, 2025",
             "Sự kiện kết hợp giữa thế giới gaming và pickleball với thiết kế hiệu suất cao",
             "https://joola.com.vn/images/1629/thumbs/razer-va-joola-ra-mat-vot-pickleball-phien-ban-gioi-han-trong-su-kien-ket-hop-choi-game-dau-tien-tren-the-gioi-w900.webp",
-            "/blog/razer-picklechic-limited"
+            "#"
         ),
         new BlogPost(
             "PickleChic ra mắt vợt Pickleball Pro IV và Agassi Pro",
@@ -419,7 +411,7 @@
             "Mar 08, 2025",
             "Dòng Pro IV mới với nhiều cải tiến về cảm giác bóng, độ xoáy và độ ổn định",
             "https://joola.com.vn/images/1102/thumbs/joola-ra-mat-vot-pickleball-pro-iv-va-agassi-pro-duoc-chung-nhan-kep-w900.webp",
-            "/blog/pro-iv-agassi-pro"
+            "#"
         ),
         new BlogPost(
             "Chứng nhận kép Agassi Pro và Pro IV",
@@ -427,20 +419,28 @@
             "Mar 08, 2025",
             "Tìm hiểu các tiêu chuẩn chứng nhận và ý nghĩa với người chơi pickleball",
             "https://joola.com.vn/images/1102/thumbs/joola-ra-mat-vot-pickleball-pro-iv-va-agassi-pro-duoc-chung-nhan-kep-w900.webp",
-            "/blog/chung-nhan-kep-agassi-pro-va-pro-iv"
+            "#"
         )
     };
 
-    private static ProductCardModel ToProductCard(ProductItem product)
+    protected override async Task OnInitializedAsync()
     {
-        return ProductCardModel.FromDisplay(
-            name: product.Name,
-            imageUrl: product.ImageUrl,
-            priceDisplay: product.Price,
-            oldPriceDisplay: product.OldPrice,
-            discountPercent: product.Discount,
-            tag: product.Tag,
-            detailUrl: product.Url);
+        var result = await _productService.GetHomeProductsAsync();
+
+        if (result.Success && result.Data is not null)
+        {
+            _newProducts = result.Data.NewProducts
+                .Where(product => product.InStock)
+                .Take(4)
+                .ToList();
+
+            _bestSellerProducts = result.Data.BestSellingProducts
+                .Where(product => product.InStock)
+                .Take(4)
+                .ToList();
+        }
+
+        _isLoadingHomeProducts = false;
     }
 
     private RenderFragment SectionHeading(string eyebrow, string title, string buttonText, string buttonUrl)

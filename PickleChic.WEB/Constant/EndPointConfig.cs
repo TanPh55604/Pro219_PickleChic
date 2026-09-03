@@ -124,6 +124,7 @@
         public static class Product
         {
             public const string Filter = "product/filter";
+            public const string Home = "product/home";
 
             public static string GetByIdWithDetailsPublic(int id) => $"product/get-by-id-with-details/{id}";
 

@@ -11,6 +11,13 @@ namespace PickleChic.WEB.DTO.Customer
         public int PageSize { get; set; }
     }
 
+    public class HomeProductsResponse
+    {
+        public List<ProductVariantSearchResponse> NewProducts { get; set; } = new();
+
+        public List<ProductVariantSearchResponse> BestSellingProducts { get; set; } = new();
+    }
+
     public class CustomerAttributeResponse
     {
         public int Id { get; set; }

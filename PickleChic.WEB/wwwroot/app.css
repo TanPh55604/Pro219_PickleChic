@@ -1720,6 +1720,9 @@
   .\!bg-green-50 {
     background-color: var(--color-green-50) !important;
   }
+  .\!bg-neutral-50 {
+    background-color: var(--color-neutral-50) !important;
+  }
   .\!bg-neutral-100 {
     background-color: var(--color-neutral-100) !important;
   }

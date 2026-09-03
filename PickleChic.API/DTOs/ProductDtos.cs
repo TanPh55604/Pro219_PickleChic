@@ -117,4 +117,10 @@ public class ProductFilterPageDto
     public int PageSize { get; set; }
 }
 
+public class HomeProductsDto
+{
+    public List<ProductVariantFilterDto> NewProducts { get; set; } = new();
+    public List<ProductVariantFilterDto> BestSellingProducts { get; set; } = new();
+}
+
 

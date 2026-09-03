@@ -10,12 +10,37 @@ namespace PickleChic.API.Controllers.Public;
 public class ProductController : ControllerBase
 {
     private readonly ProductRepository _repository;
+    private readonly ProductVariantRepository _variantRepository;
 
-    public ProductController(ProductRepository repository)
+    public ProductController(
+        ProductRepository repository,
+        ProductVariantRepository variantRepository)
     {
         _repository = repository;
+        _variantRepository = variantRepository;
     }
 
+    [HttpGet("home")]
+    public async Task<ActionResult<HomeProductsDto>> GetHomeProducts()
+    {
+        try
+        {
+            const int itemLimit = 4;
+
+            var newProducts = await _variantRepository.GetNewestInStockAsync(itemLimit);
+            var bestSellingProducts = await _variantRepository.GetBestSellingInStockAsync(itemLimit);
+
+            return Ok(new HomeProductsDto
+            {
+                NewProducts = newProducts.Select(ToFilterDto).ToList(),
+                BestSellingProducts = bestSellingProducts.Select(ToFilterDto).ToList()
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(500, "Db Error");
+        }
+    }
 
     [HttpGet("get-by-id/{id}")]
     public async Task<ActionResult<Product>> GetById(int id)
@@ -471,6 +496,42 @@ public class ProductController : ControllerBase
         {
             return StatusCode(500, "Db Error");
         }
+    }
+
+    private static ProductVariantFilterDto ToFilterDto(ProductVariant variant)
+    {
+        return new ProductVariantFilterDto
+        {
+            Id = variant.Id,
+            ProductId = variant.ProductId,
+            SKU = variant.SKU,
+            VariantName = variant.VariantName,
+            Price = variant.Price,
+            StockQuantity = variant.StockQuantity,
+            Status = variant.Status,
+            ProductName = variant.Product?.ProductName ?? string.Empty,
+            ProductDescription = variant.Product?.Description,
+            CategoryName = variant.Product?.Category?.Name,
+            CategoryDescription = variant.Product?.Category?.Description,
+            BrandName = variant.Product?.Brand?.Name,
+            BrandDescription = variant.Product?.Brand?.Description,
+            Images = variant.ProductVariantImages?.Select(image => new ProductVariantImageDetailDto
+            {
+                Id = image.Id,
+                URL = image.URL,
+                Name = image.Name,
+                Description = image.Description,
+                IsMain = image.IsMain
+            }).ToList() ?? new List<ProductVariantImageDetailDto>(),
+            Attributes = variant.ProductVariantAttributes?.Select(attribute => new AttributeValueDetailDto
+            {
+                Id = attribute.AttributeValue?.Id ?? 0,
+                AttributeId = attribute.AttributeValue?.AttributeId ?? 0,
+                AttributeName = attribute.AttributeValue?.ProductAttribute?.AttributeName ?? string.Empty,
+                Value = attribute.AttributeValue?.Value ?? string.Empty,
+                Note = attribute.AttributeValue?.Note
+            }).ToList() ?? new List<AttributeValueDetailDto>()
+        };
     }
 }
 

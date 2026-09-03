@@ -15,6 +15,13 @@ namespace PickleChic.WEB.Services.Customer
             _apiProvider = apiProvider;
         }
 
+        public async Task<ApiResult<HomeProductsResponse>> GetHomeProductsAsync()
+        {
+            return await _apiProvider.GetAsync<HomeProductsResponse>(
+                EndPointConfig.Product.Home,
+                requireAuth: false);
+        }
+
         public async Task<ApiResult<ProductFilterPageResponse>> FilterAsync(ProductSearchQuery query)
         {
             var url = BuildFilterUrl(query);
